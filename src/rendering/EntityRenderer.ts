@@ -14,9 +14,10 @@
 
 import { BoxGeometry, Mesh, MeshStandardMaterial, type Scene } from 'three';
 import type { GameState } from '../game/GameState';
+import type { Encounter } from '../game/Encounter';
 import { getSpecies } from '../game/Species';
-import { PALETTE, PLAYER, SPAWN } from '../utils/constants';
-import { lerp } from '../utils/math';
+import { CATCH, PALETTE, PLAYER, SPAWN } from '../utils/constants';
+import { clamp, lerp } from '../utils/math';
 
 export class EntityRenderer {
   private readonly marker: Mesh;
@@ -53,21 +54,51 @@ export class EntityRenderer {
 
     // Active animals claim meshes in order; leftovers are hidden. (Pool sizes
     // match, so this never runs short.)
+    const enc = state.encounter;
     let mi = 0;
-    for (const a of state.animals) {
+    for (let idx = 0; idx < state.animals.length; idx++) {
+      const a = state.animals[idx];
       if (!a.active) continue;
       const mesh = this.animalMeshes[mi++];
       const def = getSpecies(a.species);
       const size = def.size;
-      mesh.scale.set(size, size, size);
       mesh.position.set(
         lerp(a.prevX, a.x, alpha),
         size / 2,
         lerp(a.prevY, a.y, alpha),
       );
+      // The animal in the active encounter plays back the resolved shake DATA as
+      // a squash per beat (settle on catch). Everyone else is a plain cube.
+      if (enc && enc.animalIndex === idx) {
+        EntityRenderer.applySquash(mesh, enc, size);
+      } else {
+        mesh.scale.set(size, size, size);
+      }
       (mesh.material as MeshStandardMaterial).color.setHex(def.color);
       mesh.visible = true;
     }
     for (; mi < this.animalMeshes.length; mi++) this.animalMeshes[mi].visible = false;
+  }
+
+  /**
+   * Squash the target's mesh to match the encounter's CURRENT beat — driven
+   * purely by the resolved data (phase / shakeIndex / beatTimer), never by a
+   * separate animation that could diverge from the odds. Each shake wobbles
+   * (squash down, bulge out); a caught animal shrinks into the net on the settle
+   * beat; an escapee stays full-size (it bolts once the encounter clears).
+   */
+  private static applySquash(mesh: Mesh, enc: Encounter, size: number): void {
+    if (enc.phase === 'shaking') {
+      const progress = clamp(1 - enc.beatTimer / CATCH.shakeBeatSec, 0, 1);
+      const pulse = Math.sin(progress * Math.PI); // 0 -> 1 -> 0 across the beat
+      const s = pulse * CATCH.squashIntensity;
+      mesh.scale.set(size * (1 + s * 0.5), size * (1 - s), size * (1 + s * 0.5));
+    } else if (enc.phase === 'resolving' && enc.caught) {
+      const shrink = clamp(enc.beatTimer / CATCH.resolveBeatSec, 0, 1); // 1 -> 0
+      const s = size * shrink;
+      mesh.scale.set(s, s, s);
+    } else {
+      mesh.scale.set(size, size, size);
+    }
   }
 }

@@ -201,6 +201,10 @@ export type SpeciesId = 'fieldmouse' | 'rabbit' | 'quail' | 'hedgehog';
  *  faster, warier. The Meadow is all tier 1. */
 export type Tier = 1 | 2 | 3 | 4 | 5;
 
+/** Bait types = animal diets. The right bait for a species' diet calms it and
+ *  lures it closer; the wrong bait does nothing (the diet-learning mechanic). */
+export type BaitId = 'seeds' | 'greens' | 'insects';
+
 /**
  * Static definition of one species. The two axes the design keeps INDEPENDENT:
  *  - `spawnWeight` is the RARITY axis (how often it appears), and
@@ -224,8 +228,11 @@ export interface SpeciesDef {
   /** Which day phase this species is active in (ANY = all hours). */
   activityWindow: ActivityWindow;
   tier: Tier;
-  /** CATCH DIFFICULTY (reserved for PR #5; unused this PR). */
+  /** CATCH DIFFICULTY — the base [0,1] catch chance before tool / proximity /
+   *  bait / biome modifiers (the catch loop, PR #5). INDEPENDENT of spawnWeight. */
   baseCatchRate: number;
+  /** Diet — the bait type that calms + lures this species (wrong bait = no-op). */
+  bait: BaitId;
   /** Render tint, 0xRRGGBB. */
   color: number;
   /** Visual size (cube side), world units — smaller animals read as smaller. */
@@ -252,6 +259,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     activityWindow: 'any',
     tier: 1,
     baseCatchRate: 0.72,
+    bait: 'seeds',
     color: 0x8a7b6b,
     size: 0.45,
   },
@@ -265,6 +273,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     activityWindow: 'any',
     tier: 1,
     baseCatchRate: 0.6,
+    bait: 'greens',
     color: 0xb8a584,
     size: 0.55,
   },
@@ -278,6 +287,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     activityWindow: 'dawn',
     tier: 1,
     baseCatchRate: 0.55,
+    bait: 'seeds',
     color: 0x9c7b4a,
     size: 0.5,
   },
@@ -291,6 +301,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     activityWindow: 'dusk',
     tier: 1,
     baseCatchRate: 0.68,
+    bait: 'insects',
     color: 0x5c4a3a,
     size: 0.5,
   },
@@ -327,6 +338,107 @@ export const ANIMAL = {
   /** Hysteresis: once fleeing, keep fleeing until the player is detectionRadius +
    *  this buffer away — so an animal at the threshold doesn't flicker state. */
   fleeReleaseBuffer: 1.5,
+} as const;
+
+// ===========================================================================
+// Tools
+// ===========================================================================
+
+/** Catch tools, in unlock order. NET is the tier-1 baseline. */
+export type ToolId = 'net' | 'trap' | 'tranq';
+
+export interface ToolDef {
+  id: ToolId;
+  displayName: string;
+  /** Flat multiplier applied to the catch chance. */
+  catchMultiplier: number;
+  /** Whether the tool is available from the start. TRAP/TRANQ unlock with
+   *  missions (PR #8); selectable in tests via the table regardless. */
+  unlocked: boolean;
+}
+
+export const TOOL_ORDER: readonly ToolId[] = ['net', 'trap', 'tranq'];
+
+export const TOOLS: Record<ToolId, ToolDef> = {
+  net: { id: 'net', displayName: 'Net', catchMultiplier: 1.0, unlocked: true },
+  trap: { id: 'trap', displayName: 'Trap', catchMultiplier: 1.4, unlocked: false },
+  tranq: { id: 'tranq', displayName: 'Tranq', catchMultiplier: 1.9, unlocked: false },
+};
+
+/** The tool the player starts with. */
+export const STARTER_TOOL: ToolId = 'net';
+
+// ===========================================================================
+// Bait
+// ===========================================================================
+
+/** Bait deltas — the diet-learning lure. Correct bait (matches a species' diet)
+ *  calms it toward the catch ceiling AND lures it to APPROACH; wrong bait does
+ *  nothing. Bait is a consumable with an in-memory count. */
+export const BAIT_ORDER: readonly BaitId[] = ['seeds', 'greens', 'insects'];
+
+export const BAIT = {
+  /** Starting count per bait type (in-memory; no persistence until PR #7). */
+  startingCount: 5,
+  /** Calm multiplier when the CORRECT bait is active on the target (toward the
+   *  ~4x ceiling the design calls for). Wrong/none = 1.0 (no effect). */
+  correctCalm: 3.5,
+  /** Seconds a deployed bait stays active. */
+  activeWindowSec: 6,
+  /** Matching-diet animals within this radius of the bait APPROACH it (instead
+   *  of fleeing), world units. */
+  lureRadius: 8,
+  /** Approach speed while lured, world units/sec. */
+  approachSpeed: 2.0,
+} as const;
+
+// ===========================================================================
+// Catch
+// ===========================================================================
+
+/** The catch system — the core verb. Multi-shake resolution computed as DATA;
+ *  the renderer plays it back, so feel is driven by the math, never faked. */
+export const CATCH = {
+  /** Max distance from an animal to attempt a catch, world units. */
+  attemptRadius: 2.2,
+  /** Proximity multiplier: point-blank (dist 0) -> proximityMax; at attemptRadius
+   *  -> proximityMin. Closer = better odds. Linear between. */
+  proximityMax: 1.3,
+  proximityMin: 0.7,
+  /** Penalty applied to a FLEEING (spooked) animal — harder to catch. */
+  fleePenalty: 0.5,
+  /** Biome match: full odds in the species' home biome, a penalty out of it.
+   *  (Animals only roam their home biome today, but the factor is in place for
+   *  when they don't.) */
+  biomeMatchBonus: 1.0,
+  biomeMismatchPenalty: 0.6,
+  /** Number of shakes by tier (index = tier - 1). Rarer = more shakes = more
+   *  tension. The per-shake check is chance^(1/shakes), so the overall odds
+   *  equal the computed chance regardless of shake count. */
+  shakesByTier: [3, 3, 4, 4, 5],
+  /** Seconds each shake beat plays (the hit-stop window where feedback lands). */
+  shakeBeatSec: 0.45,
+  /** Settle (caught) / break-out (escape) beat after the last shake, seconds. */
+  resolveBeatSec: 0.6,
+  /** RARE critical catch: a small chance to collapse the whole attempt to a
+   *  SINGLE check at the much better chance^(1/critRoot) odds — an instant,
+   *  satisfying catch. */
+  critChance: 0.05,
+  /** Root used for the critical single check (4 = fourth-root odds). */
+  critRoot: 4,
+  /** Per-shake squash intensity for the render playback (0..1). */
+  squashIntensity: 0.4,
+} as const;
+
+/** Synth voice frequencies/feel for the catch beats (Web Audio, no files). */
+export const AUDIO = {
+  /** Base pitch of a shake blip, Hz; each shake index steps it up by stepHz. */
+  shakeBaseHz: 440,
+  shakeStepHz: 70,
+  /** Catch flourish root pitch, Hz. */
+  catchHz: 660,
+  /** Escape tone start pitch, Hz (it glides down from here). */
+  escapeHz: 300,
 } as const;
 
 /** Player movement feel — a snappy velocity ramp (no instant snap, no float). */

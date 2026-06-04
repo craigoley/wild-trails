@@ -10,10 +10,11 @@
  * looks smooth at 60 or 120 Hz. The player moves because GameState.update
  * mutates state — never because input is wired straight into this loop.
  *
- * The world now has CREATURES in it: animals spawn by biome + time of day and
- * roam (wander / flee) around the player. The spawn -> roam pipeline carries
- * `?debug=1` funnel telemetry. Catching (encounter -> catch-attempt -> resolve)
- * lands in later phased PRs.
+ * The world now has CREATURES you can CATCH: approach an animal, press catch, and
+ * watch the multi-shake resolution play out. The shake animation + audio are
+ * driven by the DATA that GameState resolved (Catch.resolveCatch) — feel reflects
+ * the real odds, never faked over them. The spawn -> roam -> catch pipeline
+ * carries `?debug=1` funnel telemetry.
  */
 
 import './style.css';
@@ -68,6 +69,10 @@ window.addEventListener('keydown', unlockAudio);
 // --- Loop -----------------------------------------------------------------
 let lastMs = performance.now();
 let accumulator = 0;
+// Catch-audio bookkeeping: blip once per shake beat as it begins, and fire the
+// settle/break tone on resolution — all read from the resolved encounter DATA.
+let prevEncounterActive = false;
+let prevShakeIndex = 0;
 
 function frame(nowMs: number): void {
   let dt = (nowMs - lastMs) / 1000;
@@ -79,6 +84,28 @@ function frame(nowMs: number): void {
   while (accumulator >= SIM_DT) {
     update(game, controls.intent, SIM_DT);
     accumulator -= SIM_DT;
+
+    // Audio cues from this sim step (checked per-step so none are missed when a
+    // frame runs several steps).
+    const enc = game.encounter;
+    if (enc) {
+      if (!prevEncounterActive) {
+        audio.shakeBlip(0, enc.shakes[0].passed); // first shake begins
+      } else if (
+        enc.phase === 'shaking' &&
+        enc.shakeIndex > prevShakeIndex &&
+        enc.shakeIndex < enc.shakes.length
+      ) {
+        audio.shakeBlip(enc.shakeIndex, enc.shakes[enc.shakeIndex].passed);
+      }
+      prevShakeIndex = enc.shakeIndex;
+      prevEncounterActive = true;
+    } else {
+      prevEncounterActive = false;
+      prevShakeIndex = 0;
+    }
+    if (game.lastOutcome === 'caught') audio.catchTone();
+    else if (game.lastOutcome === 'escaped') audio.escapeTone();
   }
   const alpha = accumulator / SIM_DT;
 

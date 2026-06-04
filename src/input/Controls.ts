@@ -3,17 +3,21 @@
  * `InputIntent` the game layer reads. The ONLY place that touches window/DOM for
  * input, so src/game/ stays Node-testable.
  *
- * Scheme (a roaming game — move is the whole control surface in Phase 0):
- *  - Desktop: WASD / arrow keys move.
- *  - Mobile: an on-screen JOYSTICK (drag anywhere; a thumb tracks the drag).
+ * Scheme:
+ *  - Desktop: WASD / arrow keys move; SPACE/F = catch; B = deploy bait; Q =
+ *    cycle bait type.
+ *  - Mobile: an on-screen JOYSTICK (drag anywhere) + on-screen CATCH / BAIT / ↻
+ *    buttons — one per edge action, mirroring the keys.
  *
- * Keyboard and touch are at PARITY: both write the SAME screen-space axes onto
- * the same intent, and the pure Player rotates them through the same iso angle.
- * So a given direction moves the player identically however it was entered.
+ * Keyboard and touch are at PARITY: both write the SAME axes / edge flags onto
+ * the same intent. Edge actions are set on the PRESS and CONSUMED by the sim, so
+ * one press = one action.
  */
 
-import { createIntent, dragAxes, keyAxes, type InputIntent } from '../game/Input';
+import { ACTION_KEYS, createIntent, dragAxes, keyAxes, type InputIntent } from '../game/Input';
 import { TOUCH } from '../utils/constants';
+
+const includes = (keys: readonly string[], k: string): boolean => keys.includes(k);
 
 export class Controls {
   readonly intent: InputIntent = createIntent();
@@ -40,11 +44,43 @@ export class Controls {
     target.append(this.stickBase, this.stickThumb);
     this.hideStick();
 
+    // On-screen action buttons (mirror the keys; one per edge action).
+    this.makeActionButton(target, 'CATCH', 'action-catch', () => {
+      this.intent.catchPressed = true;
+    });
+    this.makeActionButton(target, 'BAIT', 'action-bait', () => {
+      this.intent.baitDeploy = true;
+    });
+    this.makeActionButton(target, '↻', 'action-cycle', () => {
+      this.intent.baitCycle = true;
+    });
+
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     const hint = document.createElement('div');
     hint.className = 'touch-hint';
-    hint.textContent = isTouch ? 'Drag to roam' : 'WASD / arrows to roam';
+    hint.textContent = isTouch
+      ? 'Drag to roam · CATCH · BAIT'
+      : 'WASD roam · Space catch · B bait · Q cycle';
     target.appendChild(hint);
+  }
+
+  /** Create an on-screen button that fires an edge action on press. */
+  private makeActionButton(
+    target: HTMLElement,
+    label: string,
+    className: string,
+    fire: () => void,
+  ): void {
+    const btn = document.createElement('button');
+    btn.className = `action-btn ${className}`;
+    btn.textContent = label;
+    // pointerdown (not click) so it fires immediately on touch; preventDefault
+    // stops the synthetic double-tap / focus-scroll.
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      fire();
+    });
+    target.appendChild(btn);
   }
 
   private static makeStick(className: string): HTMLDivElement {
@@ -56,8 +92,17 @@ export class Controls {
 
   // --- Keyboard -------------------------------------------------------------
   private onKeyDown = (e: KeyboardEvent): void => {
-    this.pressed.add(e.key.toLowerCase());
+    const k = e.key.toLowerCase();
+    const fresh = !this.pressed.has(k); // ignore auto-repeat for edge actions
+    this.pressed.add(k);
     this.syncKeyAxes();
+    if (!fresh) return;
+    if (includes(ACTION_KEYS.catch, k)) {
+      e.preventDefault();
+      this.intent.catchPressed = true;
+    }
+    if (includes(ACTION_KEYS.baitDeploy, k)) this.intent.baitDeploy = true;
+    if (includes(ACTION_KEYS.baitCycle, k)) this.intent.baitCycle = true;
   };
 
   private onKeyUp = (e: KeyboardEvent): void => {
