@@ -39,14 +39,17 @@ export function arcAngleDeg(frac: number): number {
   return 180 * (1 - f);
 }
 
+/** Reusable scratch for dotPosition (no per-frame allocation). */
+const _dotOut = { leftPct: 0, topPct: 0 };
+
 /** The dot's position within the arc box as percentages (left, top). The body
  *  rises from the left horizon (0%, 100%) over the top (50%, 0%) and sets at the
- *  right horizon (100%, 100%) across the cycle. */
+ *  right horizon (100%, 100%) across the cycle.
+ *  Returns a shared scratch — read immediately, do not hold a reference. */
 export function dotPosition(frac: number): { leftPct: number; topPct: number } {
   const f = frac < 0 ? 0 : frac > 1 ? 1 : frac;
   const rad = (arcAngleDeg(f) * Math.PI) / 180;
-  return {
-    leftPct: 100 * f, // left horizon (0%) -> right horizon (100%) across the cycle
-    topPct: 100 * (1 - Math.sin(rad)), // peaks (0%) at the top of the arc
-  };
+  _dotOut.leftPct = 100 * f;
+  _dotOut.topPct = 100 * (1 - Math.sin(rad));
+  return _dotOut;
 }
