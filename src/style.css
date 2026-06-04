@@ -197,6 +197,83 @@ body {
   height: 46px;
   font-size: 20px;
 }
+.action-missions {
+  top: 14px;
+  right: 66px;
+  width: 46px;
+  height: 46px;
+  font-size: 20px;
+}
+
+/* --- Missions + rank overlay ------------------------------------------- */
+.mission-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 41;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 14, 8, 0.78);
+  pointer-events: auto;
+  padding: 16px;
+}
+.mission-panel {
+  width: min(520px, 94vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: rgba(16, 26, 18, 0.98);
+  border: 2px solid rgba(122, 200, 255, 0.4);
+  border-radius: 14px;
+  padding: 16px 18px 20px;
+  color: rgba(255, 255, 255, 0.92);
+}
+.mission-header {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-align: center;
+  margin-bottom: 14px;
+  color: #bfe3ff;
+}
+.mission-list {
+  display: grid;
+  gap: 10px;
+}
+.mission-row {
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.mission-row.done {
+  border-color: rgba(109, 255, 155, 0.5);
+  background: rgba(109, 255, 155, 0.08);
+}
+.mission-title {
+  font-size: 14.5px;
+  font-weight: 800;
+}
+.mission-desc {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.78);
+  margin: 3px 0 5px;
+}
+.mission-prog {
+  font-size: 12px;
+  color: rgba(122, 200, 255, 0.95);
+  font-variant-numeric: tabular-nums;
+}
+.mission-row.done .mission-prog {
+  color: rgba(109, 255, 155, 0.95);
+}
+.mission-debug {
+  margin-top: 12px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  color: rgba(120, 255, 180, 0.85);
+  white-space: pre-wrap;
+}
 
 /* --- Field Journal overlay --------------------------------------------- */
 .journal-overlay {

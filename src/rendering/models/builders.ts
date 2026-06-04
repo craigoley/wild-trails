@@ -135,9 +135,16 @@ function buildQuadruped(def: SpeciesDef): Group {
     ear.rotation.x = -0.2; // tilt slightly back
   }
 
-  // Tail at the back (-z): mouse = long thin cylinder, rabbit = round bobtail.
+  // Tail at the back (-z): rabbit = round bobtail; squirrel = big bushy upright
+  // tail (the signature read); mouse + others = long thin cylinder.
   if (cfg.kind === 'rabbit') {
     add(g, new SphereGeometry(s * (cfg.tailRadiusR ?? 0.2), SEG, SEG), accent, 0, bodyY, -bodyLen / 2);
+  } else if (cfg.kind === 'squirrel') {
+    const tailR = s * (cfg.tailRadiusR ?? 0.4);
+    const tailLen = s * (cfg.tailLengthR ?? 1.4);
+    const tail = add(g, new CapsuleGeometry(tailR, tailLen, 3, SEG), accent,
+      0, bodyY + tailLen * 0.4, -bodyLen / 2 - tailR * 0.4);
+    tail.rotation.x = 0.5; // arc up-and-back behind the body
   } else {
     const tailLen = s * (cfg.tailLengthR ?? 1.2);
     const tail = add(g, new CylinderGeometry(s * (cfg.tailRadiusR ?? 0.05), s * (cfg.tailRadiusR ?? 0.05), tailLen, SEG),

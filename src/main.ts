@@ -25,9 +25,12 @@ import { WorldRenderer } from './rendering/WorldRenderer';
 import { EntityRenderer } from './rendering/EntityRenderer';
 import { HUD, isDebugEnabled } from './rendering/HUD';
 import { JournalPanel } from './rendering/JournalPanel';
+import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
 import { AudioEngine } from './audio/AudioEngine';
 import { loadJournal, recordCatch, saveJournal } from './state/Journal';
-import { MAX_FRAME_DT, SIM_DT } from './utils/constants';
+import { evaluateCatch } from './game/Missions';
+import { unlockBiome } from './game/World';
+import { MAX_FRAME_DT, MISSION_ORDER, SIM_DT, type BiomeId } from './utils/constants';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('#app container not found');
@@ -43,10 +46,31 @@ const game = createGameState(bootSeed);
 // boundary (cross-session meta-progress), not in the per-run GameState. A catch
 // records into it + persists (the impure save stays out of the deterministic sim).
 const journal = loadJournal();
+// Apply persisted mission-granted unlocks to the live world at boot (so a
+// returning player keeps the regions they earned). Reuses World's unlock path.
+for (const id of journal.unlockedBiomes) {
+  if (id in game.world.biomes) unlockBiome(game.world, id as BiomeId);
+}
 if (isDebugEnabled()) {
   const species = Object.keys(journal.species).length;
   console.info(`[journal] v${journal.schemaVersion} loaded, ${species} species recorded`);
 }
+
+// Mission funnel telemetry (cumulative session counts; ?debug only). offered is
+// the static mission count; started is derived from the journal each refresh.
+const missionTelemetry: MissionTelemetry = {
+  offered: MISSION_ORDER.length,
+  started: 0,
+  progressed: 0,
+  completed: 0,
+  rewardsClaimed: 0,
+};
+const refreshMissionPanel = (): void => {
+  missionTelemetry.started = MISSION_ORDER.filter(
+    (id) => (journal.missions[id]?.progress ?? 0) > 0,
+  ).length;
+  missionPanel.refresh(journal, missionTelemetry, isDebugEnabled());
+};
 
 // --- Adapters & rendering (impure; read state) ----------------------------
 const controls = new Controls(app);
@@ -56,6 +80,8 @@ const entities = new EntityRenderer(scene.scene);
 const hud = new HUD(app);
 const journalPanel = new JournalPanel(app);
 journalPanel.refresh(journal); // seed the roster from the loaded journal
+const missionPanel = new MissionPanel(app);
+refreshMissionPanel();
 
 // Frame the camera on the player's spawn — no slide-in on frame 1.
 scene.snapFocus(game.player.x, game.player.y);
@@ -117,13 +143,25 @@ function frame(nowMs: number): void {
     }
     if (game.baitDeployFailed) audio.denyBlip();
 
-    // A catch resolved this step -> record it to the persistent journal. Pure
-    // recordCatch (Date.now passed in); the safe localStorage save is here at the
-    // boundary, never in the sim.
-    if (game.lastCaughtSpecies) {
+    // A catch resolved this step -> record it to the journal AND evaluate
+    // missions, both at the boundary. Pure recordCatch / evaluateCatch (Date.now
+    // and the unlock-application happen here, never in the deterministic sim).
+    if (game.lastCaughtSpecies && game.lastCaughtBiome && game.lastCaughtPhase) {
       recordCatch(journal, game.lastCaughtSpecies, Date.now());
+      const evalResult = evaluateCatch(journal, {
+        species: game.lastCaughtSpecies,
+        biome: game.lastCaughtBiome,
+        phase: game.lastCaughtPhase,
+      });
+      // Apply any unlock reward to the live world (reuse World's unlock path).
+      for (const id of evalResult.unlocked) unlockBiome(game.world, id);
+      // Funnel telemetry.
+      missionTelemetry.progressed += evalResult.progressed.length;
+      missionTelemetry.completed += evalResult.completed.length;
+      missionTelemetry.rewardsClaimed += evalResult.completed.length;
       saveJournal(journal);
       journalPanel.refresh(journal);
+      refreshMissionPanel();
     }
   }
   const alpha = accumulator / SIM_DT;
@@ -140,6 +178,12 @@ function frame(nowMs: number): void {
     controls.intent.journalToggle = false;
     journalPanel.setOpen(!journalPanel.isOpen());
     if (journalPanel.isOpen()) journalPanel.refresh(journal);
+  }
+  // Missions toggle (M).
+  if (controls.intent.missionToggle) {
+    controls.intent.missionToggle = false;
+    missionPanel.setOpen(!missionPanel.isOpen());
+    if (missionPanel.isOpen()) refreshMissionPanel();
   }
 
   // Render the interpolated state. Renderers read prev+current; never mutate.
