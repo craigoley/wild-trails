@@ -201,7 +201,7 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
       // Did it match a nearby animal's diet? Drives the "wrong bait" teaching cue.
       const matched = deployMatchesNearby(game, selected);
       game.lastDeployMatched = matched;
-      if (!matched) {
+      if (matched === false) {
         game.baitNotice = { text: 'Wrong bait — ignored', timer: BAIT.noticeSec };
       }
     } else {
@@ -286,9 +286,9 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
  * Used only to drive the "wrong bait — ignored" teaching cue (and the debug
  * readout). Checks animals within the lure radius of the player. PURE read.
  */
-function deployMatchesNearby(game: GameState, baitId: BaitId): boolean {
+function deployMatchesNearby(game: GameState, baitId: BaitId): boolean | null {
   const idx = nearestActiveAnimal(game.animals, game.player.x, game.player.y, BAIT.lureRadius);
-  if (idx < 0) return false;
+  if (idx < 0) return null;
   return getSpecies(game.animals[idx].species).bait === baitId;
 }
 
