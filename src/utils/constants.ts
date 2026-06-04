@@ -1225,3 +1225,13 @@ export const RANKS: readonly RankDef[] = [
   { name: 'Naturalist', minPoints: 70 },
   { name: 'Field Researcher', minPoints: 120 },
 ];
+
+/** The "Field Guide Complete" win screen copy (Plan #10). The tone is a naturalist
+ *  finishing their guide — warm, calm, no high-score energy (§14.2). */
+export const WIN = {
+  title: '🌿 Field Guide Complete',
+  /** Warm summary line. */
+  blurb: 'Every creature catalogued, every region explored, every study finished — your field guide is full.',
+  /** The free-roam invitation: an OPTION, never a pressure; progress never resets. */
+  freeRoam: 'The wild keeps turning. Roam on whenever you like — nothing here ever resets.',
+} as const;

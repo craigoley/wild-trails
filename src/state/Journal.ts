@@ -25,7 +25,7 @@ const STORAGE_KEY = 'wild-trails:journal';
 
 /** Current persisted schema version. Bump + add a `migrate` step when the shape
  *  changes incompatibly, so old stores upgrade rather than reset. */
-export const JOURNAL_SCHEMA_VERSION = 3;
+export const JOURNAL_SCHEMA_VERSION = 4;
 
 /** Per-species dex record. An entry exists IFF the species has been caught. */
 export interface SpeciesRecord {
@@ -59,6 +59,10 @@ export interface Journal {
   /** Durable bait counts per type — the one bit of session state persisted (v3).
    *  The active deployment / selection / timer are transient (recomputed fresh). */
   bait: Record<BaitId, number>;
+  /** Has the "Field Guide Complete" win been celebrated (v4)? Set once when the
+   *  win condition is first met, so the celebration fires ONCE; play continues
+   *  freely afterward and this persists (no reset post-win, §14). */
+  won: boolean;
 }
 
 /** Full-bait counts (the fresh-game / safe-default value), startingCount per type. */
@@ -77,6 +81,7 @@ export function createJournal(): Journal {
     rankPoints: 0,
     unlockedBiomes: [],
     bait: defaultBait(),
+    won: false,
   };
 }
 
@@ -207,6 +212,17 @@ function up_2to3(v2: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
+/** Upgrade a v3 store to v4: keep everything, add the win flag at `false` (an
+ *  existing player hasn't been shown the completion celebration — it fires when
+ *  they next meet the condition, exactly once). */
+function up_3to4(v3: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...v3,
+    schemaVersion: 4,
+    won: false,
+  };
+}
+
 /**
  * The migration HOOK: turn an arbitrary parsed payload into a valid current-
  * schema Journal. Old versions upgrade STEP BY STEP (v1 -> v2) BEFORE the version
@@ -221,6 +237,7 @@ export function migrate(parsed: unknown): Journal {
   // store flows all the way up (v1 -> up_1to2 -> v2 -> up_2to3 -> v3).
   if (obj.schemaVersion === 1) obj = up_1to2(obj);
   if (obj.schemaVersion === 2) obj = up_2to3(obj);
+  if (obj.schemaVersion === 3) obj = up_3to4(obj);
 
   if (obj.schemaVersion !== JOURNAL_SCHEMA_VERSION) return createJournal();
 
@@ -233,6 +250,7 @@ export function migrate(parsed: unknown): Journal {
     rankPoints,
     unlockedBiomes: sanitizeUnlocked(obj.unlockedBiomes),
     bait: sanitizeBait(obj.bait),
+    won: obj.won === true,
   };
 }
 
