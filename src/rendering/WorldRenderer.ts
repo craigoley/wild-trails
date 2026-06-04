@@ -26,7 +26,7 @@ import {
   type Scene,
 } from 'three';
 import type { World } from '../game/World';
-import { isUnlocked, sharedBorder } from '../game/World';
+import { walledEdges } from './lockedRegions';
 import {
   BIOME_RENDER,
   HIDING_RENDER,
@@ -52,14 +52,53 @@ const rectCY = (r: Rect): number => (r.minY + r.maxY) / 2;
 
 export class WorldRenderer {
   private readonly group = new Group();
+  /** Unlock-DEPENDENT visuals (per-biome ground dim + fog veil + boundary walls).
+   *  Rebuilt by `refresh` when a biome unlocks; static props (grid, cover, signs)
+   *  live in `group` and are built once. */
+  private readonly dynamic = new Group();
 
   constructor(scene: Scene, world: World) {
+    this.group.add(this.dynamic);
+
+    // Static props — built ONCE (unlock-independent): cover, tracking signs, grid.
+    for (const spot of world.hidingSpots) this.addGrassCluster(spot);
+    this.addTrackSigns();
+    this.addGrid(world);
+
+    // The locked-region visuals — built from the current unlock state, and
+    // rebuilt on unlock (see refresh) so a mid-session unlock can't leave them stale.
+    this.rebuildDynamic(world);
+
+    scene.add(this.group);
+  }
+
+  /**
+   * Regenerate the locked-region visuals (ground dim + fog veil + boundary walls)
+   * from the CURRENT unlock state. Call after a biome unlocks (rare — not per
+   * frame) so the stale wall/fog/dim at the now-open seam clears while gates at
+   * still-locked edges remain. The constructor calls the SAME builder, so refresh
+   * and a fresh construct can't drift.
+   */
+  refresh(world: World): void {
+    this.rebuildDynamic(world);
+  }
+
+  /** Dispose the old dynamic meshes (no GPU leak on repeated unlocks) and rebuild
+   *  the ground/fog/walls for the current unlock state. The shared build step. */
+  private rebuildDynamic(world: World): void {
+    for (const child of this.dynamic.children) {
+      if (child instanceof Mesh) {
+        child.geometry.dispose();
+        (child.material as MeshBasicMaterial | MeshStandardMaterial).dispose();
+      }
+    }
+    this.dynamic.clear();
+
     for (const id of world.order) {
       const biome = world.biomes[id];
       const r = biome.def.bounds;
 
-      // Ground plane, sized + positioned to the biome's footprint. Locked biomes
-      // are darkened so they read as out of reach.
+      // Ground plane. Locked biomes are darkened so they read as out of reach.
       const color = biome.unlocked
         ? biome.def.color
         : dim(biome.def.color, BIOME_RENDER.lockedDim);
@@ -69,10 +108,9 @@ export class WorldRenderer {
       );
       ground.rotation.x = -Math.PI / 2;
       ground.position.set(rectCX(r), 0, rectCY(r));
-      this.group.add(ground);
+      this.dynamic.add(ground);
 
-      // Fog veil over locked biomes — a translucent dark plane just above the
-      // ground, so the locked land is visible but plainly "fogged".
+      // Fog veil over locked biomes — a translucent dark plane above the ground.
       if (!biome.unlocked) {
         const veil = new Mesh(
           new PlaneGeometry(rectW(r), rectH(r)),
@@ -85,31 +123,12 @@ export class WorldRenderer {
         );
         veil.rotation.x = -Math.PI / 2;
         veil.position.set(rectCX(r), BIOME_RENDER.fogY, rectCY(r));
-        this.group.add(veil);
+        this.dynamic.add(veil);
       }
     }
 
-    // Boundary walls: for every unlocked biome, wall off each adjacent biome that
-    // is still locked, along the edge the two share.
-    for (const id of world.order) {
-      if (!isUnlocked(world, id)) continue;
-      for (const adj of world.biomes[id].def.adjacent) {
-        if (isUnlocked(world, adj)) continue;
-        const edge = sharedBorder(world.biomes[id].def.bounds, world.biomes[adj].def.bounds);
-        if (edge) this.addWall(edge);
-      }
-    }
-
-    // Hiding spots — a procedural tall-grass cluster per cover prop (static, so
-    // built once here; nothing per frame). Shows the player WHERE cover is.
-    for (const spot of world.hidingSpots) this.addGrassCluster(spot);
-
-    // Tracking signs (Plan #8b) — static dug-earth marks in the woodland (the
-    // breadcrumb-region, not a trail). Built once; nothing per frame.
-    this.addTrackSigns();
-
-    this.addGrid(world);
-    scene.add(this.group);
+    // Boundary walls: one per unlocked -> LOCKED adjacency (the shared edge set).
+    for (const w of walledEdges(world)) this.addWall(w.edge);
   }
 
   /** A little cluster of flat dark dug-earth marks per track sign (zero-asset,
@@ -165,7 +184,7 @@ export class WorldRenderer {
       }),
     );
     wall.position.set((edge.x1 + edge.x2) / 2, BIOME_RENDER.wallHeight / 2, (edge.y1 + edge.y2) / 2);
-    this.group.add(wall);
+    this.dynamic.add(wall);
   }
 
   /** One faint grid covering the bounding box of every biome (one line per unit). */
