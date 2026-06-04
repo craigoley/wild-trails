@@ -66,6 +66,60 @@ body {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
+/* Session status (catches + selected bait) — just under the biome label. */
+.hud-status {
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+}
+
+/* --- On-screen action buttons (catch / bait / cycle) -------------------- */
+/* Bottom-right cluster, mirroring the keyboard actions. pointer-events:auto so
+ * they're tappable even though the .hud overlay is click-through. */
+.action-btn {
+  position: fixed;
+  pointer-events: auto;
+  z-index: 25;
+  border: 2px solid rgba(255, 207, 107, 0.5);
+  border-radius: 50%;
+  background: rgba(255, 179, 71, 0.18);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.action-btn:active {
+  background: rgba(255, 179, 71, 0.4);
+}
+.action-catch {
+  right: 28px;
+  bottom: 96px;
+  width: 92px;
+  height: 92px;
+}
+.action-bait {
+  right: 132px;
+  bottom: 64px;
+  width: 64px;
+  height: 64px;
+}
+.action-cycle {
+  right: 140px;
+  bottom: 136px;
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+}
+
 /* ?debug=1 readout — top left, monospace, unobtrusive. */
 .hud-debug {
   position: fixed;

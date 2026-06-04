@@ -4,26 +4,36 @@
  * spawning activates an inactive slot and despawning deactivates one — the array
  * is never grown and nothing allocates per frame (fleet rule).
  *
- * AI is a two-state machine, data-driven from the species table:
- *  - WANDER: a slow random-walk, re-picking a heading every wanderRetargetSec,
+ * AI is a small state machine, data-driven from the species table:
+ *  - WANDER:  a slow random-walk, re-picking a heading every wanderRetargetSec,
  *    clamped to the animal's HOME biome (it never leaves its biome).
- *  - FLEE:   triggered when the player comes within the species' detectionRadius;
+ *  - FLEE:    triggered when the player comes within the species' detectionRadius;
  *    moves directly away at the species' baseFleeSpeed. Warier/faster species
  *    (bigger detectionRadius, higher baseFleeSpeed) bolt sooner and quicker.
  *    Hysteresis (ANIMAL.fleeReleaseBuffer) stops state flicker at the threshold.
+ *  - APPROACH: when the CORRECT bait (matching this species' diet) is active
+ *    within lureRadius, the animal moves TOWARD the bait instead of fleeing —
+ *    overriding skittishness. Wrong-diet bait is ignored. (Bait, PR #5.)
  *
- * There is NO catching here yet — fleeing is just movement. For render
+ * Fleeing is just movement (the catch loop in GameState reacts to it). For render
  * interpolation each animal keeps its previous sim-step position.
  */
 
-import { ANIMAL, SPAWN, type SpeciesId } from '../utils/constants';
+import { ANIMAL, BAIT, SPAWN, type BaitId, type SpeciesId } from '../utils/constants';
 import { clampToBiome, type World } from './World';
 import { getSpecies } from './Species';
 import type { PlayerState } from './Player';
 import type { Rng } from '../utils/rng';
 import type { Vec2 } from '../utils/math';
 
-export type AnimalAIState = 'wander' | 'flee';
+export type AnimalAIState = 'wander' | 'flee' | 'approach';
+
+/** An active bait lure the AI can be drawn to (matching diet only). */
+export interface BaitLure {
+  baitId: BaitId;
+  x: number;
+  y: number;
+}
 
 export interface Animal {
   active: boolean;
@@ -69,6 +79,23 @@ export function activeAnimalCount(pool: Animal[]): number {
   let n = 0;
   for (const a of pool) if (a.active) n++;
   return n;
+}
+
+/** Pool index of the nearest ACTIVE animal within `maxDist` of (x, y), or -1 if
+ *  none. Used to gate a catch attempt to a nearby animal. */
+export function nearestActiveAnimal(pool: Animal[], x: number, y: number, maxDist: number): number {
+  let best = -1;
+  let bestDist = maxDist;
+  for (let i = 0; i < pool.length; i++) {
+    const a = pool[i];
+    if (!a.active) continue;
+    const d = Math.hypot(a.x - x, a.y - y);
+    if (d <= bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
 }
 
 /**
@@ -118,6 +145,10 @@ const _heading: Vec2 = { x: 0, y: 0 };
  * (a wander -> flee transition) so the caller can count flee events. The animal
  * is clamped to its home biome; on hitting the edge while wandering it re-rolls
  * its heading so it doesn't grind along the wall.
+ *
+ * `lure` (optional) is an active bait point: if it matches this species' diet and
+ * is within BAIT.lureRadius, the animal APPROACHES it instead of fleeing. Passing
+ * no lure (the default) reproduces the pure wander/flee behaviour exactly.
  */
 export function updateAnimal(
   animal: Animal,
@@ -125,6 +156,7 @@ export function updateAnimal(
   world: World,
   rng: Rng,
   dt: number,
+  lure: BaitLure | null = null,
 ): boolean {
   animal.prevX = animal.x;
   animal.prevY = animal.y;
@@ -134,22 +166,47 @@ export function updateAnimal(
   const dy = animal.y - player.y;
   const dist = Math.hypot(dx, dy);
 
+  // Is a matching-diet bait luring this animal (within range)?
+  const lured =
+    lure !== null &&
+    def.bait === lure.baitId &&
+    Math.hypot(animal.x - lure.x, animal.y - lure.y) <= BAIT.lureRadius;
+
   // --- State transitions (with hysteresis) ---------------------------------
   let fledNow = false;
-  if (animal.aiState === 'wander') {
-    if (dist <= def.detectionRadius) {
-      animal.aiState = 'flee';
-      fledNow = true;
+  if (lured) {
+    animal.aiState = 'approach';
+  } else {
+    // A lure that just ended leaves the animal in 'approach'; drop back to wander
+    // (the detection check below may immediately re-flee if the player is close).
+    if (animal.aiState === 'approach') {
+      animal.aiState = 'wander';
+      animal.retargetTimer = 0;
     }
-  } else if (dist > def.detectionRadius + ANIMAL.fleeReleaseBuffer) {
-    animal.aiState = 'wander';
-    animal.retargetTimer = 0; // re-pick a wander heading next
+    if (animal.aiState === 'wander') {
+      if (dist <= def.detectionRadius) {
+        animal.aiState = 'flee';
+        fledNow = true;
+      }
+    } else if (dist > def.detectionRadius + ANIMAL.fleeReleaseBuffer) {
+      animal.aiState = 'wander';
+      animal.retargetTimer = 0; // re-pick a wander heading next
+    }
   }
 
-  // --- Movement (both branches set vx/vy) ----------------------------------
+  // --- Movement (every branch sets vx/vy) ----------------------------------
   let vx: number;
   let vy: number;
-  if (animal.aiState === 'flee') {
+  if (animal.aiState === 'approach' && lure !== null) {
+    // Toward the bait point at the approach speed.
+    const adx = lure.x - animal.x;
+    const ady = lure.y - animal.y;
+    const adist = Math.hypot(adx, ady);
+    const ux = adist > 0 ? adx / adist : animal.facingX;
+    const uy = adist > 0 ? ady / adist : animal.facingY;
+    vx = ux * BAIT.approachSpeed;
+    vy = uy * BAIT.approachSpeed;
+  } else if (animal.aiState === 'flee') {
     // Directly away from the player at the species' flee speed. (If exactly on
     // the player — dist 0 — keep the current facing to avoid a divide-by-zero.)
     const ux = dist > 0 ? dx / dist : animal.facingX;

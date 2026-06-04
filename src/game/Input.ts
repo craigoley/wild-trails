@@ -21,10 +21,15 @@ export interface InputIntent {
   moveX: number;
   /** Vertical move axis: -1 = up, +1 = down, 0 = none (screen space). */
   moveY: number;
+  /** EDGE actions — set true on the press by Controls, CONSUMED (set back to
+   *  false) by the sim, so one press = one action. */
+  catchPressed: boolean;
+  baitDeploy: boolean;
+  baitCycle: boolean;
 }
 
 export function createIntent(): InputIntent {
-  return { moveX: 0, moveY: 0 };
+  return { moveX: 0, moveY: 0, catchPressed: false, baitDeploy: false, baitCycle: false };
 }
 
 /** Keys (lowercased) that drive each screen direction. */
@@ -33,6 +38,14 @@ export const MOVE_KEYS = {
   right: ['arrowright', 'd'],
   up: ['arrowup', 'w'],
   down: ['arrowdown', 's'],
+} as const;
+
+/** Keys (lowercased) for the edge actions. The on-screen buttons mirror these,
+ *  one button per action, so touch and keyboard are at parity. */
+export const ACTION_KEYS = {
+  catch: [' ', 'f'],
+  baitDeploy: ['b'],
+  baitCycle: ['q'],
 } as const;
 
 /** The two move axes (the whole intent in Phase 0) — the pure keyboard/touch
