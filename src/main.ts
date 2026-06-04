@@ -24,8 +24,9 @@ import { SceneManager } from './rendering/SceneManager';
 import { WorldRenderer } from './rendering/WorldRenderer';
 import { EntityRenderer } from './rendering/EntityRenderer';
 import { HUD, isDebugEnabled } from './rendering/HUD';
+import { JournalPanel } from './rendering/JournalPanel';
 import { AudioEngine } from './audio/AudioEngine';
-import { loadJournal } from './state/Journal';
+import { loadJournal, recordCatch, saveJournal } from './state/Journal';
 import { MAX_FRAME_DT, SIM_DT } from './utils/constants';
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -37,12 +38,14 @@ if (!app) throw new Error('#app container not found');
 // game layer itself pure.
 const bootSeed = (Date.now() & 0xffffffff) >>> 0;
 const game = createGameState(bootSeed);
-// The persistent Field Journal — loaded once at boot (safe no-op in private mode).
-// Phase 0 just proves the load path; the catch loop reads/writes it later.
+// The persistent Field Journal — the fleet's first real localStorage collection.
+// Loaded once at boot (safe no-op in private mode); the journal lives HERE at the
+// boundary (cross-session meta-progress), not in the per-run GameState. A catch
+// records into it + persists (the impure save stays out of the deterministic sim).
 const journal = loadJournal();
 if (isDebugEnabled()) {
   const species = Object.keys(journal.species).length;
-  console.info(`[journal] v${journal.version} loaded, ${species} species recorded`);
+  console.info(`[journal] v${journal.schemaVersion} loaded, ${species} species recorded`);
 }
 
 // --- Adapters & rendering (impure; read state) ----------------------------
@@ -51,6 +54,8 @@ const scene = new SceneManager(app);
 new WorldRenderer(scene.scene, game.world);
 const entities = new EntityRenderer(scene.scene);
 const hud = new HUD(app);
+const journalPanel = new JournalPanel(app);
+journalPanel.refresh(journal); // seed the roster from the loaded journal
 
 // Frame the camera on the player's spawn — no slide-in on frame 1.
 scene.snapFocus(game.player.x, game.player.y);
@@ -111,6 +116,15 @@ function frame(nowMs: number): void {
       controls.pulseBait();
     }
     if (game.baitDeployFailed) audio.denyBlip();
+
+    // A catch resolved this step -> record it to the persistent journal. Pure
+    // recordCatch (Date.now passed in); the safe localStorage save is here at the
+    // boundary, never in the sim.
+    if (game.lastCaughtSpecies) {
+      recordCatch(journal, game.lastCaughtSpecies, Date.now());
+      saveJournal(journal);
+      journalPanel.refresh(journal);
+    }
   }
   const alpha = accumulator / SIM_DT;
 
@@ -119,6 +133,14 @@ function frame(nowMs: number): void {
   controls.setCatchState(game.catchArmed, game.targetChance);
   controls.setBaitHint(game.catchArmed && !game.targetBaited && !game.usedBaitEver);
   controls.setBaitTray(game.bait);
+
+  // Field Journal toggle (UI-only edge action; consumed at the boundary, not the
+  // sim). Refresh on open so it shows the latest roster.
+  if (controls.intent.journalToggle) {
+    controls.intent.journalToggle = false;
+    journalPanel.setOpen(!journalPanel.isOpen());
+    if (journalPanel.isOpen()) journalPanel.refresh(journal);
+  }
 
   // Render the interpolated state. Renderers read prev+current; never mutate.
   entities.sync(game, alpha);

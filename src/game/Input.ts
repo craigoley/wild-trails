@@ -29,6 +29,9 @@ export interface InputIntent {
   /** Direct bait SELECTION: the bait index to select this step (chip 0 = first
    *  bait), or -1 = none. Edge action, consumed by the sim. */
   baitSelect: number;
+  /** Toggle the Field Journal overlay (open/close). UI-only edge action,
+   *  consumed at the boundary (not the sim). */
+  journalToggle: boolean;
 }
 
 export function createIntent(): InputIntent {
@@ -39,6 +42,7 @@ export function createIntent(): InputIntent {
     baitDeploy: false,
     baitCycle: false,
     baitSelect: -1,
+    journalToggle: false,
   };
 }
 
@@ -56,6 +60,7 @@ export const ACTION_KEYS = {
   catch: [' ', 'f'],
   baitDeploy: ['b'],
   baitCycle: ['q'],
+  journal: ['j'],
 } as const;
 
 /** Number keys for DIRECT bait selection, positional: index 0 = '1', 1 = '2', …

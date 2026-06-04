@@ -184,6 +184,16 @@ export type DayPhase = 'dawn' | 'day' | 'dusk' | 'night';
 /** A species' activity window: one day phase, or ANY (out at all hours). */
 export type ActivityWindow = DayPhase | 'any';
 
+/** Human-readable activity label for the Field Journal card (confirms the
+ *  time-of-day mechanic the player learned by encountering the species). */
+export const ACTIVITY_LABEL: Record<ActivityWindow, string> = {
+  any: 'Active all day',
+  dawn: 'Active at dawn',
+  day: 'Active by day',
+  dusk: 'Active at dusk',
+  night: 'Active at night',
+};
+
 /**
  * Day-night cycle. The cycle length is one full loop through dawn -> day ->
  * dusk -> night; each phase's START is a fraction of the cycle [0, 1). Dawn and
@@ -246,6 +256,9 @@ export interface SpeciesDef {
   color: number;
   /** Visual size (cube side), world units — smaller animals read as smaller. */
   size: number;
+  /** Short, accurate "did you know" line for the Field Journal card. Written as
+   *  CONFIRMATION of what play taught (§5), not a front-loaded lecture. */
+  profile: string;
 }
 
 /** Deterministic iteration order over the species table. */
@@ -272,6 +285,8 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     bait: 'seeds',
     color: 0x8a7b6b,
     size: 0.45,
+    profile:
+      'Field mice turn up almost anywhere and eat mostly seeds and grains. They breed several times a year, which is why they are the commonest catch in the meadow.',
   },
   rabbit: {
     id: 'rabbit',
@@ -289,6 +304,8 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     bait: 'greens',
     color: 0xb8a584,
     size: 0.55,
+    profile:
+      'Rabbits graze on grasses and clover and bolt for cover in a zig-zag when startled. Their big ears help them hear danger coming.',
   },
   quail: {
     id: 'quail',
@@ -307,6 +324,8 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     bait: 'seeds',
     color: 0x9c7b4a,
     size: 0.5,
+    profile:
+      'Quail forage at first light for seeds and shoots, and would rather run than fly. Coveys roost together in a circle, tails pointing in.',
   },
   hedgehog: {
     id: 'hedgehog',
@@ -322,6 +341,8 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     bait: 'insects',
     color: 0x5c4a3a,
     size: 0.5,
+    profile:
+      'Hedgehogs come out at dusk to hunt insects and worms. When threatened they curl into a spiky ball — they\'re calm and easy to approach.',
   },
 };
 

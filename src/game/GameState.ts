@@ -53,7 +53,7 @@ import { finalCatchChance } from './Catch';
 import { getSpecies } from './Species';
 import { STARTER_TOOL, type ToolId } from './Tools';
 import { createRng, type Rng } from '../utils/rng';
-import { BAIT, BAIT_ORDER, CATCH, CATCH_FX, SPAWN, type BaitId } from '../utils/constants';
+import { BAIT, BAIT_ORDER, CATCH, CATCH_FX, SPAWN, type BaitId, type SpeciesId } from '../utils/constants';
 import type { InputIntent } from './Input';
 
 /** Default seed when none is supplied (keeps no-arg callers/tests deterministic;
@@ -107,6 +107,10 @@ export interface GameState {
   encounter: Encounter | null;
   /** Outcome of the encounter that resolved THIS step (one-shot; for fx). */
   lastOutcome: EncounterOutcome;
+  /** The species CAUGHT this step (one-shot; null otherwise). The boundary reads
+   *  it to record the catch to the persistent Field Journal — keeping the journal
+   *  write (and Date.now) out of the deterministic sim. */
+  lastCaughtSpecies: SpeciesId | null;
   /** A lingering result flash (caught/escaped), or null. */
   resultFlash: ResultFlash | null;
   // --- Targeting (PR #5.1 — "who am I catching") ---------------------------
@@ -156,6 +160,7 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
     bait: createBaitState(),
     encounter: null,
     lastOutcome: null,
+    lastCaughtSpecies: null,
     resultFlash: null,
     targetIndex: -1,
     catchArmed: false,
@@ -186,6 +191,7 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
 /** Advance the simulation one fixed step. The ONLY mutation path. */
 export function update(game: GameState, intent: InputIntent, dt: number): void {
   game.lastOutcome = null; // one-shot fx flags, fresh each step
+  game.lastCaughtSpecies = null;
   game.baitJustDeployed = false;
   game.baitDeployFailed = false;
   game.timeSec += dt;
@@ -368,6 +374,7 @@ function resolveOutcome(game: GameState, outcome: 'caught' | 'escaped'): void {
     despawnAnimal(animal);
     game.sessionCatches++;
     game.telemetry.caught++;
+    game.lastCaughtSpecies = enc.species; // one-shot: the boundary records it to the journal
     // Replenish the caught species' diet bait (you learned what it eats), and
     // spend the active lure — it was "used up" on the catch, so it disappears.
     addBait(game.bait, getSpecies(enc.species).bait, BAIT.rewardPerCatch);
