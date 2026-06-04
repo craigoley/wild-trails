@@ -34,7 +34,7 @@ import { createAutosaver, loadJournal, recordCatch, setBaitCounts } from './stat
 import { restoreBaitCounts } from './game/Bait';
 import { evaluateCatch } from './game/Missions';
 import { unlockBiome } from './game/World';
-import { MAX_FRAME_DT, MISSION_ORDER, SIM_DT, type BiomeId } from './utils/constants';
+import { MAX_FRAME_DT, MISSION_ORDER, SIM_DT, TRACKING, type BiomeId } from './utils/constants';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('#app container not found');
@@ -135,6 +135,11 @@ function frame(nowMs: number): void {
   let dt = (nowMs - lastMs) / 1000;
   lastMs = nowMs;
   dt = Math.min(dt, MAX_FRAME_DT);
+
+  // Tracking puzzle (Plan #8b): the BOUNDARY tells the sim whether a tracking
+  // mission is in progress (the sim doesn't read the journal). Active until the
+  // target is caught (the mission completes); drives the seeded sett spawn + hints.
+  game.activeTrackTarget = journal.missions['track-badger']?.completed ? null : TRACKING.target;
 
   // Step the sim in fixed slices; the remainder interpolates the render.
   accumulator += dt;

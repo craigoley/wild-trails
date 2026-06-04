@@ -82,6 +82,13 @@ export function activeAnimalCount(pool: Animal[]): number {
   return n;
 }
 
+/** Is any animal of this species currently active? (Plan #8b — avoid spawning a
+ *  second tracking target while one is already out.) */
+export function hasActiveSpecies(pool: Animal[], species: SpeciesId): boolean {
+  for (const a of pool) if (a.active && a.species === species) return true;
+  return false;
+}
+
 /** Pool index of the nearest ACTIVE animal within `maxDist` of (x, y), or -1 if
  *  none. Used to gate a catch attempt to a nearby animal. */
 export function nearestActiveAnimal(pool: Animal[], x: number, y: number, maxDist: number): number {

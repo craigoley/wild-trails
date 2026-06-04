@@ -25,11 +25,12 @@ import {
   activeAnimalCount,
   createAnimalPool,
   despawnAnimal,
+  hasActiveSpecies,
   nearestActiveAnimal,
   updateAnimal,
   type Animal,
 } from './Animal';
-import { trySpawn } from './Spawn';
+import { trySpawn, spawnTrackingTarget } from './Spawn';
 import { dayPhaseAt, type DayPhase } from './Time';
 import {
   advanceEncounter,
@@ -61,7 +62,18 @@ import {
 import { getSpecies } from './Species';
 import { STARTER_TOOL, type ToolId } from './Tools';
 import { createRng, type Rng } from '../utils/rng';
-import { BAIT, BAIT_ORDER, CATCH, CATCH_FX, SPAWN, type BaitId, type SpeciesId } from '../utils/constants';
+import {
+  BAIT,
+  BAIT_ORDER,
+  CATCH,
+  CATCH_FX,
+  NOTICE,
+  SPAWN,
+  TRACKING,
+  TRACK_SIGNS,
+  type BaitId,
+  type SpeciesId,
+} from '../utils/constants';
 import type { InputIntent } from './Input';
 
 /** Default seed when none is supplied (keeps no-arg callers/tests deterministic;
@@ -146,8 +158,10 @@ export interface GameState {
   /** Whether the last deploy's bait MATCHED a nearby animal's diet (debug); null
    *  before the first deploy. */
   lastDeployMatched: boolean | null;
-  /** A lingering bait message ("Out of …" / "Wrong bait — ignored"), or null. */
-  baitNotice: { text: string; timer: number } | null;
+  /** A lingering transient HUD notice (bait scarcity, tracking teaching-hints …),
+   *  or null. `ttl` is the original duration so the HUD fades it generically,
+   *  whatever the source (Plan #8b generalised the old bait-only channel). */
+  notice: { text: string; timer: number; ttl: number } | null;
   // --- Stealth (PR #6 — derived each step from the player + world) ---------
   /** Player stealth this step: the detection-radius factor (1 = fully visible),
    *  and which inputs are active. Read by the AI (via the factor) and the
@@ -156,6 +170,17 @@ export interface GameState {
   /** In-memory catches this session (Journal persistence is PR #7). */
   sessionCatches: number;
   telemetry: Telemetry;
+  // --- Tracking puzzle (Plan #8b) ------------------------------------------
+  /** The active tracking-target species, or null. Set by the BOUNDARY (main) from
+   *  the journal (the sim doesn't read the journal). Drives the seeded sett spawn
+   *  + the sign teaching-hints; null = no tracking mission in progress. */
+  activeTrackTarget: SpeciesId | null;
+  /** Which signs have been read (distinct count), and which sign the player is
+   *  currently on (-1 = none) so a hint fires once per approach, not per frame. */
+  signsSeen: boolean[];
+  nearSign: number;
+  /** Tracking funnel (§5.5): signs read -> region located -> target caught. */
+  track: { signsFound: number; located: boolean; caught: number };
 }
 
 export function createGameState(seed: number = DEFAULT_SEED): GameState {
@@ -185,7 +210,7 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
     baitJustDeployed: false,
     baitDeployFailed: false,
     lastDeployMatched: null,
-    baitNotice: null,
+    notice: null,
     stealth: { factor: 1, inCover: false, sneaking: false },
     sessionCatches: 0,
     telemetry: {
@@ -201,6 +226,10 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
       escaped: 0,
       ...createDiagnostics(),
     },
+    activeTrackTarget: null,
+    signsSeen: TRACK_SIGNS.map(() => false),
+    nearSign: -1,
+    track: { signsFound: 0, located: false, caught: 0 },
   };
 }
 
@@ -234,7 +263,7 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
     const id = BAIT_ORDER[intent.baitSelect];
     intent.baitSelect = -1;
     if (id !== undefined && !setSelectedBait(game.bait, id)) {
-      game.baitNotice = { text: `Out of ${id}`, timer: BAIT.noticeSec };
+      game.notice = { text: `Out of ${id}`, timer: BAIT.noticeSec, ttl: BAIT.noticeSec };
     }
   }
   if (intent.baitCycle) {
@@ -251,13 +280,13 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
       const matched = deployMatchesNearby(game, selected);
       game.lastDeployMatched = matched;
       if (matched === false) {
-        game.baitNotice = { text: 'Wrong bait — ignored', timer: BAIT.noticeSec };
+        game.notice = { text: 'Wrong bait — ignored', timer: BAIT.noticeSec, ttl: BAIT.noticeSec };
       }
     } else {
       // Out of that bait — blocked.
       game.baitDeployFailed = true;
       recordOutOfBait(game.telemetry); // diagnostics: bait-scarcity signal (cause b)
-      game.baitNotice = { text: `Out of ${selected}!`, timer: BAIT.noticeSec };
+      game.notice = { text: `Out of ${selected}!`, timer: BAIT.noticeSec, ttl: BAIT.noticeSec };
     }
   }
   tickBait(game.bait, dt);
@@ -267,9 +296,9 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
     game.resultFlash.timer -= dt;
     if (game.resultFlash.timer <= 0) game.resultFlash = null;
   }
-  if (game.baitNotice) {
-    game.baitNotice.timer -= dt;
-    if (game.baitNotice.timer <= 0) game.baitNotice = null;
+  if (game.notice) {
+    game.notice.timer -= dt;
+    if (game.notice.timer <= 0) game.notice = null;
   }
 
   // --- Catch encounter -----------------------------------------------------
@@ -326,6 +355,9 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
     if (result.outcome !== 'no-eligible') game.telemetry.attempts++;
     if (result.outcome === 'spawned') game.telemetry.spawned++;
   }
+
+  // --- Tracking puzzle (Plan #8b) ------------------------------------------
+  updateTracking(game);
 
   // --- Roam + despawn ------------------------------------------------------
   const lure = activeLure(game.bait);
@@ -397,6 +429,62 @@ function updateTarget(game: GameState): void {
   });
 }
 
+/**
+ * Tracking-puzzle step (Plan #8b) — PURE. Reads the player + clock; fires teaching
+ * hints at signs and biases the SEEDED target spawn into the sett at night so the
+ * signs actually lead to the animal. It NEVER touches mission PROGRESS: a wrong
+ * look TEACHES (a hint), it does not reset or penalise (§6.5). No-op when no
+ * tracking mission is active.
+ */
+function updateTracking(game: GameState): void {
+  const target = game.activeTrackTarget;
+  if (!target) {
+    game.nearSign = -1;
+    return;
+  }
+  const px = game.player.x;
+  const py = game.player.y;
+  const night = game.dayPhase === 'night';
+
+  // Sign proximity -> a teaching hint on ENTERING a sign (once per approach, not
+  // every frame). The hint uses the species' real facts (cold by day, fresh at
+  // night) — it leads, it never resets progress.
+  let near = -1;
+  for (let i = 0; i < TRACK_SIGNS.length; i++) {
+    const s = TRACK_SIGNS[i];
+    if (Math.hypot(px - s.x, py - s.y) <= s.radius) {
+      near = i;
+      break;
+    }
+  }
+  if (near !== -1 && near !== game.nearSign) {
+    if (!game.signsSeen[near]) {
+      game.signsSeen[near] = true;
+      game.track.signsFound++;
+    }
+    const text = night ? TRACKING.freshHint : TRACKING.coldHint;
+    game.notice = { text, timer: NOTICE.trackSec, ttl: NOTICE.trackSec };
+  }
+  game.nearSign = near;
+
+  // Located: the player reasoned their way into the sett region.
+  const distSett = Math.hypot(px - TRACKING.sett.x, py - TRACKING.sett.y);
+  if (distSett <= TRACKING.sett.radius) game.track.located = true;
+
+  // SEEDED hidden spawn: at night, as the player nears the signed sett, reveal the
+  // target by spawning it (seeded) inside the sett — one at a time. This biases
+  // WHERE the target appears during the mission; it does NOT gate the target's
+  // normal night/woodland spawning elsewhere (that still runs via trySpawn).
+  if (
+    night &&
+    game.currentBiome === TRACKING.sett.biome &&
+    distSett <= TRACKING.revealRadius &&
+    !hasActiveSpecies(game.animals, target)
+  ) {
+    spawnTrackingTarget(game.animals, TRACKING.sett, target, game.rng);
+  }
+}
+
 /** Apply a resolved encounter's outcome and clear it. */
 function resolveOutcome(game: GameState, outcome: 'caught' | 'escaped'): void {
   const enc = game.encounter!;
@@ -408,6 +496,8 @@ function resolveOutcome(game: GameState, outcome: 'caught' | 'escaped'): void {
     despawnAnimal(animal);
     game.sessionCatches++;
     game.telemetry.caught++;
+    // Tracking funnel: caught the tracking target (the last stage of the funnel).
+    if (game.activeTrackTarget && enc.species === game.activeTrackTarget) game.track.caught++;
     // Diagnostics: bucket this success as bait-on/off + close the per-target chain.
     recordCatchSuccess(game.telemetry);
     // One-shot catch event for the boundary (journal + missions): species + the
