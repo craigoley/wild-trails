@@ -22,6 +22,7 @@
 import { ANIMAL, BAIT, SPAWN, type BaitId, type SpeciesId } from '../utils/constants';
 import { clampToBiome, type World } from './World';
 import { getSpecies } from './Species';
+import { effectiveDetectionRadius } from './Detection';
 import type { PlayerState } from './Player';
 import type { Rng } from '../utils/rng';
 import type { Vec2 } from '../utils/math';
@@ -149,6 +150,11 @@ const _heading: Vec2 = { x: 0, y: 0 };
  * `lure` (optional) is an active bait point: if it matches this species' diet and
  * is within BAIT.lureRadius, the animal APPROACHES it instead of fleeing. Passing
  * no lure (the default) reproduces the pure wander/flee behaviour exactly.
+ *
+ * `stealthFactor` (optional, default 1) shrinks the species' detection radius
+ * (PR #6). 1 = no stealth = exact PR #4 behaviour; only the radius the flee
+ * trigger + hysteresis compare against changes — the flee/hysteresis logic and
+ * flee speed are untouched.
  */
 export function updateAnimal(
   animal: Animal,
@@ -157,6 +163,7 @@ export function updateAnimal(
   rng: Rng,
   dt: number,
   lure: BaitLure | null = null,
+  stealthFactor = 1,
 ): boolean {
   animal.prevX = animal.x;
   animal.prevY = animal.y;
@@ -165,6 +172,10 @@ export function updateAnimal(
   const dx = animal.x - player.x;
   const dy = animal.y - player.y;
   const dist = Math.hypot(dx, dy);
+  // Stealth-aware detection radius. With stealthFactor === 1 this equals
+  // def.detectionRadius, so the trigger + hysteresis below are byte-identical
+  // to PR #4 at rest.
+  const detRadius = effectiveDetectionRadius(def, stealthFactor);
 
   // Is a matching-diet bait luring this animal (within range)?
   const lured =
@@ -184,11 +195,11 @@ export function updateAnimal(
       animal.retargetTimer = 0;
     }
     if (animal.aiState === 'wander') {
-      if (dist <= def.detectionRadius) {
+      if (dist <= detRadius) {
         animal.aiState = 'flee';
         fledNow = true;
       }
-    } else if (dist > def.detectionRadius + ANIMAL.fleeReleaseBuffer) {
+    } else if (dist > detRadius + ANIMAL.fleeReleaseBuffer) {
       animal.aiState = 'wander';
       animal.retargetTimer = 0; // re-pick a wander heading next
     }

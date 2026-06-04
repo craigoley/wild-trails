@@ -19,7 +19,8 @@
  */
 
 import { updatePlayer, type PlayerState, createPlayer } from './Player';
-import { createWorld, currentBiome, type BiomeId, type World } from './World';
+import { createWorld, currentBiome, isInCover, type BiomeId, type World } from './World';
+import { computeStealthFactor, isSneaking } from './Detection';
 import {
   activeAnimalCount,
   createAnimalPool,
@@ -129,6 +130,11 @@ export interface GameState {
   lastDeployMatched: boolean | null;
   /** A lingering bait message ("Out of …" / "Wrong bait — ignored"), or null. */
   baitNotice: { text: string; timer: number } | null;
+  // --- Stealth (PR #6 — derived each step from the player + world) ---------
+  /** Player stealth this step: the detection-radius factor (1 = fully visible),
+   *  and which inputs are active. Read by the AI (via the factor) and the
+   *  ?debug overlay. */
+  stealth: { factor: number; inCover: boolean; sneaking: boolean };
   /** In-memory catches this session (Journal persistence is PR #7). */
   sessionCatches: number;
   telemetry: Telemetry;
@@ -159,6 +165,7 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
     baitDeployFailed: false,
     lastDeployMatched: null,
     baitNotice: null,
+    stealth: { factor: 1, inCover: false, sneaking: false },
     sessionCatches: 0,
     telemetry: {
       eligible: 0,
@@ -186,6 +193,14 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
   const here = currentBiome(game.world, game.player.x, game.player.y);
   if (here) game.currentBiome = here;
   game.dayPhase = dayPhaseAt(game.timeSec);
+
+  // --- Stealth (one global factor; depends on the player + world, not the
+  // animal, so compute it ONCE here and feed it to every animal's detection). --
+  const inCover = isInCover(game.world, game.player.x, game.player.y);
+  const sneaking = isSneaking(game.player);
+  game.stealth.inCover = inCover;
+  game.stealth.sneaking = sneaking;
+  game.stealth.factor = computeStealthFactor(inCover, sneaking);
 
   // --- Bait actions (independent of the encounter) -------------------------
   if (intent.baitCycle) {
@@ -269,7 +284,7 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
     const a = game.animals[i];
     if (!a.active) continue;
     if (i === encounterIdx) continue; // the caught animal is frozen in the net
-    const fledNow = updateAnimal(a, game.player, game.world, game.rng, dt, lure);
+    const fledNow = updateAnimal(a, game.player, game.world, game.rng, dt, lure, game.stealth.factor);
     if (fledNow) game.telemetry.fled++;
     if (Math.hypot(a.x - game.player.x, a.y - game.player.y) > SPAWN.despawnRadius) {
       despawnAnimal(a);

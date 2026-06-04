@@ -12,6 +12,7 @@ import type { GameState } from '../game/GameState';
 import { liveAnimalCount } from '../game/GameState';
 import { clampActive } from '../game/World';
 import { getSpecies } from '../game/Species';
+import { effectiveDetectionRadius } from '../game/Detection';
 import { clamp } from '../utils/math';
 import { BAIT, BAIT_ORDER, BIOMES, CATCH_FX, CSS_PALETTE, PLAYER } from '../utils/constants';
 
@@ -25,9 +26,23 @@ function baitDebugCounts(state: GameState): string {
   return BAIT_ORDER.map((id) => `${id}×${state.bait.counts[id]}`).join('  ');
 }
 
+/** Per-target detection readout: detected y/n + effective vs base radius — the
+ *  bisect tool for "which layer made it notice me". Empty when no target. */
+function stealthTargetLine(state: GameState): string {
+  const a = state.targetIndex >= 0 ? state.animals[state.targetIndex] : undefined;
+  if (!a) return '';
+  const species = getSpecies(a.species);
+  const eff = effectiveDetectionRadius(species, state.stealth.factor);
+  return (
+    `\ndetected: ${a.aiState === 'flee' ? 'yes' : 'no'}  ` +
+    `effRadius: ${eff.toFixed(2)} (base ${species.detectionRadius.toFixed(2)})`
+  );
+}
+
 export class HUD {
   private readonly biomeLabel: HTMLDivElement;
   private readonly statusLine: HTMLDivElement;
+  private readonly hiddenBadge: HTMLDivElement;
   private readonly resultFlash: HTMLDivElement;
   private readonly baitNotice: HTMLDivElement;
   private readonly debugPanel: HTMLDivElement | null;
@@ -44,6 +59,13 @@ export class HUD {
     this.statusLine = document.createElement('div');
     this.statusLine.className = 'hud-status';
     root.appendChild(this.statusLine);
+
+    // "Hidden" badge — shown while the player is in cover (the stealth affordance).
+    this.hiddenBadge = document.createElement('div');
+    this.hiddenBadge.className = 'hud-hidden';
+    this.hiddenBadge.textContent = '🌿 Hidden';
+    this.hiddenBadge.style.display = 'none';
+    root.appendChild(this.hiddenBadge);
 
     // The big "Got it!" / "It got away!" flash — the unambiguous result signal.
     this.resultFlash = document.createElement('div');
@@ -72,6 +94,8 @@ export class HUD {
     const count = bait.counts[bait.selected];
     this.statusLine.textContent =
       `Caught ${state.sessionCatches}   ·   Bait: ${bait.selected} ×${count}${count === 0 ? ' (out)' : ''}`;
+
+    this.hiddenBadge.style.display = state.stealth.inCover ? 'block' : 'none';
 
     // Lingering bait notice (out of bait / wrong bait), fading over its lifetime.
     const notice = state.baitNotice;
@@ -115,7 +139,11 @@ export class HUD {
           : '') +
         `\n--- bait ---\n` +
         `${baitDebugCounts(state)}\n` +
-        `lastDeployMatched: ${state.lastDeployMatched === null ? '-' : state.lastDeployMatched ? 'yes' : 'no'}`;
+        `lastDeployMatched: ${state.lastDeployMatched === null ? '-' : state.lastDeployMatched ? 'yes' : 'no'}` +
+        `\n--- stealth ---\n` +
+        `inCover: ${state.stealth.inCover ? 'yes' : 'no'}  sneaking: ${state.stealth.sneaking ? 'yes' : 'no'}  ` +
+        `factor: ${state.stealth.factor.toFixed(2)}` +
+        stealthTargetLine(state);
 
       // During an attempt, show the live chance + per-shake DATA so the on-screen
       // animation can be checked against the resolved odds.
