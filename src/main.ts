@@ -110,6 +110,7 @@ function frame(nowMs: number): void {
       audio.baitBlip();
       controls.pulseBait();
     }
+    if (game.baitDeployFailed) audio.denyBlip();
   }
   const alpha = accumulator / SIM_DT;
 
