@@ -12,6 +12,7 @@
 import type { Journal } from '../state/Journal';
 import { currentRank, rankPointsTotal } from '../game/Missions';
 import { MISSIONS, MISSION_ORDER } from '../utils/constants';
+import { addOverlayDismiss } from './overlayDismiss';
 
 /** Funnel counts for the mission pipeline (debug-only, §5.5). */
 export interface MissionTelemetry {
@@ -50,6 +51,9 @@ export class MissionPanel {
     this.debugLine = document.createElement('div');
     this.debugLine.className = 'mission-debug';
     panel.appendChild(this.debugLine);
+
+    // Same close paths as the journal (this panel had the identical soft-trap).
+    addOverlayDismiss(this.root, panel, () => this.open, () => this.setOpen(false));
 
     container.appendChild(this.root);
   }
