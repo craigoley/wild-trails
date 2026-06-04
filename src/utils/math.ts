@@ -21,6 +21,19 @@ export interface Vec2 {
   y: number;
 }
 
+/** An axis-aligned rectangle in world units (min/max on each axis). */
+export interface Rect {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+/** True if (x, y) lies within `rect` (inclusive of the edges). */
+export function rectContains(rect: Rect, x: number, y: number): boolean {
+  return x >= rect.minX && x <= rect.maxX && y >= rect.minY && y <= rect.maxY;
+}
+
 /**
  * Camera dead-zone follow (pure). Given the current focus (fx, fy) and the
  * target (px, py) — both in world units — the focus does NOT move while the

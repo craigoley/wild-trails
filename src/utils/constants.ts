@@ -7,11 +7,11 @@
  * through an OrthographicCamera tilted to an isometric angle. Speeds are
  * world-units per second.
  *
- * Phase 0 (this PR) ships ONLY what the placeholder render needs: the world
- * size, the player movement ramp, and the iso camera. Catch/species/AI/spawn
- * tuning lands in later phased PRs — each adds its own block here, never a
- * magic number out at a call site.
+ * Catch/species/AI/spawn tuning lands in later phased PRs — each adds its own
+ * block here, never a magic number out at a call site.
  */
+
+import type { Rect } from './math';
 
 /** Wild palette as 0xRRGGBB numbers for the three.js / rendering layer. */
 export const PALETTE = {
@@ -22,6 +22,10 @@ export const PALETTE = {
   groundLine: 0x2c5436,
   /** Player marker — warm trail-blaze orange (reads against the green). */
   player: 0xffb347,
+  /** Fog veil over locked biomes — the deep-shadow background colour. */
+  fog: 0x0a1810,
+  /** Boundary wall at the edge of the unlocked region (warm "blocked" amber). */
+  boundary: 0xffcf6b,
 } as const;
 
 /** Same palette as CSS hex strings for the HTML HUD overlay. */
@@ -53,14 +57,111 @@ export const PLAYER = {
 } as const;
 
 /**
- * The roaming world. Phase 0 is a single flat square plane the player wanders;
- * biome regions, spawn zones and a larger streamed world arrive in later PRs.
+ * The roaming world. A finite isometric world made of BIOME cells. The starting
+ * Meadow is the original square centred on the origin; the other biomes tile
+ * outward from it. `halfSize` is the half-extent of ONE biome cell.
  */
 export const WORLD = {
-  /** Half-extent of the square world from the origin, world units. The player is
-   *  clamped to [-halfSize, +halfSize] on each axis so it can't roam off the
-   *  rendered ground. */
+  /** Half-extent of a single biome cell from its centre, world units. The
+   *  starting Meadow spans [-halfSize, +halfSize] on each axis (unchanged from
+   *  the Phase 0 square), and adjacent biomes are cells of the same size tiled
+   *  beside it. */
   halfSize: 20,
+} as const;
+
+/** The biomes in the world. `meadow` is the starting region. */
+export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands';
+
+/** Static definition of one biome: its finite bounds, display name, adjacency
+ *  in the world graph, initial unlocked state, and ground tint. */
+export interface BiomeDef {
+  id: BiomeId;
+  displayName: string;
+  /** Finite footprint in world units. */
+  bounds: Rect;
+  /** Whether the biome is enterable. Only the Meadow starts unlocked; the
+   *  unlock MECHANISM (missions) arrives in a later PR — this is just the
+   *  initial state so the locked-but-visible rendering has something to read. */
+  unlocked: boolean;
+  /** Adjacent biome ids (graph edges). */
+  adjacent: BiomeId[];
+  /** Ground tint, 0xRRGGBB. */
+  color: number;
+}
+
+/** Half-size of one biome cell, and the centre-to-centre pitch of the grid (one
+ *  full cell, so adjacent cells share an edge with no gap). */
+const CELL = WORLD.halfSize;
+const PITCH = CELL * 2;
+
+/** A square biome cell of half-size CELL centred at (cx, cy). */
+function cell(cx: number, cy: number): Rect {
+  return { minX: cx - CELL, minY: cy - CELL, maxX: cx + CELL, maxY: cy + CELL };
+}
+
+/** Iteration order for the biome graph (deterministic; render + lookup order). */
+export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands'];
+
+/**
+ * The biome graph. A 2x2 grid of equal cells:
+ *
+ *     WOODLAND (0, +PITCH) | HIGHLANDS (+PITCH, +PITCH)
+ *     MEADOW   (0, 0)      | WETLAND   (+PITCH, 0)
+ *
+ * The Meadow is unlocked and centred on the origin (so its bounds equal the
+ * original world square); the other three exist in the graph but are locked.
+ */
+export const BIOMES: Record<BiomeId, BiomeDef> = {
+  meadow: {
+    id: 'meadow',
+    displayName: 'Meadow',
+    bounds: cell(0, 0),
+    unlocked: true,
+    adjacent: ['woodland', 'wetland'],
+    color: 0x2f6b3a,
+  },
+  woodland: {
+    id: 'woodland',
+    displayName: 'Woodland',
+    bounds: cell(0, PITCH),
+    unlocked: false,
+    adjacent: ['meadow', 'highlands'],
+    color: 0x244f2c,
+  },
+  wetland: {
+    id: 'wetland',
+    displayName: 'Wetland',
+    bounds: cell(PITCH, 0),
+    unlocked: false,
+    adjacent: ['meadow', 'highlands'],
+    color: 0x2a5a55,
+  },
+  highlands: {
+    id: 'highlands',
+    displayName: 'Highlands',
+    bounds: cell(PITCH, PITCH),
+    unlocked: false,
+    adjacent: ['woodland', 'wetland'],
+    color: 0x4a4f57,
+  },
+};
+
+/** How locked-but-adjacent biomes are rendered — visible (the metroidvania
+ *  breadcrumb) but clearly out of reach. */
+export const BIOME_RENDER = {
+  /** Locked biome ground is darkened by this factor (0..1) so it reads as
+   *  "there, but not yet yours". */
+  lockedDim: 0.45,
+  /** Opacity of the translucent fog veil drawn over locked biomes. */
+  fogOpacity: 0.4,
+  /** Small +y offset of the fog veil above the ground (avoids z-fighting). */
+  fogY: 0.02,
+  /** Boundary wall (at the edge between the unlocked region and a locked
+   *  neighbour) — height + thickness in world units, and opacity (semi-
+   *  transparent so the locked land is still visible past it). */
+  wallHeight: 1.2,
+  wallThickness: 0.3,
+  wallOpacity: 0.55,
 } as const;
 
 /** Player movement feel — a snappy velocity ramp (no instant snap, no float). */
