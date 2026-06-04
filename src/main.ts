@@ -95,7 +95,7 @@ const refreshMissionPanel = (): void => {
 // --- Adapters & rendering (impure; read state) ----------------------------
 const controls = new Controls(app);
 const scene = new SceneManager(app);
-new WorldRenderer(scene.scene, game.world);
+const worldRenderer = new WorldRenderer(scene.scene, game.world);
 const entities = new EntityRenderer(scene.scene);
 const hud = new HUD(app);
 // Time-of-day indicator (top-left) — makes the day-night cycle legible: the
@@ -187,6 +187,9 @@ function frame(nowMs: number): void {
       });
       // Apply any unlock reward to the live world (reuse World's unlock path).
       for (const id of evalResult.unlocked) unlockBiome(game.world, id);
+      // Refresh the locked-region visuals so the now-open seam's stale wall / fog /
+      // dim clears (the build-once renderer didn't update on a mid-session unlock).
+      if (evalResult.unlocked.length > 0) worldRenderer.refresh(game.world);
       // Player-facing feedback: a banner per completion + per unlock, + a tone.
       // (Previously completions/unlocks were silent — only telemetry + the panel.)
       for (const msg of missionBannerMessages(evalResult)) banner.enqueue(msg.text, msg.kind);
