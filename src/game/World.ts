@@ -11,7 +11,14 @@
  * read).
  */
 
-import { BIOMES, BIOME_ORDER, type BiomeDef, type BiomeId } from '../utils/constants';
+import {
+  BIOMES,
+  BIOME_ORDER,
+  HIDING_SPOTS,
+  type BiomeDef,
+  type BiomeId,
+  type HidingSpotDef,
+} from '../utils/constants';
 import { clamp, rectContains, type Rect, type Vec2 } from '../utils/math';
 
 export type { BiomeId } from '../utils/constants';
@@ -33,6 +40,9 @@ export interface World {
    * via `recomputeUnlockedBounds` whenever an unlock flag changes (a later PR).
    */
   unlockedBounds: Rect;
+  /** Cover props (tall grass). A player within a spot's radius is "in cover"
+   *  (PR #6 stealth). Static DATA from constants. */
+  hidingSpots: readonly HidingSpotDef[];
 }
 
 /** Bounding box of every unlocked biome's rect. Falls back to the Meadow if —
@@ -80,9 +90,21 @@ export function createWorld(): World {
     biomes,
     order: BIOME_ORDER,
     unlockedBounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
+    hidingSpots: HIDING_SPOTS,
   };
   recomputeUnlockedBounds(world);
   return world;
+}
+
+/**
+ * Is (x, y) inside any hiding spot (cover)? Boundary is INCLUSIVE — a point
+ * exactly `radius` from a spot's centre counts as in cover (pinned in a test).
+ */
+export function isInCover(world: World, x: number, y: number): boolean {
+  for (const s of world.hidingSpots) {
+    if (Math.hypot(x - s.x, y - s.y) <= s.radius) return true;
+  }
+  return false;
 }
 
 /** Is the biome enterable? */

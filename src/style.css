@@ -135,6 +135,19 @@ body {
   50% { transform: translateY(-3px); }
 }
 
+/* "Hidden" badge — shown while the player is in cover (stealth affordance). */
+.hud-hidden {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  color: #9ff0a8;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+}
+
 /* Bait notice ("Out of …" / "Wrong bait — ignored") — under the status line. */
 .hud-bait-notice {
   position: fixed;

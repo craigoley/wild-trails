@@ -359,6 +359,63 @@ export const ANIMAL = {
 } as const;
 
 // ===========================================================================
+// Stealth + detection (PR #6 — an ISOLABLE layer ON TOP of the #4 values)
+// ===========================================================================
+
+/**
+ * Stealth tunes the species detectionRadius DOWN; it never edits the #4 base
+ * values. The effective radius = baseDetectionRadius * stealthFactor, where
+ * stealthFactor ∈ [0,1] and === 1 reproduces PR #4 behaviour exactly (the
+ * load-bearing invariant). The factor is the product of the active multipliers
+ * below (all < 1), clamped to [0,1].
+ */
+export const STEALTH = {
+  /** Detection-radius multiplier while the player is inside a hiding spot. */
+  coverFactor: 0.45,
+  /** Detection-radius multiplier while the player is SNEAKING (moving slowly). */
+  movementFactor: 0.6,
+  /**
+   * "Sneaking" is derived from the player's CURRENT speed (no separate movement
+   * mode exists — see PR #6 recon): at/below this fraction of maxSpeed the player
+   * counts as sneaking. Standing still or a light joystick deflection sneaks;
+   * full-tilt movement does not.
+   */
+  sneakSpeedFrac: 0.45,
+} as const;
+
+/** A hiding-spot (tall-grass) prop — DATA. A player within `radius` of (x, y) is
+ *  "in cover". Same discipline as the species table. */
+export interface HidingSpotDef {
+  biome: BiomeId;
+  x: number;
+  y: number;
+  radius: number;
+}
+
+/** Hiding spots, per biome. The Meadow ([-20,20]²) gets a handful of tall-grass
+ *  clusters spread across it so stealth has somewhere to happen. */
+export const HIDING_SPOTS: readonly HidingSpotDef[] = [
+  { biome: 'meadow', x: -8, y: -6, radius: 2.2 },
+  { biome: 'meadow', x: 7, y: -10, radius: 2.0 },
+  { biome: 'meadow', x: 10, y: 8, radius: 2.4 },
+  { biome: 'meadow', x: -6, y: 11, radius: 2.0 },
+  { biome: 'meadow', x: 1, y: 3, radius: 1.8 },
+];
+
+/** Procedural tall-grass cluster look (render-only, zero assets). */
+export const HIDING_RENDER = {
+  /** Blades per cluster. */
+  bladeCount: 10,
+  /** Blade height + base radius, world units. */
+  bladeHeight: 1.2,
+  bladeRadius: 0.07,
+  /** Fraction of the spot radius the blades fill. */
+  spread: 0.82,
+  /** Tall-grass green. */
+  color: 0x4e7d3a,
+} as const;
+
+// ===========================================================================
 // Tools
 // ===========================================================================
 

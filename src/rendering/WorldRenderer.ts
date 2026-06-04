@@ -15,6 +15,7 @@
 
 import {
   BoxGeometry,
+  ConeGeometry,
   GridHelper,
   Group,
   Mesh,
@@ -25,7 +26,7 @@ import {
 } from 'three';
 import type { World } from '../game/World';
 import { isUnlocked, sharedBorder } from '../game/World';
-import { BIOME_RENDER, PALETTE } from '../utils/constants';
+import { BIOME_RENDER, HIDING_RENDER, type HidingSpotDef, PALETTE } from '../utils/constants';
 import type { Rect } from '../utils/math';
 
 /** Darken a 0xRRGGBB colour by `f` (0..1), per channel. */
@@ -91,8 +92,30 @@ export class WorldRenderer {
       }
     }
 
+    // Hiding spots — a procedural tall-grass cluster per cover prop (static, so
+    // built once here; nothing per frame). Shows the player WHERE cover is.
+    for (const spot of world.hidingSpots) this.addGrassCluster(spot);
+
     this.addGrid(world);
     scene.add(this.group);
+  }
+
+  /** A cluster of thin tall-grass blades filling a hiding spot's radius. The
+   *  blades are placed deterministically (golden-angle spiral) so the cover
+   *  reads as a soft tuft without any RNG. */
+  private addGrassCluster(spot: HidingSpotDef): void {
+    const bladeGeo = new ConeGeometry(HIDING_RENDER.bladeRadius, HIDING_RENDER.bladeHeight, 5);
+    const bladeMat = new MeshStandardMaterial({ color: HIDING_RENDER.color, roughness: 1 });
+    const fill = spot.radius * HIDING_RENDER.spread;
+    const golden = Math.PI * (3 - Math.sqrt(5)); // golden angle
+    for (let i = 0; i < HIDING_RENDER.bladeCount; i++) {
+      // Even radial spread: r grows as sqrt(i/n) so blades aren't bunched centre.
+      const r = fill * Math.sqrt((i + 0.5) / HIDING_RENDER.bladeCount);
+      const a = i * golden;
+      const blade = new Mesh(bladeGeo, bladeMat);
+      blade.position.set(spot.x + Math.cos(a) * r, HIDING_RENDER.bladeHeight / 2, spot.y + Math.sin(a) * r);
+      this.group.add(blade);
+    }
   }
 
   /** A low, semi-transparent slab standing on a shared biome edge. Axis-aligned:
