@@ -24,6 +24,7 @@ import { SceneManager } from './rendering/SceneManager';
 import { WorldRenderer } from './rendering/WorldRenderer';
 import { EntityRenderer } from './rendering/EntityRenderer';
 import { HUD, isDebugEnabled } from './rendering/HUD';
+import { TimeIndicator } from './rendering/TimeIndicator';
 import { JournalPanel } from './rendering/JournalPanel';
 import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
 import { Banner } from './rendering/Banner';
@@ -80,6 +81,9 @@ const scene = new SceneManager(app);
 new WorldRenderer(scene.scene, game.world);
 const entities = new EntityRenderer(scene.scene);
 const hud = new HUD(app);
+// Time-of-day indicator (top-left) — makes the day-night cycle legible: the
+// last invisible core mechanic. Reads game.dayPhase + game.timeSec each frame.
+const timeIndicator = new TimeIndicator(app);
 const journalPanel = new JournalPanel(app);
 journalPanel.refresh(journal); // seed the roster from the loaded journal
 const missionPanel = new MissionPanel(app);
@@ -204,6 +208,7 @@ function frame(nowMs: number): void {
   scene.updateFollow(game, alpha, dt);
   scene.render();
   hud.update(game);
+  timeIndicator.update(game.dayPhase, game.timeSec);
 
   requestAnimationFrame(frame);
 }
