@@ -35,49 +35,86 @@ export interface World {
   /** Deterministic iteration order (mirrors BIOME_ORDER). */
   order: readonly BiomeId[];
   /**
-   * Bounding box of the union of all UNLOCKED biome rects, cached so the
-   * per-step containment clamp allocates nothing and iterates no biomes. Recompute
-   * via `recomputeUnlockedBounds` whenever an unlock flag changes (a later PR).
+   * The UNLOCKED biome rects, each tagged with which sides are "open" (shared
+   * with another unlocked rect). The player clamp confines to the UNION of these
+   * (not their bounding box) so a non-rectangular unlocked region — e.g. the
+   * L-shape of Meadow+Woodland+Wetland — doesn't over-permit the empty corner.
+   * Rebuilt by `recomputeUnlockedBounds` on unlock ONLY; the per-step clamp
+   * iterates this ≤4-element list with local primitives (zero allocation).
    */
-  unlockedBounds: Rect;
+  unlockedRects: UnlockedRect[];
   /** Cover props (tall grass). A player within a spot's radius is "in cover"
    *  (PR #6 stealth). Static DATA from constants. */
   hidingSpots: readonly HidingSpotDef[];
 }
 
-/** Bounding box of every unlocked biome's rect. Falls back to the Meadow if —
- *  defensively — nothing is unlocked, so the world is never zero-sized. */
-function computeUnlockedBounds(world: Pick<World, 'biomes' | 'order'>): Rect {
-  let found = false;
-  const out: Rect = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
-  for (const id of world.order) {
-    const b = world.biomes[id];
-    if (!b.unlocked) continue;
-    const r = b.def.bounds;
-    if (!found) {
-      out.minX = r.minX;
-      out.minY = r.minY;
-      out.maxX = r.maxX;
-      out.maxY = r.maxY;
-      found = true;
-    } else {
-      out.minX = Math.min(out.minX, r.minX);
-      out.minY = Math.min(out.minY, r.minY);
-      out.maxX = Math.max(out.maxX, r.maxX);
-      out.maxY = Math.max(out.maxY, r.maxY);
-    }
-  }
-  if (!found) {
-    const r = world.biomes.meadow.def.bounds;
-    return { minX: r.minX, minY: r.minY, maxX: r.maxX, maxY: r.maxY };
-  }
-  return out;
+/**
+ * An unlocked biome rect plus its OPEN sides. A side is open when another
+ * unlocked rect shares that full edge; the clamp does NOT inset open sides, so
+ * adjacent inset-rects meet exactly at the seam → the union is seamless (no
+ * internal wall at a shared border). Closed sides (a locked neighbour or the
+ * world edge) are inset by the player radius as before.
+ */
+export interface UnlockedRect {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+  openMinX: boolean;
+  openMaxX: boolean;
+  openMinY: boolean;
+  openMaxY: boolean;
 }
 
-/** Recompute the cached unlocked bounding box (call after flipping any unlock
- *  flag). */
+/** Do two axis-aligned ranges overlap with positive length (a shared segment, not
+ *  just a touching point)? */
+function rangesOverlap(a1: number, a2: number, b1: number, b2: number): boolean {
+  return a1 < b2 && b1 < a2;
+}
+
+/**
+ * Build the unlocked-rect list with each rect's OPEN sides. A side is open when
+ * SOME OTHER unlocked rect shares that full edge (its opposing edge is collinear
+ * and the perpendicular ranges overlap).
+ *
+ * ASSUMPTION: biome cells are axis-aligned and adjacency is FULL-EDGE (equal-size
+ * grid cells), so "ranges overlap" === "shares the whole side". This holds for the
+ * biome graph today. If off-grid / partial-overlap biomes ever land, a partial
+ * shared edge would be wrongly marked fully open (over-permit) — revisit here.
+ */
+function computeUnlockedRects(world: Pick<World, 'biomes' | 'order'>): UnlockedRect[] {
+  const open: { id: BiomeId; r: Rect }[] = [];
+  for (const id of world.order) {
+    if (world.biomes[id].unlocked) open.push({ id, r: world.biomes[id].def.bounds });
+  }
+  // Defensive: never a zero-sized world — fall back to the Meadow, all sides closed.
+  if (open.length === 0) {
+    const r = world.biomes.meadow.def.bounds;
+    open.push({ id: 'meadow', r });
+  }
+
+  return open.map(({ r }) => {
+    let openMinX = false;
+    let openMaxX = false;
+    let openMinY = false;
+    let openMaxY = false;
+    for (const other of open) {
+      if (other.r === r) continue;
+      const o = other.r;
+      // A vertical seam (shared x edge) needs overlapping y-ranges; horizontal vice versa.
+      if (o.maxX === r.minX && rangesOverlap(r.minY, r.maxY, o.minY, o.maxY)) openMinX = true;
+      if (o.minX === r.maxX && rangesOverlap(r.minY, r.maxY, o.minY, o.maxY)) openMaxX = true;
+      if (o.maxY === r.minY && rangesOverlap(r.minX, r.maxX, o.minX, o.maxX)) openMinY = true;
+      if (o.minY === r.maxY && rangesOverlap(r.minX, r.maxX, o.minX, o.maxX)) openMaxY = true;
+    }
+    return { minX: r.minX, minY: r.minY, maxX: r.maxX, maxY: r.maxY, openMinX, openMaxX, openMinY, openMaxY };
+  });
+}
+
+/** Recompute the cached unlocked-rect list (call after flipping any unlock flag).
+ *  Rebuilt on UNLOCK only — never per frame — so the small alloc here is fine. */
 export function recomputeUnlockedBounds(world: World): void {
-  world.unlockedBounds = computeUnlockedBounds(world);
+  world.unlockedRects = computeUnlockedRects(world);
 }
 
 /** Build a fresh world from the static biome graph. */
@@ -89,7 +126,7 @@ export function createWorld(): World {
   const world: World = {
     biomes,
     order: BIOME_ORDER,
-    unlockedBounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
+    unlockedRects: [],
     hidingSpots: HIDING_SPOTS,
   };
   recomputeUnlockedBounds(world);
@@ -114,13 +151,9 @@ export function isUnlocked(world: World, id: BiomeId): boolean {
 
 /**
  * Unlock a biome (a mission reward, Plan #8): flip its flag and recompute the
- * cached unlocked bounds so `clampToUnlocked` immediately permits the new region.
- * Reuses Plan #3's flag + recompute path — no new map logic. A no-op if already
- * unlocked. Returns whether it changed (so the caller can fire fx once).
- *
- * Single ADJACENT unlocks keep the unlocked region a contiguous rectangle, so the
- * bbox stays exact — the non-contiguous "diagonal over-permit" follow-up noted on
- * `clampToUnlocked` is not triggered here.
+ * cached unlocked rects so `clampToUnlocked` immediately permits the new region.
+ * A no-op if already unlocked. Returns whether it changed (so the caller can fire
+ * fx once).
  */
 export function unlockBiome(world: World, id: BiomeId): boolean {
   if (world.biomes[id].unlocked) return false;
@@ -143,17 +176,28 @@ export function currentBiome(world: World, x: number, y: number): BiomeId | null
   return null;
 }
 
+/** Is (x, y) inside this rect's inset bounds? Open (shared) sides aren't inset, so
+ *  a point on a seam is INSIDE both neighbours. Edges are INCLUSIVE (a point
+ *  exactly on an inset edge counts as inside). Zero allocation. */
+function insetContains(r: UnlockedRect, m: number, x: number, y: number): boolean {
+  const loX = r.openMinX ? r.minX : r.minX + m;
+  const hiX = r.openMaxX ? r.maxX : r.maxX - m;
+  const loY = r.openMinY ? r.minY : r.minY + m;
+  const hiY = r.openMaxY ? r.maxY : r.maxY - m;
+  return x >= loX && x <= hiX && y >= loY && y <= hiY;
+}
+
 /**
- * Clamp (x, y) into the UNLOCKED region, inset by `margin` (the player's radius)
- * so the body never pokes past the edge. Writes into `out` and returns it — no
- * allocation, safe to call every sim step with a reused scratch.
+ * Clamp (x, y) into the UNLOCKED region — the UNION of unlocked biome rects, each
+ * inset by `margin` (the player's radius) on its CLOSED sides only (open/seam
+ * sides aren't inset, so the player crosses a shared border freely). Writes into
+ * `out` and returns it — iterates the ≤4 cached rects with local primitives, no
+ * allocation, safe every sim step.
  *
- * The unlocked region is treated as the bounding box of all unlocked biome
- * rects. That is EXACT for a single unlocked biome (the current state) and for
- * contiguous unlocked cells that tile into a rectangle. Non-contiguous unlocks
- * (e.g. a diagonal pair) would over-permit the gap; when missions unlock biomes
- * (PR 8) the unlock order is adjacency-gated, but if free-form unlocks ever
- * land this needs per-rect containment instead of a single bbox.
+ * Confining to the union (not its bounding box) is the fix for the L-shaped
+ * unlock: the empty diagonal corner is inside NO unlocked rect, so it's denied.
+ * A point inside any inset rect is returned unchanged; otherwise it's clamped to
+ * the NEAREST point on the union.
  */
 export function clampToUnlocked(
   world: World,
@@ -162,9 +206,34 @@ export function clampToUnlocked(
   margin: number,
   out: Vec2,
 ): Vec2 {
-  const b = world.unlockedBounds;
-  out.x = clamp(x, b.minX + margin, b.maxX - margin);
-  out.y = clamp(y, b.minY + margin, b.maxY - margin);
+  const rects = world.unlockedRects;
+  let bestX = x;
+  let bestY = y;
+  let bestD = Infinity;
+  for (let i = 0; i < rects.length; i++) {
+    const r = rects[i];
+    const loX = r.openMinX ? r.minX : r.minX + margin;
+    const hiX = r.openMaxX ? r.maxX : r.maxX - margin;
+    const loY = r.openMinY ? r.minY : r.minY + margin;
+    const hiY = r.openMaxY ? r.maxY : r.maxY - margin;
+    const cx = x < loX ? loX : x > hiX ? hiX : x;
+    const cy = y < loY ? loY : y > hiY ? hiY : y;
+    if (cx === x && cy === y) {
+      out.x = x; // inside this rect (incl. seams) — unchanged
+      out.y = y;
+      return out;
+    }
+    const dx = x - cx;
+    const dy = y - cy;
+    const d = dx * dx + dy * dy;
+    if (d < bestD) {
+      bestD = d;
+      bestX = cx;
+      bestY = cy;
+    }
+  }
+  out.x = bestX;
+  out.y = bestY;
   return out;
 }
 
@@ -188,10 +257,14 @@ export function clampToBiome(
 }
 
 /** Would (x, y) be moved by `clampToUnlocked` — i.e. is the point at/over the
- *  unlocked boundary? DIAGNOSTIC (the ?debug readout); not read by the sim. */
+ *  unlocked boundary? DIAGNOSTIC (the ?debug readout); not read by the sim. Uses
+ *  the SAME per-rect containment as the clamp, so the readout never lies. */
 export function clampActive(world: World, x: number, y: number, margin: number): boolean {
-  const b = world.unlockedBounds;
-  return x < b.minX + margin || x > b.maxX - margin || y < b.minY + margin || y > b.maxY - margin;
+  const rects = world.unlockedRects;
+  for (let i = 0; i < rects.length; i++) {
+    if (insetContains(rects[i], margin, x, y)) return false; // inside → not moved
+  }
+  return true;
 }
 
 /** The line segment two biome rects share, or null if they don't touch on an
