@@ -214,7 +214,14 @@ export const TIME = {
 
 /** Every catchable species id. Phase 4 seeds only the Meadow's tier-1 roster;
  *  locked biomes get their species as they unlock in later PRs. */
-export type SpeciesId = 'fieldmouse' | 'rabbit' | 'quail' | 'hedgehog';
+export type SpeciesId =
+  | 'fieldmouse'
+  | 'rabbit'
+  | 'quail'
+  | 'hedgehog'
+  // Woodland (tier 2 — rarer / faster / warier than the Meadow roster).
+  | 'redsquirrel'
+  | 'robin';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -262,7 +269,14 @@ export interface SpeciesDef {
 }
 
 /** Deterministic iteration order over the species table. */
-export const SPECIES_ORDER: readonly SpeciesId[] = ['fieldmouse', 'rabbit', 'quail', 'hedgehog'];
+export const SPECIES_ORDER: readonly SpeciesId[] = [
+  'fieldmouse',
+  'rabbit',
+  'quail',
+  'hedgehog',
+  'redsquirrel',
+  'robin',
+];
 
 /**
  * The species table — DATA. The Meadow's tier-1 roster: common, slow, docile
@@ -343,6 +357,43 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     size: 0.5,
     profile:
       'Hedgehogs come out at dusk to hunt insects and worms. When threatened they curl into a spiky ball — they\'re calm and easy to approach.',
+  },
+  // --- Woodland, tier 2 — harder than every Meadow animal (lower baseCatchRate
+  //     than the Meadow average, faster flee than the Meadow's fastest). ---
+  redsquirrel: {
+    id: 'redsquirrel',
+    displayName: 'Red Squirrel',
+    biome: 'woodland',
+    spawnWeight: 4,
+    // TIER 2: quick + wary, darts for the trees. flee 4.4 > Meadow's fastest (4.0).
+    baseFleeSpeed: 4.4,
+    detectionRadius: 4.2,
+    activityWindow: 'day',
+    tier: 2,
+    baseCatchRate: 0.42,
+    bait: 'seeds',
+    color: 0xb5632a,
+    size: 0.5,
+    profile:
+      'Red squirrels forage by day for seeds, nuts and cones, burying caches to dig up later. They are quick and wary, and bolt up the nearest trunk when alarmed.',
+  },
+  robin: {
+    id: 'robin',
+    displayName: 'Robin',
+    biome: 'woodland',
+    spawnWeight: 3,
+    // TIER 2: the hardest yet — baseCatchRate 0.30 (below the Meadow min 0.32),
+    // flee 4.6 (above the Meadow max 4.0). A flighty dawn songbird.
+    baseFleeSpeed: 4.6,
+    detectionRadius: 4.5,
+    activityWindow: 'dawn',
+    tier: 2,
+    baseCatchRate: 0.3,
+    bait: 'insects',
+    color: 0x9c5042,
+    size: 0.42,
+    profile:
+      'Robins sing from first light and hunt insects, worms and grubs — often following a digging gardener for an easy meal. They are bold but flighty, quick to flit off.',
   },
 };
 
@@ -714,7 +765,7 @@ export const LIGHTING = {
 // ===========================================================================
 
 /** Which procedural shape a species is built from. */
-export type ModelKind = 'mouse' | 'rabbit' | 'bird' | 'hedgehog';
+export type ModelKind = 'mouse' | 'rabbit' | 'bird' | 'hedgehog' | 'squirrel';
 
 /** Low-poly segment count for spheres/cones/cylinders (kept low for facets). */
 export const MODEL_SEGMENTS = 8;
@@ -805,4 +856,107 @@ export const SPECIES_MODEL: Record<
     spikeCount: 16,
     spikeLengthR: 0.85,
   },
+  // Quadruped with a big upright bushy tail + tufted ears (the squirrel read).
+  redsquirrel: {
+    kind: 'squirrel',
+    accent: 0xe0d2b8,
+    earHeightR: 0.45,
+    earRadiusR: 0.18,
+    tailLengthR: 1.5,
+    tailRadiusR: 0.42,
+  },
+  // A small songbird — reuses the BIRD build (round body + beak + crest).
+  robin: {
+    kind: 'bird',
+    accent: 0xd98b4a,
+    beakLengthR: 0.45,
+    crestHeightR: 0.4,
+  },
 } as const;
+
+// ===========================================================================
+// Missions + rank + biome unlock (Plan #8 — the progression spine)
+// ===========================================================================
+
+/** A mission requirement. The two KINDS differ ONLY in which catch-context field
+ *  they read — the engine has ONE code path over these (no per-type branch). */
+export type MissionRequirement =
+  | { kind: 'catch-in-timephase'; phase: DayPhase; count: number }
+  | { kind: 'catch-in-biome'; biome: BiomeId; count: number };
+
+export interface MissionDef {
+  id: string;
+  /** Which biome's mission SET this belongs to (completing the set unlocks the
+   *  mapped biome — see BIOME_SET_UNLOCK). */
+  biome: BiomeId;
+  /** Applied-behavior framing — gates on knowledge the player USES, never grind
+   *  or recall trivia (§6.5). */
+  title: string;
+  description: string;
+  requirement: MissionRequirement;
+  /** Field-Researcher rank points awarded on completion. */
+  rewardPoints: number;
+}
+
+/** Deterministic mission order (offer + display). */
+export const MISSION_ORDER: readonly string[] = ['meadow-survey', 'meadow-dawn', 'meadow-dusk'];
+
+/**
+ * The mission table — DATA. The Meadow set teaches by APPLICATION: roam + catch
+ * (survey), then use time-of-day knowledge (be out at dawn / at dusk). New
+ * missions are data edits. Tracking-puzzle missions (type 2) land in Plan #8b.
+ */
+export const MISSIONS: Record<string, MissionDef> = {
+  'meadow-survey': {
+    id: 'meadow-survey',
+    biome: 'meadow',
+    title: 'Meadow Survey',
+    description: 'Get to know the meadow — catch 5 animals here.',
+    requirement: { kind: 'catch-in-biome', biome: 'meadow', count: 5 },
+    rewardPoints: 20,
+  },
+  'meadow-dawn': {
+    id: 'meadow-dawn',
+    biome: 'meadow',
+    title: 'Dawn Patrol',
+    description: 'Some animals only forage at first light. Catch 2 at dawn.',
+    requirement: { kind: 'catch-in-timephase', phase: 'dawn', count: 2 },
+    rewardPoints: 15,
+  },
+  'meadow-dusk': {
+    id: 'meadow-dusk',
+    biome: 'meadow',
+    title: 'Dusk Watch',
+    description: 'The crepuscular crowd comes out at dusk. Catch 2 at dusk.',
+    requirement: { kind: 'catch-in-timephase', phase: 'dusk', count: 2 },
+    rewardPoints: 15,
+  },
+};
+
+/** Completing ALL of a biome's missions unlocks the mapped biome (lateral reward
+ *  — a new region + its species, not flat power, §5.5). */
+export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, BiomeId>> = {
+  meadow: 'woodland',
+};
+
+/** Field Researcher rank — a SOFT gate (missions are the hard gate, §5.5).
+ *  Total rank points = mission rewards + a bonus per species found. */
+export const RANK = {
+  /** Rank points granted per species found (journal completion feeds rank). */
+  perSpeciesFound: 8,
+} as const;
+
+export interface RankDef {
+  name: string;
+  /** Minimum total rank points to hold this rank. */
+  minPoints: number;
+}
+
+/** Rank ladder, ascending. The current rank is the highest whose minPoints the
+ *  player's total meets. */
+export const RANKS: readonly RankDef[] = [
+  { name: 'Novice', minPoints: 0 },
+  { name: 'Field Hand', minPoints: 30 },
+  { name: 'Naturalist', minPoints: 70 },
+  { name: 'Field Researcher', minPoints: 120 },
+];

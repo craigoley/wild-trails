@@ -111,6 +111,11 @@ export interface GameState {
    *  it to record the catch to the persistent Field Journal — keeping the journal
    *  write (and Date.now) out of the deterministic sim. */
   lastCaughtSpecies: SpeciesId | null;
+  /** Catch CONTEXT this step (one-shot, alongside lastCaughtSpecies) — the
+   *  biome + day phase the catch happened in, so the boundary's mission engine
+   *  can evaluate catch-in-biome / catch-in-timephase requirements. */
+  lastCaughtBiome: BiomeId | null;
+  lastCaughtPhase: DayPhase | null;
   /** A lingering result flash (caught/escaped), or null. */
   resultFlash: ResultFlash | null;
   // --- Targeting (PR #5.1 — "who am I catching") ---------------------------
@@ -161,6 +166,8 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
     encounter: null,
     lastOutcome: null,
     lastCaughtSpecies: null,
+    lastCaughtBiome: null,
+    lastCaughtPhase: null,
     resultFlash: null,
     targetIndex: -1,
     catchArmed: false,
@@ -192,6 +199,8 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
 export function update(game: GameState, intent: InputIntent, dt: number): void {
   game.lastOutcome = null; // one-shot fx flags, fresh each step
   game.lastCaughtSpecies = null;
+  game.lastCaughtBiome = null;
+  game.lastCaughtPhase = null;
   game.baitJustDeployed = false;
   game.baitDeployFailed = false;
   game.timeSec += dt;
@@ -374,7 +383,11 @@ function resolveOutcome(game: GameState, outcome: 'caught' | 'escaped'): void {
     despawnAnimal(animal);
     game.sessionCatches++;
     game.telemetry.caught++;
-    game.lastCaughtSpecies = enc.species; // one-shot: the boundary records it to the journal
+    // One-shot catch event for the boundary (journal + missions): species + the
+    // biome and day phase it happened in.
+    game.lastCaughtSpecies = enc.species;
+    game.lastCaughtBiome = game.currentBiome;
+    game.lastCaughtPhase = game.dayPhase;
     // Replenish the caught species' diet bait (you learned what it eats), and
     // spend the active lure — it was "used up" on the catch, so it disappears.
     addBait(game.bait, getSpecies(enc.species).bait, BAIT.rewardPerCatch);

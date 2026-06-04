@@ -32,6 +32,8 @@ export interface InputIntent {
   /** Toggle the Field Journal overlay (open/close). UI-only edge action,
    *  consumed at the boundary (not the sim). */
   journalToggle: boolean;
+  /** Toggle the Missions overlay (open/close). UI-only edge action. */
+  missionToggle: boolean;
 }
 
 export function createIntent(): InputIntent {
@@ -43,6 +45,7 @@ export function createIntent(): InputIntent {
     baitCycle: false,
     baitSelect: -1,
     journalToggle: false,
+    missionToggle: false,
   };
 }
 
@@ -61,6 +64,7 @@ export const ACTION_KEYS = {
   baitDeploy: ['b'],
   baitCycle: ['q'],
   journal: ['j'],
+  missions: ['m'],
 } as const;
 
 /** Number keys for DIRECT bait selection, positional: index 0 = '1', 1 = '2', …

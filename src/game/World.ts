@@ -112,6 +112,23 @@ export function isUnlocked(world: World, id: BiomeId): boolean {
   return world.biomes[id].unlocked;
 }
 
+/**
+ * Unlock a biome (a mission reward, Plan #8): flip its flag and recompute the
+ * cached unlocked bounds so `clampToUnlocked` immediately permits the new region.
+ * Reuses Plan #3's flag + recompute path — no new map logic. A no-op if already
+ * unlocked. Returns whether it changed (so the caller can fire fx once).
+ *
+ * Single ADJACENT unlocks keep the unlocked region a contiguous rectangle, so the
+ * bbox stays exact — the non-contiguous "diagonal over-permit" follow-up noted on
+ * `clampToUnlocked` is not triggered here.
+ */
+export function unlockBiome(world: World, id: BiomeId): boolean {
+  if (world.biomes[id].unlocked) return false;
+  world.biomes[id].unlocked = true;
+  recomputeUnlockedBounds(world);
+  return true;
+}
+
 /** Is (x, y) inside the given biome's footprint? */
 export function isInsideBiome(world: World, id: BiomeId, x: number, y: number): boolean {
   return rectContains(world.biomes[id].def.bounds, x, y);
