@@ -218,6 +218,7 @@ body {
   padding: 16px;
 }
 .mission-panel {
+  position: relative;
   width: min(520px, 94vw);
   max-height: 88vh;
   overflow-y: auto;
@@ -288,6 +289,7 @@ body {
   padding: 16px;
 }
 .journal-panel {
+  position: relative;
   width: min(560px, 94vw);
   max-height: 88vh;
   overflow-y: auto;
@@ -296,6 +298,30 @@ body {
   border-radius: 14px;
   padding: 16px 18px 20px;
   color: rgba(255, 255, 255, 0.92);
+}
+
+/* The ✕ close button — pinned to the panel's top-right corner (sticky so it
+ * stays reachable even if the roster scrolls). Touch + mouse hittable. */
+.overlay-close {
+  position: sticky;
+  top: 0;
+  float: right;
+  margin: -6px -6px 2px 8px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  z-index: 1;
+}
+.overlay-close:active {
+  background: rgba(255, 255, 255, 0.2);
 }
 .journal-header {
   font-size: 17px;

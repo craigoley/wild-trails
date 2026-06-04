@@ -13,6 +13,7 @@
 
 import type { Journal } from '../state/Journal';
 import { foundCount, isFound } from '../state/Journal';
+import { addOverlayDismiss } from './overlayDismiss';
 import {
   ACTIVITY_LABEL,
   BAIT_DISPLAY,
@@ -45,6 +46,10 @@ export class JournalPanel {
     this.grid = document.createElement('div');
     this.grid.className = 'journal-grid';
     panel.appendChild(this.grid);
+
+    // Close paths (✕ / backdrop tap / Escape) — without these the modal is a
+    // soft-trap on touch (its toggle button is occluded by the open overlay).
+    addOverlayDismiss(this.root, panel, () => this.open, () => this.setOpen(false));
 
     container.appendChild(this.root);
   }
