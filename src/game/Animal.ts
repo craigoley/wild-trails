@@ -125,7 +125,7 @@ export function updateAnimal(
   world: World,
   rng: Rng,
   dt: number,
-): { fledNow: boolean } {
+): boolean {
   animal.prevX = animal.x;
   animal.prevY = animal.y;
 
@@ -185,5 +185,5 @@ export function updateAnimal(
   animal.x = _clamp.x;
   animal.y = _clamp.y;
 
-  return { fledNow };
+  return fledNow;
 }

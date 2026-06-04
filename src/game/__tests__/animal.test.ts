@@ -29,8 +29,8 @@ describe('Animal — flee triggers at detectionRadius, not before', () => {
   it('stays in WANDER when the player is just outside detectionRadius', () => {
     const player = createPlayer(0, 0);
     const a = one('fieldmouse', det + 0.5, 0); // 3.0 from player
-    const r = updateAnimal(a, player, world, rng(), 0.1);
-    expect(r.fledNow).toBe(false);
+    const fledNow = updateAnimal(a, player, world, rng(), 0.1);
+    expect(fledNow).toBe(false);
     expect(a.aiState).toBe('wander');
   });
 
@@ -38,8 +38,8 @@ describe('Animal — flee triggers at detectionRadius, not before', () => {
     const player = createPlayer(0, 0);
     const startX = det - 0.5; // 2.0 from player, inside detection
     const a = one('fieldmouse', startX, 0);
-    const r = updateAnimal(a, player, world, rng(), 0.1);
-    expect(r.fledNow).toBe(true);
+    const fledNow = updateAnimal(a, player, world, rng(), 0.1);
+    expect(fledNow).toBe(true);
     expect(a.aiState).toBe('flee');
     // Flees directly away from the player (+x here), so it gets farther.
     expect(a.x).toBeGreaterThan(startX);
@@ -49,8 +49,8 @@ describe('Animal — flee triggers at detectionRadius, not before', () => {
     const player = createPlayer(0, 0);
     const a = one('fieldmouse', 2.0, 0);
     updateAnimal(a, player, world, rng(), 0.1); // -> flee (fledNow true)
-    const r2 = updateAnimal(a, player, world, rng(), 0.1);
-    expect(r2.fledNow).toBe(false);
+    const fledNow2 = updateAnimal(a, player, world, rng(), 0.1);
+    expect(fledNow2).toBe(false);
     expect(a.aiState).toBe('flee');
   });
 
@@ -58,10 +58,10 @@ describe('Animal — flee triggers at detectionRadius, not before', () => {
     // quail (det 4.0) flees at a distance where the hedgehog (det 2.0) wouldn't.
     const player = createPlayer(0, 0);
     const d = 3.5;
-    const quail = updateAnimal(one('quail', d, 0), player, world, rng(), 0.1);
-    const hedgehog = updateAnimal(one('hedgehog', d, 0), player, world, rng(), 0.1);
-    expect(quail.fledNow).toBe(true);
-    expect(hedgehog.fledNow).toBe(false);
+    const quailFled = updateAnimal(one('quail', d, 0), player, world, rng(), 0.1);
+    const hedgehogFled = updateAnimal(one('hedgehog', d, 0), player, world, rng(), 0.1);
+    expect(quailFled).toBe(true);
+    expect(hedgehogFled).toBe(false);
   });
 });
 

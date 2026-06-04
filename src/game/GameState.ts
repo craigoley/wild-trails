@@ -114,8 +114,8 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
   // --- Roam + despawn ------------------------------------------------------
   for (const a of game.animals) {
     if (!a.active) continue;
-    const r = updateAnimal(a, game.player, game.world, game.rng, dt);
-    if (r.fledNow) game.telemetry.fled++;
+    const fledNow = updateAnimal(a, game.player, game.world, game.rng, dt);
+    if (fledNow) game.telemetry.fled++;
     // Off-screen cleanup: recycle animals that have wandered/fled far away.
     if (Math.hypot(a.x - game.player.x, a.y - game.player.y) > SPAWN.despawnRadius) {
       despawnAnimal(a);
