@@ -80,6 +80,7 @@ export class Controls {
       e.preventDefault();
       fire();
     });
+    btn.addEventListener('touchstart', (e) => e.stopPropagation());
     target.appendChild(btn);
   }
 

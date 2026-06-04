@@ -428,6 +428,8 @@ export const CATCH = {
   critRoot: 4,
   /** Per-shake squash intensity for the render playback (0..1). */
   squashIntensity: 0.4,
+  /** Width expansion ratio relative to the height squash (volume-preserving feel). */
+  squashWidthRatio: 0.5,
 } as const;
 
 /** Synth voice frequencies/feel for the catch beats (Web Audio, no files). */
@@ -435,10 +437,34 @@ export const AUDIO = {
   /** Base pitch of a shake blip, Hz; each shake index steps it up by stepHz. */
   shakeBaseHz: 440,
   shakeStepHz: 70,
+  /** Pitch ratio applied to a FAILED shake blip (duller than a pass). */
+  shakeFailPitchRatio: 0.8,
+  /** Shake blip duration, seconds. */
+  blipDuration: 0.09,
+  /** Shake blip gain (volume). */
+  blipGain: 0.12,
   /** Catch flourish root pitch, Hz. */
   catchHz: 660,
+  /** Catch flourish first-note duration, seconds. */
+  catchDuration: 0.12,
+  /** Catch flourish first-note gain. */
+  catchGain: 0.16,
+  /** Second note harmonic ratio (relative to catchHz). */
+  catchHarmonicRatio: 1.5,
+  /** Second note duration, seconds. */
+  catchHarmonicDuration: 0.18,
+  /** Second note gain. */
+  catchHarmonicGain: 0.14,
+  /** Second note delay after the first, seconds. */
+  catchHarmonicDelay: 0.1,
   /** Escape tone start pitch, Hz (it glides down from here). */
   escapeHz: 300,
+  /** Escape glide end pitch ratio (relative to escapeHz). */
+  escapeGlideRatio: 0.6,
+  /** Escape glide duration, seconds. */
+  escapeDuration: 0.22,
+  /** Escape glide gain. */
+  escapeGain: 0.14,
 } as const;
 
 /** Player movement feel — a snappy velocity ramp (no instant snap, no float). */

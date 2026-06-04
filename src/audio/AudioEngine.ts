@@ -31,19 +31,19 @@ export class AudioEngine {
    *  pitch up so tension mounts across the sequence; `passed` brightens a
    *  surviving shake vs a duller break. */
   shakeBlip(index: number, passed: boolean): void {
-    const base = passed ? AUDIO.shakeBaseHz : AUDIO.shakeBaseHz * 0.8;
-    this.tone(base + index * AUDIO.shakeStepHz, 0.09, passed ? 'triangle' : 'square', 0.12);
+    const base = passed ? AUDIO.shakeBaseHz : AUDIO.shakeBaseHz * AUDIO.shakeFailPitchRatio;
+    this.tone(base + index * AUDIO.shakeStepHz, AUDIO.blipDuration, passed ? 'triangle' : 'square', AUDIO.blipGain);
   }
 
   /** A bright two-note flourish on a successful catch. */
   catchTone(): void {
-    this.tone(AUDIO.catchHz, 0.12, 'triangle', 0.16);
-    this.tone(AUDIO.catchHz * 1.5, 0.18, 'triangle', 0.14, 0.1);
+    this.tone(AUDIO.catchHz, AUDIO.catchDuration, 'triangle', AUDIO.catchGain);
+    this.tone(AUDIO.catchHz * AUDIO.catchHarmonicRatio, AUDIO.catchHarmonicDuration, 'triangle', AUDIO.catchHarmonicGain, AUDIO.catchHarmonicDelay);
   }
 
   /** A dull downward tone on an escape. */
   escapeTone(): void {
-    this.glide(AUDIO.escapeHz, AUDIO.escapeHz * 0.6, 0.22, 0.14);
+    this.glide(AUDIO.escapeHz, AUDIO.escapeHz * AUDIO.escapeGlideRatio, AUDIO.escapeDuration, AUDIO.escapeGain);
   }
 
   // --- Primitives -----------------------------------------------------------

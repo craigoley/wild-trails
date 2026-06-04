@@ -92,7 +92,7 @@ export class EntityRenderer {
       const progress = clamp(1 - enc.beatTimer / CATCH.shakeBeatSec, 0, 1);
       const pulse = Math.sin(progress * Math.PI); // 0 -> 1 -> 0 across the beat
       const s = pulse * CATCH.squashIntensity;
-      mesh.scale.set(size * (1 + s * 0.5), size * (1 - s), size * (1 + s * 0.5));
+      mesh.scale.set(size * (1 + s * CATCH.squashWidthRatio), size * (1 - s), size * (1 + s * CATCH.squashWidthRatio));
     } else if (enc.phase === 'resolving' && enc.caught) {
       const shrink = clamp(enc.beatTimer / CATCH.resolveBeatSec, 0, 1); // 1 -> 0
       const s = size * shrink;
