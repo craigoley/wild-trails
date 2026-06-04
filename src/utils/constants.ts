@@ -671,9 +671,17 @@ export const AUDIO = {
   missionHz: 587,
   missionDuration: 0.13,
   missionGain: 0.13,
+  /** Second note pitch ratio — a perfect fifth above missionHz. */
+  missionHarmonicRatio: 1.5,
   /** Biome-unlock fanfare (three rising notes — the spine's payoff). */
   unlockHz: 523,
   unlockGain: 0.16,
+  /** Second note pitch ratio (major third above unlockHz). */
+  unlockNote2Ratio: 1.25,
+  /** Third note pitch ratio (perfect fifth above unlockHz). */
+  unlockNote3Ratio: 1.5,
+  /** Third note sustains longer by this factor (the payoff lingers). */
+  unlockNote3DurScale: 1.6,
 } as const;
 
 /** On-screen banner timing for boundary events (mission complete / biome unlock).
