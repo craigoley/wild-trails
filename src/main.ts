@@ -106,8 +106,17 @@ function frame(nowMs: number): void {
     }
     if (game.lastOutcome === 'caught') audio.catchTone();
     else if (game.lastOutcome === 'escaped') audio.escapeTone();
+    if (game.baitJustDeployed) {
+      audio.baitBlip();
+      controls.pulseBait();
+    }
   }
   const alpha = accumulator / SIM_DT;
+
+  // Reflect the catch target on the UI: arm the CATCH button + show the live
+  // chance, and surface the first-time "try bait" hint.
+  controls.setCatchState(game.catchArmed, game.targetChance);
+  controls.setBaitHint(game.catchArmed && !game.targetBaited && !game.usedBaitEver);
 
   // Render the interpolated state. Renderers read prev+current; never mutate.
   entities.sync(game, alpha);

@@ -11,7 +11,8 @@
 import type { GameState } from '../game/GameState';
 import { liveAnimalCount } from '../game/GameState';
 import { clampActive } from '../game/World';
-import { BIOMES, PLAYER } from '../utils/constants';
+import { clamp } from '../utils/math';
+import { BIOMES, CATCH_FX, CSS_PALETTE, PLAYER } from '../utils/constants';
 
 /** `?debug=1` in the URL turns on funnel telemetry + (later) the tuning panel. */
 export function isDebugEnabled(): boolean {
@@ -21,6 +22,7 @@ export function isDebugEnabled(): boolean {
 export class HUD {
   private readonly biomeLabel: HTMLDivElement;
   private readonly statusLine: HTMLDivElement;
+  private readonly resultFlash: HTMLDivElement;
   private readonly debugPanel: HTMLDivElement | null;
 
   constructor(container: HTMLElement) {
@@ -35,6 +37,12 @@ export class HUD {
     this.statusLine = document.createElement('div');
     this.statusLine.className = 'hud-status';
     root.appendChild(this.statusLine);
+
+    // The big "Got it!" / "It got away!" flash — the unambiguous result signal.
+    this.resultFlash = document.createElement('div');
+    this.resultFlash.className = 'hud-result';
+    this.resultFlash.style.opacity = '0';
+    root.appendChild(this.resultFlash);
 
     this.debugPanel = isDebugEnabled() ? document.createElement('div') : null;
     if (this.debugPanel) {
@@ -51,6 +59,17 @@ export class HUD {
     this.statusLine.textContent =
       `Caught ${state.sessionCatches}   ·   Bait: ${bait.selected} ×${bait.counts[bait.selected]}`;
 
+    // Result flash: fade out over its remaining lifetime.
+    const flash = state.resultFlash;
+    if (flash) {
+      this.resultFlash.textContent = flash.outcome === 'caught' ? 'Got it!' : 'It got away!';
+      this.resultFlash.style.color =
+        flash.outcome === 'caught' ? CSS_PALETTE.caught : CSS_PALETTE.escaped;
+      this.resultFlash.style.opacity = String(clamp(flash.timer / CATCH_FX.resultFlashSec, 0, 1));
+    } else {
+      this.resultFlash.style.opacity = '0';
+    }
+
     if (this.debugPanel) {
       const p = state.player;
       const clamped = clampActive(state.world, p.x, p.y, PLAYER.radius);
@@ -63,7 +82,11 @@ export class HUD {
         `attempts: ${t.attempts}  spawned: ${t.spawned}  fled: ${t.fled}  despawned: ${t.despawned}\n` +
         `--- catch ---\n` +
         `attempts: ${t.catchAttempts}  caught: ${t.caught}  escaped: ${t.escaped}\n` +
-        `lastChance: ${t.lastChance.toFixed(3)}  shakesSurvived: ${t.shakesSurvived}`;
+        `lastChance: ${t.lastChance.toFixed(3)}  shakesSurvived: ${t.shakesSurvived}\n` +
+        `--- target ---\n` +
+        `idx: ${state.targetIndex}  armed: ${state.catchArmed ? 'yes' : 'no'}  ` +
+        `baited: ${state.targetBaited ? 'yes' : 'no'}\n` +
+        `chance: ${state.targetChance.toFixed(3)}`;
 
       // During an attempt, show the live chance + per-shake DATA so the on-screen
       // animation can be checked against the resolved odds.

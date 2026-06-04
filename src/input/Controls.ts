@@ -31,6 +31,12 @@ export class Controls {
   private moveOX = 0;
   private moveOY = 0;
 
+  // Action-button handles, so the render loop can reflect game state on them
+  // (CATCH arms + shows the chance; a first-time "try bait" hint).
+  private readonly catchBtn: HTMLButtonElement;
+  private readonly baitBtn: HTMLButtonElement;
+  private readonly baitHint: HTMLDivElement;
+
   constructor(target: HTMLElement = document.body) {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
@@ -45,15 +51,23 @@ export class Controls {
     this.hideStick();
 
     // On-screen action buttons (mirror the keys; one per edge action).
-    this.makeActionButton(target, 'CATCH', 'action-catch', () => {
+    this.catchBtn = this.makeActionButton(target, 'CATCH', 'action-catch', () => {
       this.intent.catchPressed = true;
     });
-    this.makeActionButton(target, 'BAIT', 'action-bait', () => {
+    this.baitBtn = this.makeActionButton(target, 'BAIT', 'action-bait', () => {
       this.intent.baitDeploy = true;
     });
     this.makeActionButton(target, '↻', 'action-cycle', () => {
       this.intent.baitCycle = true;
     });
+
+    // First-time affordance: a small "try bait" pointer near the BAIT button,
+    // shown only when a target is armed but unbaited and bait was never used.
+    this.baitHint = document.createElement('div');
+    this.baitHint.className = 'bait-hint';
+    this.baitHint.textContent = 'try BAIT ↓';
+    this.baitHint.style.display = 'none';
+    target.appendChild(this.baitHint);
 
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     const hint = document.createElement('div');
@@ -70,7 +84,7 @@ export class Controls {
     label: string,
     className: string,
     fire: () => void,
-  ): void {
+  ): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.className = `action-btn ${className}`;
     btn.textContent = label;
@@ -82,6 +96,26 @@ export class Controls {
     });
     btn.addEventListener('touchstart', (e) => e.stopPropagation());
     target.appendChild(btn);
+    return btn;
+  }
+
+  /** Reflect the catch target on the CATCH button: armed shows the live chance,
+   *  out-of-range dims it (so the player learns range by watching it "arm"). */
+  setCatchState(armed: boolean, chance: number): void {
+    this.catchBtn.classList.toggle('disabled', !armed);
+    this.catchBtn.textContent = armed ? `CATCH ${Math.round(chance * 100)}%` : 'CATCH';
+  }
+
+  /** Show/hide the first-time "try bait" affordance. */
+  setBaitHint(show: boolean): void {
+    this.baitHint.style.display = show ? 'block' : 'none';
+  }
+
+  /** Brief confirmation pulse on the BAIT button when bait is deployed. */
+  pulseBait(): void {
+    this.baitBtn.classList.remove('pulse');
+    void this.baitBtn.offsetWidth; // reflow so the animation re-triggers
+    this.baitBtn.classList.add('pulse');
   }
 
   private static makeStick(className: string): HTMLDivElement {

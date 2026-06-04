@@ -26,6 +26,12 @@ export const PALETTE = {
   fog: 0x0a1810,
   /** Boundary wall at the edge of the unlocked region (warm "blocked" amber). */
   boundary: 0xffcf6b,
+  /** Target ring when armed (bright cyan — "this is your catch target"). */
+  targetArmed: 0x66f0ff,
+  /** Target ring when the correct bait is on it (green — "baited, calm"). */
+  targetBaited: 0x6dff9b,
+  /** Active-bait ground marker (warm seed-amber). */
+  baitMarker: 0xffd166,
 } as const;
 
 /** Same palette as CSS hex strings for the HTML HUD overlay. */
@@ -33,6 +39,9 @@ export const CSS_PALETTE = {
   background: '#0d1f12',
   ground: '#1d3b24',
   player: '#ffb347',
+  /** Result flash: caught (green) / escaped (amber). */
+  caught: '#6dff9b',
+  escaped: '#ffcf6b',
 } as const;
 
 /**
@@ -268,7 +277,9 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     displayName: 'Rabbit',
     biome: 'meadow',
     spawnWeight: 3,
-    baseFleeSpeed: 4.2,
+    // PR #5.1 feel: eased 4.2 -> 3.8 so a player (maxSpeed 6) closes the gap
+    // without an endless chase, but it's still the brisk one of the roster.
+    baseFleeSpeed: 3.8,
     detectionRadius: 3.5,
     activityWindow: 'any',
     tier: 1,
@@ -282,7 +293,9 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     displayName: 'Quail',
     biome: 'meadow',
     spawnWeight: 2,
-    baseFleeSpeed: 4.6,
+    // PR #5.1 feel: eased 4.6 -> 4.0 (still the fastest/wariest tier-1, but
+    // catchable on foot rather than a marathon).
+    baseFleeSpeed: 4.0,
     detectionRadius: 4.0,
     activityWindow: 'dawn',
     tier: 1,
@@ -399,8 +412,10 @@ export const BAIT = {
 /** The catch system — the core verb. Multi-shake resolution computed as DATA;
  *  the renderer plays it back, so feel is driven by the math, never faked. */
 export const CATCH = {
-  /** Max distance from an animal to attempt a catch, world units. */
-  attemptRadius: 2.2,
+  /** Max distance from an animal to attempt a catch, world units. PR #5.1 feel:
+   *  eased 2.2 -> 2.6 so getting "in range" is comfortable (the proximity
+   *  penalty at the new edge still rewards closing the distance). */
+  attemptRadius: 2.6,
   /** Proximity multiplier: point-blank (dist 0) -> proximityMax; at attemptRadius
    *  -> proximityMin. Closer = better odds. Linear between. */
   proximityMax: 1.3,
@@ -426,10 +441,35 @@ export const CATCH = {
   critChance: 0.05,
   /** Root used for the critical single check (4 = fourth-root odds). */
   critRoot: 4,
-  /** Per-shake squash intensity for the render playback (0..1). */
-  squashIntensity: 0.4,
+  /** Per-shake squash intensity for the render playback (0..1). PR #5.1: 0.4 ->
+   *  0.55 so each shake reads clearly at arm's length on a phone. */
+  squashIntensity: 0.55,
   /** Width expansion ratio relative to the height squash (volume-preserving feel). */
   squashWidthRatio: 0.5,
+} as const;
+
+/**
+ * Catch FEEDBACK rendering (PR #5.1 — discoverability + legibility). These are
+ * render-only; they NEVER touch the resolved odds. The animation still reads the
+ * ShakeOutcome[] data — these just make it visible.
+ */
+export const CATCH_FX = {
+  /** Target ring under the catchable animal — inner/outer radius (world units)
+   *  and a small +y lift so it sits on the ground without z-fighting. */
+  ringInner: 0.5,
+  ringOuter: 0.72,
+  ringY: 0.03,
+  /** Gentle ring pulse so "this is your target" reads as alive. */
+  ringPulseAmp: 0.12,
+  ringPulseHz: 2.5,
+  /** ESCAPE break-out: the target pops to this scale on the resolve beat so a
+   *  failed catch reads as "it lunged free", not "nothing happened". */
+  escapePop: 1.45,
+  /** On-screen result flash ("Got it!" / "It got away!") duration, seconds. */
+  resultFlashSec: 1.2,
+  /** Active-bait ground marker — radius (world units) + a small +y lift. */
+  baitMarkerRadius: 0.55,
+  baitMarkerY: 0.04,
 } as const;
 
 /** Synth voice frequencies/feel for the catch beats (Web Audio, no files). */
@@ -465,6 +505,10 @@ export const AUDIO = {
   escapeDuration: 0.22,
   /** Escape glide gain. */
   escapeGain: 0.14,
+  /** Bait-deploy confirmation blip — a soft mid tone. */
+  baitHz: 520,
+  baitDuration: 0.1,
+  baitGain: 0.1,
 } as const;
 
 /** Player movement feel — a snappy velocity ramp (no instant snap, no float). */

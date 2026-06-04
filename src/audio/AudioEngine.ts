@@ -46,6 +46,11 @@ export class AudioEngine {
     this.glide(AUDIO.escapeHz, AUDIO.escapeHz * AUDIO.escapeGlideRatio, AUDIO.escapeDuration, AUDIO.escapeGain);
   }
 
+  /** A soft confirmation blip when bait is deployed. */
+  baitBlip(): void {
+    this.tone(AUDIO.baitHz, AUDIO.baitDuration, 'sine', AUDIO.baitGain);
+  }
+
   // --- Primitives -----------------------------------------------------------
 
   /** One oscillator note with a quick attack + exponential decay. */
