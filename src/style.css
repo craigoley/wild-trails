@@ -136,10 +136,13 @@ body {
 }
 
 /* "Hidden" badge — shown while the player is in cover (stealth affordance). */
+/* "Hidden" stealth badge — conditional (shows only in cover). Anchored BELOW the
+ * top-right toggle cluster (which is ~46px tall at top:12), so it slots in/out
+ * without overlapping or shifting the always-present buttons. */
 .hud-hidden {
   position: fixed;
-  top: 14px;
-  right: 16px;
+  top: 66px;
+  right: 14px;
   color: #9ff0a8;
   font-size: 14px;
   font-weight: 700;
@@ -190,16 +193,25 @@ body {
   height: 64px;
 }
 /* Field Journal toggle — top-right corner, out of the action cluster. */
-.action-journal {
-  top: 14px;
+/* Top-right cluster: a flex row holding the panel toggles. The container itself
+ * is click-through (pointer-events:none); the buttons re-enable pointer events.
+ * Buttons flow in the row (override the base .action-btn fixed positioning) so
+ * they never collide and future toggles slot in automatically. */
+.hud-topright {
+  position: fixed;
+  top: 12px;
   right: 12px;
-  width: 46px;
-  height: 46px;
-  font-size: 20px;
+  z-index: 25;
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
 }
+.hud-topright .action-btn {
+  position: static;
+  pointer-events: auto;
+}
+.action-journal,
 .action-missions {
-  top: 14px;
-  right: 66px;
   width: 46px;
   height: 46px;
   font-size: 20px;
