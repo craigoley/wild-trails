@@ -26,10 +26,20 @@ export interface InputIntent {
   catchPressed: boolean;
   baitDeploy: boolean;
   baitCycle: boolean;
+  /** Direct bait SELECTION: the bait index to select this step (chip 0 = first
+   *  bait), or -1 = none. Edge action, consumed by the sim. */
+  baitSelect: number;
 }
 
 export function createIntent(): InputIntent {
-  return { moveX: 0, moveY: 0, catchPressed: false, baitDeploy: false, baitCycle: false };
+  return {
+    moveX: 0,
+    moveY: 0,
+    catchPressed: false,
+    baitDeploy: false,
+    baitCycle: false,
+    baitSelect: -1,
+  };
 }
 
 /** Keys (lowercased) that drive each screen direction. */
@@ -47,6 +57,16 @@ export const ACTION_KEYS = {
   baitDeploy: ['b'],
   baitCycle: ['q'],
 } as const;
+
+/** Number keys for DIRECT bait selection, positional: index 0 = '1', 1 = '2', …
+ *  (chip 1 selects the first bait). */
+export const BAIT_SELECT_KEYS = ['1', '2', '3'] as const;
+
+/** The bait index a key selects, or -1 if the key isn't a bait-select key. Pure
+ *  — the off-by-one guard ('1' -> index 0) is pinned in a test. */
+export function baitIndexForKey(key: string): number {
+  return (BAIT_SELECT_KEYS as readonly string[]).indexOf(key);
+}
 
 /** The two move axes (the whole intent in Phase 0) — the pure keyboard/touch
  *  mappings produce these and the adapter copies them onto the live intent. */

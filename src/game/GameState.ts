@@ -43,6 +43,7 @@ import {
   clearActiveBait,
   createBaitState,
   cycleSelectedBait,
+  setSelectedBait,
   deployBait,
   isCorrectBaitFor,
   tickBait,
@@ -52,7 +53,7 @@ import { finalCatchChance } from './Catch';
 import { getSpecies } from './Species';
 import { STARTER_TOOL, type ToolId } from './Tools';
 import { createRng, type Rng } from '../utils/rng';
-import { BAIT, CATCH, CATCH_FX, SPAWN, type BaitId } from '../utils/constants';
+import { BAIT, BAIT_ORDER, CATCH, CATCH_FX, SPAWN, type BaitId } from '../utils/constants';
 import type { InputIntent } from './Input';
 
 /** Default seed when none is supplied (keeps no-arg callers/tests deterministic;
@@ -203,6 +204,15 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
   game.stealth.factor = computeStealthFactor(inCover, sneaking);
 
   // --- Bait actions (independent of the encounter) -------------------------
+  // Direct selection (the tray): a no-op if that bait is empty; surface a notice
+  // so the scarcity reads (reusing the #5.3 bait-notice channel).
+  if (intent.baitSelect >= 0) {
+    const id = BAIT_ORDER[intent.baitSelect];
+    intent.baitSelect = -1;
+    if (id !== undefined && !setSelectedBait(game.bait, id)) {
+      game.baitNotice = { text: `Out of ${id}`, timer: BAIT.noticeSec };
+    }
+  }
   if (intent.baitCycle) {
     intent.baitCycle = false;
     cycleSelectedBait(game.bait);

@@ -118,6 +118,7 @@ function frame(nowMs: number): void {
   // chance, and surface the first-time "try bait" hint.
   controls.setCatchState(game.catchArmed, game.targetChance);
   controls.setBaitHint(game.catchArmed && !game.targetBaited && !game.usedBaitEver);
+  controls.setBaitTray(game.bait);
 
   // Render the interpolated state. Renderers read prev+current; never mutate.
   entities.sync(game, alpha);
