@@ -82,7 +82,7 @@ function frame(nowMs: number): void {
   entities.sync(game, alpha);
   scene.updateFollow(game, alpha, dt);
   scene.render();
-  hud.update(game);
+  hud.update();
 
   requestAnimationFrame(frame);
 }
