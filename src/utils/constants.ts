@@ -667,6 +667,25 @@ export const AUDIO = {
   denyHz: 150,
   denyDuration: 0.14,
   denyGain: 0.1,
+  /** Mission-complete chime (two rising notes). */
+  missionHz: 587,
+  missionDuration: 0.13,
+  missionGain: 0.13,
+  /** Biome-unlock fanfare (three rising notes — the spine's payoff). */
+  unlockHz: 523,
+  unlockGain: 0.16,
+} as const;
+
+/** On-screen banner timing for boundary events (mission complete / biome unlock).
+ *  Reuses the existing fade-notice pattern (cf. BAIT.noticeSec, CATCH_FX
+ *  resultFlashSec); the banner is main-owned (these are boundary events). */
+export const BANNER = {
+  /** A routine "Mission complete" toast stays up this long, seconds. */
+  missionSec: 2.6,
+  /** The biome-unlock banner lingers longer — it MUST be felt. */
+  unlockSec: 3.8,
+  /** Tail fade-out window at the end of a banner, seconds. */
+  fadeSec: 0.45,
 } as const;
 
 /** Player movement feel — a snappy velocity ramp (no instant snap, no float). */

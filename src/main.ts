@@ -26,6 +26,8 @@ import { EntityRenderer } from './rendering/EntityRenderer';
 import { HUD, isDebugEnabled } from './rendering/HUD';
 import { JournalPanel } from './rendering/JournalPanel';
 import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
+import { Banner } from './rendering/Banner';
+import { missionBannerMessages } from './rendering/missionBanners';
 import { AudioEngine } from './audio/AudioEngine';
 import { loadJournal, recordCatch, saveJournal } from './state/Journal';
 import { evaluateCatch } from './game/Missions';
@@ -82,6 +84,9 @@ const journalPanel = new JournalPanel(app);
 journalPanel.refresh(journal); // seed the roster from the loaded journal
 const missionPanel = new MissionPanel(app);
 refreshMissionPanel();
+// Transient banners for mission completions + biome unlocks (the missing
+// player-facing feedback — the unlock previously fired silently).
+const banner = new Banner(app);
 
 // Frame the camera on the player's spawn — no slide-in on frame 1.
 scene.snapFocus(game.player.x, game.player.y);
@@ -155,6 +160,11 @@ function frame(nowMs: number): void {
       });
       // Apply any unlock reward to the live world (reuse World's unlock path).
       for (const id of evalResult.unlocked) unlockBiome(game.world, id);
+      // Player-facing feedback: a banner per completion + per unlock, + a tone.
+      // (Previously completions/unlocks were silent — only telemetry + the panel.)
+      for (const msg of missionBannerMessages(evalResult)) banner.enqueue(msg.text, msg.kind);
+      if (evalResult.completed.length > 0) audio.missionTone();
+      if (evalResult.unlocked.length > 0) audio.unlockFanfare();
       // Funnel telemetry.
       missionTelemetry.progressed += evalResult.progressed.length;
       missionTelemetry.completed += evalResult.completed.length;
@@ -165,6 +175,9 @@ function frame(nowMs: number): void {
     }
   }
   const alpha = accumulator / SIM_DT;
+
+  // Fade the mission/unlock banner on real frame time (it's render-side feedback).
+  banner.tick(dt);
 
   // Reflect the catch target on the UI: arm the CATCH button + show the live
   // chance, and surface the first-time "try bait" hint.
