@@ -10,10 +10,11 @@
  * looks smooth at 60 or 120 Hz. The player moves because GameState.update
  * mutates state — never because input is wired straight into this loop.
  *
- * Phase 0 (this PR) is a roaming SKELETON: a placeholder marker on a flat ground
- * plane under the iso follow-cam, plus the persistent Field Journal load. The
- * creature-catching pipeline (spawn -> roam -> encounter -> catch -> resolve)
- * and its `?debug=1` funnel telemetry land in later phased PRs.
+ * This PR is real-time roaming on the finite biome world: the player wanders the
+ * unlocked Meadow under the iso follow-cam, with the locked neighbour biomes
+ * visible-but-walled across the boundary. The creature-catching pipeline
+ * (spawn -> roam -> encounter -> catch -> resolve) and its `?debug=1` funnel
+ * telemetry land in later phased PRs.
  */
 
 import './style.css';
@@ -43,7 +44,7 @@ if (isDebugEnabled()) {
 // --- Adapters & rendering (impure; read state) ----------------------------
 const controls = new Controls(app);
 const scene = new SceneManager(app);
-new WorldRenderer(scene.scene);
+new WorldRenderer(scene.scene, game.world);
 const entities = new EntityRenderer(scene.scene);
 const hud = new HUD(app);
 
@@ -82,7 +83,7 @@ function frame(nowMs: number): void {
   entities.sync(game, alpha);
   scene.updateFollow(game, alpha, dt);
   scene.render();
-  hud.update();
+  hud.update(game);
 
   requestAnimationFrame(frame);
 }

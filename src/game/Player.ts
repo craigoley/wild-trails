@@ -4,21 +4,31 @@
  * Movement is velocity-based and SNAPPY (accel/friction ramp): raw screen input
  * is rotated onto the world plane by the iso angle, normalized, then the
  * velocity eases toward `maxSpeed` in that direction (and decays under friction
- * on release). The player is clamped to the world bounds. There is no catch,
+ * on release). The player is clamped to the UNLOCKED biome region (it can roam
+ * the Meadow but the locked neighbours are walled off). There is no catch,
  * stealth, or AI here yet — those land in later phased PRs.
  *
  * For render interpolation the player keeps its PREVIOUS sim-step position
  * alongside the current one; the renderer lerps between them by the frame alpha.
  */
 
-import { ISO_YAW, PLAYER, TUNING, WORLD } from '../utils/constants';
-import { clamp } from '../utils/math';
+import { ISO_YAW, PLAYER, TUNING } from '../utils/constants';
+import type { Vec2 } from '../utils/math';
+import { clampToUnlocked, createWorld, type World } from './World';
 import type { InputIntent } from './Input';
 
 // Rotation that maps raw SCREEN input (+x right, +y down) onto the world plane
 // (the real 45° under the iso camera). Computed ONCE from ISO_YAW.
 const ISO_COS = Math.cos(-ISO_YAW);
 const ISO_SIN = Math.sin(-ISO_YAW);
+
+// The standard world, built ONCE. updatePlayer defaults to it when no world is
+// passed (keeps the pure function self-contained for unit tests); the live game
+// passes its own GameState.world, which is the same shape.
+const DEFAULT_WORLD = createWorld();
+
+// Reused scratch for the containment clamp — no per-step allocation.
+const _clamped: Vec2 = { x: 0, y: 0 };
 
 export interface PlayerState {
   /** Current world position, world units. */
@@ -66,9 +76,16 @@ function approachVelocity(player: PlayerState, tx: number, ty: number, maxDelta:
 /**
  * Advance the player one fixed step: rotate raw input onto the world plane, ramp
  * velocity toward the target (or decay under friction), update facing, then
- * integrate and clamp to the world bounds.
+ * integrate and clamp to the UNLOCKED biome region (zeroing velocity on the axis
+ * that hit the edge, so the player stops cleanly at a boundary wall instead of
+ * grinding into it).
  */
-export function updatePlayer(player: PlayerState, intent: InputIntent, dt: number): void {
+export function updatePlayer(
+  player: PlayerState,
+  intent: InputIntent,
+  dt: number,
+  world: World = DEFAULT_WORLD,
+): void {
   player.prevX = player.x;
   player.prevY = player.y;
 
@@ -90,8 +107,14 @@ export function updatePlayer(player: PlayerState, intent: InputIntent, dt: numbe
   const rate = hasInput ? TUNING.accel : TUNING.friction;
   approachVelocity(player, targetVx, targetVy, rate * dt);
 
-  // Integrate, then clamp to the world so the player can't roam off the ground.
-  const bound = WORLD.halfSize - PLAYER.radius;
-  player.x = clamp(player.x + player.vx * dt, -bound, bound);
-  player.y = clamp(player.y + player.vy * dt, -bound, bound);
+  // Integrate, then clamp into the unlocked region (inset by the body radius so
+  // the marker stops flush against a boundary wall). Velocity on a clamped axis
+  // is zeroed so the player rests at the edge instead of pushing into it.
+  const nx = player.x + player.vx * dt;
+  const ny = player.y + player.vy * dt;
+  clampToUnlocked(world, nx, ny, PLAYER.radius, _clamped);
+  if (_clamped.x !== nx) player.vx = 0;
+  if (_clamped.y !== ny) player.vy = 0;
+  player.x = _clamped.x;
+  player.y = _clamped.y;
 }

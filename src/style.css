@@ -52,6 +52,33 @@ body {
   z-index: 10;
 }
 
+/* Current-biome label — top centre, quietly authoritative. */
+.hud-biome {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* ?debug=1 readout — top left, monospace, unobtrusive. */
+.hud-debug {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  color: rgba(120, 255, 180, 0.85);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
 /* --- On-screen touch joystick ------------------------------------------- */
 /* Base + thumb are absolutely positioned and centred on their (left, top) via a
  * -50% translate, so the JS only sets the centre point. */
