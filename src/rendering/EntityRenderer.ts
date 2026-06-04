@@ -24,7 +24,6 @@ import {
 import type { GameState } from '../game/GameState';
 import type { Encounter } from '../game/Encounter';
 import { getSpecies } from '../game/Species';
-import { activeLure } from '../game/Bait';
 import { CATCH, CATCH_FX, PALETTE, PLAYER, SPAWN } from '../utils/constants';
 import { clamp, lerp } from '../utils/math';
 
@@ -131,14 +130,15 @@ export class EntityRenderer {
     this.targetRing.visible = true;
   }
 
-  /** Scent-circle under an active bait deployment, so "I dropped bait" is visible. */
+  /** Scent-circle under an active bait deployment, so "I dropped bait" is visible.
+   *  Reads bait state directly to avoid the per-frame allocation activeLure() makes. */
   private syncBaitMarker(state: GameState): void {
-    const lure = activeLure(state.bait);
-    if (!lure) {
+    const b = state.bait;
+    if (b.activeType === null || b.timer <= 0) {
       this.baitMarker.visible = false;
       return;
     }
-    this.baitMarker.position.set(lure.x, CATCH_FX.baitMarkerY, lure.y);
+    this.baitMarker.position.set(b.x, CATCH_FX.baitMarkerY, b.y);
     this.baitMarker.visible = true;
   }
 
