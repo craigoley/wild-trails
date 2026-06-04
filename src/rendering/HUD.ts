@@ -8,8 +8,6 @@
  * READS game state, never mutates it.
  */
 
-import type { GameState } from '../game/GameState';
-
 /** `?debug=1` in the URL turns on funnel telemetry + (later) the tuning panel. */
 export function isDebugEnabled(): boolean {
   return new URLSearchParams(window.location.search).get('debug') === '1';
@@ -24,8 +22,9 @@ export class HUD {
     container.appendChild(this.root);
   }
 
-  /** Refresh the overlay from the (read-only) game state. No-op placeholder. */
-  update(_state: GameState): void {
+  /** Refresh the overlay each frame. No-op placeholder — the readouts that read
+   *  (never mutate) game state arrive with the HUD content in a later PR. */
+  update(): void {
     // Phase 0: nothing to draw yet.
   }
 }
