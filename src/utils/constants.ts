@@ -267,7 +267,8 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     detectionRadius: 2.5,
     activityWindow: 'any',
     tier: 1,
-    baseCatchRate: 0.72,
+    // EASY: slow flee (2.6) + common. High base so a starter mouse is reliable.
+    baseCatchRate: 0.75,
     bait: 'seeds',
     color: 0x8a7b6b,
     size: 0.45,
@@ -283,7 +284,8 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     detectionRadius: 3.5,
     activityWindow: 'any',
     tier: 1,
-    baseCatchRate: 0.6,
+    // MEDIUM: brisk flee (3.8) — catchable bare, but the right bait clearly helps.
+    baseCatchRate: 0.5,
     bait: 'greens',
     color: 0xb8a584,
     size: 0.55,
@@ -299,7 +301,9 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     detectionRadius: 4.0,
     activityWindow: 'dawn',
     tier: 1,
-    baseCatchRate: 0.55,
+    // HARD: fastest + wariest (flee 4.0, detection 4.0). Low base so seeds (its
+    // diet) are effectively REQUIRED — the moment bait stops feeling optional.
+    baseCatchRate: 0.32,
     bait: 'seeds',
     color: 0x9c7b4a,
     size: 0.5,
@@ -313,7 +317,8 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     detectionRadius: 2.0,
     activityWindow: 'dusk',
     tier: 1,
-    baseCatchRate: 0.68,
+    // EASIEST: slowest + most docile (flee 1.8). The confidence-building catch.
+    baseCatchRate: 0.85,
     bait: 'insects',
     color: 0x5c4a3a,
     size: 0.5,
@@ -403,6 +408,15 @@ export const BAIT = {
   lureRadius: 8,
   /** Approach speed while lured, world units/sec. */
   approachSpeed: 2.0,
+  /** Bait is a CONSUMED resource: 1 is spent on every deploy (a wrong/wasted
+   *  deploy still costs, which teaches). To keep it managed rather than a
+   *  dead-end, a successful catch REPLENISHES the caught species' diet bait
+   *  (you learned what it eats) by this much, capped at maxCount. */
+  rewardPerCatch: 2,
+  /** Upper bound on any one bait type's count (no infinite hoarding). */
+  maxCount: 9,
+  /** Seconds the on-screen bait notice ("Out of …" / "Wrong bait") lingers. */
+  noticeSec: 1.4,
 } as const;
 
 // ===========================================================================
@@ -509,6 +523,10 @@ export const AUDIO = {
   baitHz: 520,
   baitDuration: 0.1,
   baitGain: 0.1,
+  /** "Denied" blip — a low buzz when a deploy fails (out of bait). */
+  denyHz: 150,
+  denyDuration: 0.14,
+  denyGain: 0.1,
 } as const;
 
 /** Player movement feel — a snappy velocity ramp (no instant snap, no float). */

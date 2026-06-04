@@ -11,18 +11,25 @@
 import type { GameState } from '../game/GameState';
 import { liveAnimalCount } from '../game/GameState';
 import { clampActive } from '../game/World';
+import { getSpecies } from '../game/Species';
 import { clamp } from '../utils/math';
-import { BIOMES, CATCH_FX, CSS_PALETTE, PLAYER } from '../utils/constants';
+import { BAIT, BAIT_ORDER, BIOMES, CATCH_FX, CSS_PALETTE, PLAYER } from '../utils/constants';
 
 /** `?debug=1` in the URL turns on funnel telemetry + (later) the tuning panel. */
 export function isDebugEnabled(): boolean {
   return new URLSearchParams(window.location.search).get('debug') === '1';
 }
 
+/** One-line "seeds×N greens×N insects×N" for the debug panel. */
+function baitDebugCounts(state: GameState): string {
+  return BAIT_ORDER.map((id) => `${id}×${state.bait.counts[id]}`).join('  ');
+}
+
 export class HUD {
   private readonly biomeLabel: HTMLDivElement;
   private readonly statusLine: HTMLDivElement;
   private readonly resultFlash: HTMLDivElement;
+  private readonly baitNotice: HTMLDivElement;
   private readonly debugPanel: HTMLDivElement | null;
 
   constructor(container: HTMLElement) {
@@ -44,6 +51,12 @@ export class HUD {
     this.resultFlash.style.opacity = '0';
     root.appendChild(this.resultFlash);
 
+    // Bait notice ("Out of …" / "Wrong bait — ignored"), near the status line.
+    this.baitNotice = document.createElement('div');
+    this.baitNotice.className = 'hud-bait-notice';
+    this.baitNotice.style.opacity = '0';
+    root.appendChild(this.baitNotice);
+
     this.debugPanel = isDebugEnabled() ? document.createElement('div') : null;
     if (this.debugPanel) {
       this.debugPanel.className = 'hud-debug';
@@ -56,8 +69,18 @@ export class HUD {
     this.biomeLabel.textContent = BIOMES[state.currentBiome].displayName;
 
     const bait = state.bait;
+    const count = bait.counts[bait.selected];
     this.statusLine.textContent =
-      `Caught ${state.sessionCatches}   ·   Bait: ${bait.selected} ×${bait.counts[bait.selected]}`;
+      `Caught ${state.sessionCatches}   ·   Bait: ${bait.selected} ×${count}${count === 0 ? ' (out)' : ''}`;
+
+    // Lingering bait notice (out of bait / wrong bait), fading over its lifetime.
+    const notice = state.baitNotice;
+    if (notice) {
+      this.baitNotice.textContent = notice.text;
+      this.baitNotice.style.opacity = String(clamp(notice.timer / BAIT.noticeSec, 0, 1));
+    } else {
+      this.baitNotice.style.opacity = '0';
+    }
 
     // Result flash: fade out over its remaining lifetime.
     const flash = state.resultFlash;
@@ -86,7 +109,13 @@ export class HUD {
         `--- target ---\n` +
         `idx: ${state.targetIndex}  armed: ${state.catchArmed ? 'yes' : 'no'}  ` +
         `baited: ${state.targetBaited ? 'yes' : 'no'}\n` +
-        `chance: ${state.targetChance.toFixed(3)}`;
+        `chance: ${state.targetChance.toFixed(3)}` +
+        (state.targetIndex >= 0 && state.animals[state.targetIndex]
+          ? `  baseRate: ${getSpecies(state.animals[state.targetIndex].species).baseCatchRate.toFixed(2)}`
+          : '') +
+        `\n--- bait ---\n` +
+        `${baitDebugCounts(state)}\n` +
+        `lastDeployMatched: ${state.lastDeployMatched === null ? '-' : state.lastDeployMatched ? 'yes' : 'no'}`;
 
       // During an attempt, show the live chance + per-shake DATA so the on-screen
       // animation can be checked against the resolved odds.

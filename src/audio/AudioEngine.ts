@@ -51,6 +51,11 @@ export class AudioEngine {
     this.tone(AUDIO.baitHz, AUDIO.baitDuration, 'sine', AUDIO.baitGain);
   }
 
+  /** A low "denied" buzz when a deploy is blocked (out of bait). */
+  denyBlip(): void {
+    this.tone(AUDIO.denyHz, AUDIO.denyDuration, 'square', AUDIO.denyGain);
+  }
+
   // --- Primitives -----------------------------------------------------------
 
   /** One oscillator note with a quick attack + exponential decay. */

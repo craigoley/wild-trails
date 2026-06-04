@@ -54,6 +54,19 @@ export function deployBait(state: BaitState, x: number, y: number): boolean {
   return true;
 }
 
+/** Replenish a bait type by `n`, capped at BAIT.maxCount (never negative). The
+ *  catch loop calls this to reward the caught species' diet bait. */
+export function addBait(state: BaitState, id: BaitId, n: number): void {
+  state.counts[id] = Math.min(BAIT.maxCount, Math.max(0, state.counts[id] + n));
+}
+
+/** Clear any active deployment immediately (e.g. the lure was "spent" on a
+ *  successful catch, so it visibly disappears rather than lingering its window). */
+export function clearActiveBait(state: BaitState): void {
+  state.activeType = null;
+  state.timer = 0;
+}
+
 /** Tick the active-bait timer; clears the deployment when it lapses. */
 export function tickBait(state: BaitState, dt: number): void {
   if (state.activeType === null) return;

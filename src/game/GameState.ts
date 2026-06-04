@@ -38,6 +38,8 @@ import {
 } from './Encounter';
 import {
   activeLure,
+  addBait,
+  clearActiveBait,
   createBaitState,
   cycleSelectedBait,
   deployBait,
@@ -49,7 +51,7 @@ import { finalCatchChance } from './Catch';
 import { getSpecies } from './Species';
 import { STARTER_TOOL, type ToolId } from './Tools';
 import { createRng, type Rng } from '../utils/rng';
-import { CATCH, CATCH_FX, SPAWN } from '../utils/constants';
+import { BAIT, CATCH, CATCH_FX, SPAWN, type BaitId } from '../utils/constants';
 import type { InputIntent } from './Input';
 
 /** Default seed when none is supplied (keeps no-arg callers/tests deterministic;
@@ -120,6 +122,13 @@ export interface GameState {
   usedBaitEver: boolean;
   /** Bait was deployed THIS step (one-shot; for the deploy confirmation fx). */
   baitJustDeployed: boolean;
+  /** A deploy was BLOCKED this step because that bait was empty (one-shot). */
+  baitDeployFailed: boolean;
+  /** Whether the last deploy's bait MATCHED a nearby animal's diet (debug); null
+   *  before the first deploy. */
+  lastDeployMatched: boolean | null;
+  /** A lingering bait message ("Out of …" / "Wrong bait — ignored"), or null. */
+  baitNotice: { text: string; timer: number } | null;
   /** In-memory catches this session (Journal persistence is PR #7). */
   sessionCatches: number;
   telemetry: Telemetry;
@@ -147,6 +156,9 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
     targetBaited: false,
     usedBaitEver: false,
     baitJustDeployed: false,
+    baitDeployFailed: false,
+    lastDeployMatched: null,
+    baitNotice: null,
     sessionCatches: 0,
     telemetry: {
       eligible: 0,
@@ -167,6 +179,7 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
 export function update(game: GameState, intent: InputIntent, dt: number): void {
   game.lastOutcome = null; // one-shot fx flags, fresh each step
   game.baitJustDeployed = false;
+  game.baitDeployFailed = false;
   game.timeSec += dt;
   updatePlayer(game.player, intent, dt, game.world);
 
@@ -181,17 +194,32 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
   }
   if (intent.baitDeploy) {
     intent.baitDeploy = false;
+    const selected = game.bait.selected;
     if (deployBait(game.bait, game.player.x, game.player.y)) {
       game.usedBaitEver = true;
       game.baitJustDeployed = true; // one-shot: drives the deploy confirmation fx
+      // Did it match a nearby animal's diet? Drives the "wrong bait" teaching cue.
+      const matched = deployMatchesNearby(game, selected);
+      game.lastDeployMatched = matched;
+      if (!matched) {
+        game.baitNotice = { text: 'Wrong bait — ignored', timer: BAIT.noticeSec };
+      }
+    } else {
+      // Out of that bait — blocked.
+      game.baitDeployFailed = true;
+      game.baitNotice = { text: `Out of ${selected}!`, timer: BAIT.noticeSec };
     }
   }
   tickBait(game.bait, dt);
 
-  // Tick down the lingering result flash.
+  // Tick down the lingering flashes.
   if (game.resultFlash) {
     game.resultFlash.timer -= dt;
     if (game.resultFlash.timer <= 0) game.resultFlash = null;
+  }
+  if (game.baitNotice) {
+    game.baitNotice.timer -= dt;
+    if (game.baitNotice.timer <= 0) game.baitNotice = null;
   }
 
   // --- Catch encounter -----------------------------------------------------
@@ -254,6 +282,17 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
 }
 
 /**
+ * Did a just-deployed bait match the diet of an animal near the deploy point?
+ * Used only to drive the "wrong bait — ignored" teaching cue (and the debug
+ * readout). Checks animals within the lure radius of the player. PURE read.
+ */
+function deployMatchesNearby(game: GameState, baitId: BaitId): boolean {
+  const idx = nearestActiveAnimal(game.animals, game.player.x, game.player.y, BAIT.lureRadius);
+  if (idx < 0) return false;
+  return getSpecies(game.animals[idx].species).bait === baitId;
+}
+
+/**
  * Recompute the catch target + its live preview chance. During an encounter the
  * target is locked to the encounter's animal; otherwise it's the nearest active
  * animal within reach (the same proximity gate startEncounter uses). PURE read.
@@ -304,6 +343,10 @@ function resolveOutcome(game: GameState, outcome: 'caught' | 'escaped'): void {
     despawnAnimal(animal);
     game.sessionCatches++;
     game.telemetry.caught++;
+    // Replenish the caught species' diet bait (you learned what it eats), and
+    // spend the active lure — it was "used up" on the catch, so it disappears.
+    addBait(game.bait, getSpecies(enc.species).bait, BAIT.rewardPerCatch);
+    clearActiveBait(game.bait);
   } else {
     animal.aiState = 'flee'; // a spooked escapee bolts
     game.telemetry.escaped++;

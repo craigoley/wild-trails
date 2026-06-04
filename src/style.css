@@ -135,6 +135,22 @@ body {
   50% { transform: translateY(-3px); }
 }
 
+/* Bait notice ("Out of …" / "Wrong bait — ignored") — under the status line. */
+.hud-bait-notice {
+  position: fixed;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ffcf6b;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.1s linear;
+}
+
 /* The big result flash — centred, fades via inline opacity from the HUD. */
 .hud-result {
   position: fixed;
