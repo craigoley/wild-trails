@@ -8,9 +8,10 @@
  * boundary — the metroidvania breadcrumb — while the wall makes "can't go there
  * yet" unmistakable.
  *
- * Built ONCE: every biome is static, so nothing here runs per frame and no
- * geometry/material is allocated in the loop. READ-ONLY with respect to game
- * state.
+ * Static props (grid, cover, tracking signs) are built ONCE; the
+ * unlock-dependent visuals (ground dim, fog veil, boundary walls) are rebuilt
+ * on biome unlock via `refresh` — rare, never per frame. READ-ONLY with
+ * respect to game state.
  */
 
 import {
