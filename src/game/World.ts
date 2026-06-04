@@ -129,6 +129,25 @@ export function clampToUnlocked(
   return out;
 }
 
+/**
+ * Clamp (x, y) into a SINGLE biome's footprint, inset by `margin`. Used to keep
+ * a roaming animal inside its home biome (animals stay in their biome; the
+ * player's clamp is the unlocked-region one above). Writes into `out`, no alloc.
+ */
+export function clampToBiome(
+  world: World,
+  id: BiomeId,
+  x: number,
+  y: number,
+  margin: number,
+  out: Vec2,
+): Vec2 {
+  const r = world.biomes[id].def.bounds;
+  out.x = clamp(x, r.minX + margin, r.maxX - margin);
+  out.y = clamp(y, r.minY + margin, r.maxY - margin);
+  return out;
+}
+
 /** Would (x, y) be moved by `clampToUnlocked` — i.e. is the point at/over the
  *  unlocked boundary? DIAGNOSTIC (the ?debug readout); not read by the sim. */
 export function clampActive(world: World, x: number, y: number, margin: number): boolean {

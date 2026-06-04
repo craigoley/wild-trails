@@ -8,6 +8,7 @@
  */
 
 import type { GameState } from '../game/GameState';
+import { liveAnimalCount } from '../game/GameState';
 import { clampActive } from '../game/World';
 import { BIOMES, PLAYER } from '../utils/constants';
 
@@ -43,10 +44,15 @@ export class HUD {
     if (this.debugPanel) {
       const p = state.player;
       const clamped = clampActive(state.world, p.x, p.y, PLAYER.radius);
+      const t = state.telemetry;
+      // Funnel telemetry for the spawn -> roam pipeline (the black-box guard).
       this.debugPanel.textContent =
-        `biome: ${state.currentBiome}\n` +
-        `pos: ${p.x.toFixed(2)}, ${p.y.toFixed(2)}\n` +
-        `clamp: ${clamped ? 'yes' : 'no'}`;
+        `biome: ${state.currentBiome}  phase: ${state.dayPhase}\n` +
+        `pos: ${p.x.toFixed(2)}, ${p.y.toFixed(2)}  clamp: ${clamped ? 'yes' : 'no'}\n` +
+        `--- spawn -> roam ---\n` +
+        `eligible: ${t.eligible}  active: ${liveAnimalCount(state)}/${state.animals.length}\n` +
+        `attempts: ${t.attempts}  spawned: ${t.spawned}\n` +
+        `fled: ${t.fled}  despawned: ${t.despawned}`;
     }
   }
 }

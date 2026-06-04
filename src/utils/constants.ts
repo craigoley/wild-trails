@@ -164,6 +164,171 @@ export const BIOME_RENDER = {
   wallOpacity: 0.55,
 } as const;
 
+// ===========================================================================
+// Time of day
+// ===========================================================================
+
+/** The four phases of the day-night cycle. Time of day gates which species are
+ *  out (the educational mechanic: crepuscular animals only at dawn/dusk, etc). */
+export type DayPhase = 'dawn' | 'day' | 'dusk' | 'night';
+
+/** A species' activity window: one day phase, or ANY (out at all hours). */
+export type ActivityWindow = DayPhase | 'any';
+
+/**
+ * Day-night cycle. The cycle length is one full loop through dawn -> day ->
+ * dusk -> night; each phase's START is a fraction of the cycle [0, 1). Dawn and
+ * dusk are deliberately SHORT (the crepuscular windows) and day/night long.
+ */
+export const TIME = {
+  /** Full day-night cycle length, seconds. */
+  cyclePeriodSec: 120,
+  /** Phase start fractions of the cycle, ascending. dawn starts at 0. */
+  dayStart: 0.15,
+  duskStart: 0.5,
+  nightStart: 0.65,
+} as const;
+
+// ===========================================================================
+// Species
+// ===========================================================================
+
+/** Every catchable species id. Phase 4 seeds only the Meadow's tier-1 roster;
+ *  locked biomes get their species as they unlock in later PRs. */
+export type SpeciesId = 'fieldmouse' | 'rabbit' | 'quail' | 'hedgehog';
+
+/** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
+ *  faster, warier. The Meadow is all tier 1. */
+export type Tier = 1 | 2 | 3 | 4 | 5;
+
+/**
+ * Static definition of one species. The two axes the design keeps INDEPENDENT:
+ *  - `spawnWeight` is the RARITY axis (how often it appears), and
+ *  - `baseCatchRate` is the catch-DIFFICULTY axis (how hard it is once found).
+ * They are deliberately NOT collapsed into one number. `baseCatchRate` is
+ * reserved for PR #5 (the catch loop) — it's typed here so the table shape is
+ * stable, but nothing reads it yet.
+ */
+export interface SpeciesDef {
+  id: SpeciesId;
+  displayName: string;
+  /** Home biome — the only biome this species spawns in. */
+  biome: BiomeId;
+  /** RARITY: relative weight in the spawn lottery (higher = more common). */
+  spawnWeight: number;
+  /** Flee speed when startled, world units/sec (kept below the player's top
+   *  speed so tier-1 animals are catchable on foot once catching lands). */
+  baseFleeSpeed: number;
+  /** How close the player can get before the animal bolts, world units. */
+  detectionRadius: number;
+  /** Which day phase this species is active in (ANY = all hours). */
+  activityWindow: ActivityWindow;
+  tier: Tier;
+  /** CATCH DIFFICULTY (reserved for PR #5; unused this PR). */
+  baseCatchRate: number;
+  /** Render tint, 0xRRGGBB. */
+  color: number;
+  /** Visual size (cube side), world units — smaller animals read as smaller. */
+  size: number;
+}
+
+/** Deterministic iteration order over the species table. */
+export const SPECIES_ORDER: readonly SpeciesId[] = ['fieldmouse', 'rabbit', 'quail', 'hedgehog'];
+
+/**
+ * The species table — DATA. The Meadow's tier-1 roster: common, slow, docile
+ * animals with varied activity windows so time-of-day gating is real
+ * (fieldmouse + rabbit are out all day; quail forages at dawn; the hedgehog is
+ * crepuscular at dusk).
+ */
+export const SPECIES: Record<SpeciesId, SpeciesDef> = {
+  fieldmouse: {
+    id: 'fieldmouse',
+    displayName: 'Field Mouse',
+    biome: 'meadow',
+    spawnWeight: 6,
+    baseFleeSpeed: 2.6,
+    detectionRadius: 2.5,
+    activityWindow: 'any',
+    tier: 1,
+    baseCatchRate: 0.72,
+    color: 0x8a7b6b,
+    size: 0.45,
+  },
+  rabbit: {
+    id: 'rabbit',
+    displayName: 'Rabbit',
+    biome: 'meadow',
+    spawnWeight: 3,
+    baseFleeSpeed: 4.2,
+    detectionRadius: 3.5,
+    activityWindow: 'any',
+    tier: 1,
+    baseCatchRate: 0.6,
+    color: 0xb8a584,
+    size: 0.55,
+  },
+  quail: {
+    id: 'quail',
+    displayName: 'Quail',
+    biome: 'meadow',
+    spawnWeight: 2,
+    baseFleeSpeed: 4.6,
+    detectionRadius: 4.0,
+    activityWindow: 'dawn',
+    tier: 1,
+    baseCatchRate: 0.55,
+    color: 0x9c7b4a,
+    size: 0.5,
+  },
+  hedgehog: {
+    id: 'hedgehog',
+    displayName: 'Hedgehog',
+    biome: 'meadow',
+    spawnWeight: 2,
+    baseFleeSpeed: 1.8,
+    detectionRadius: 2.0,
+    activityWindow: 'dusk',
+    tier: 1,
+    baseCatchRate: 0.68,
+    color: 0x5c4a3a,
+    size: 0.5,
+  },
+};
+
+// ===========================================================================
+// Spawning + animal AI
+// ===========================================================================
+
+/** Biome + time-of-day weighted spawning, with a BOUNDED population. */
+export const SPAWN = {
+  /** Hard population cap = the fixed animal-pool size. Spawning never grows it. */
+  maxAnimals: 12,
+  /** Seconds between spawn attempts. */
+  intervalSec: 2.5,
+  /** Animals spawn on a ring around the player, in [min, max] world units —
+   *  never on top of the player (min > the largest detectionRadius so a fresh
+   *  spawn doesn't instantly flee), and within roughly a screen's reach. */
+  spawnRadiusMin: 6,
+  spawnRadiusMax: 14,
+  /** Despawn an animal once it's farther than this from the player (off-screen
+   *  cleanup that recycles its pool slot). */
+  despawnRadius: 22,
+} as const;
+
+/** Roaming AI feel. */
+export const ANIMAL = {
+  /** Collision/visual half-extent used for biome containment, world units. */
+  radius: 0.3,
+  /** WANDER random-walk speed, world units/sec (a slow amble). */
+  wanderSpeed: 1.2,
+  /** How often WANDER picks a fresh heading, seconds. */
+  wanderRetargetSec: 2.0,
+  /** Hysteresis: once fleeing, keep fleeing until the player is detectionRadius +
+   *  this buffer away — so an animal at the threshold doesn't flicker state. */
+  fleeReleaseBuffer: 1.5,
+} as const;
+
 /** Player movement feel — a snappy velocity ramp (no instant snap, no float). */
 export const TUNING = {
   /** Top movement speed, world units per second. */

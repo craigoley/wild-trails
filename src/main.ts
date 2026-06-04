@@ -10,11 +10,10 @@
  * looks smooth at 60 or 120 Hz. The player moves because GameState.update
  * mutates state — never because input is wired straight into this loop.
  *
- * This PR is real-time roaming on the finite biome world: the player wanders the
- * unlocked Meadow under the iso follow-cam, with the locked neighbour biomes
- * visible-but-walled across the boundary. The creature-catching pipeline
- * (spawn -> roam -> encounter -> catch -> resolve) and its `?debug=1` funnel
- * telemetry land in later phased PRs.
+ * The world now has CREATURES in it: animals spawn by biome + time of day and
+ * roam (wander / flee) around the player. The spawn -> roam pipeline carries
+ * `?debug=1` funnel telemetry. Catching (encounter -> catch-attempt -> resolve)
+ * lands in later phased PRs.
  */
 
 import './style.css';
@@ -32,7 +31,11 @@ const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('#app container not found');
 
 // --- State (pure) ---------------------------------------------------------
-const game = createGameState();
+// A fresh per-load seed keeps the sim deterministic-from-seed while still
+// varying run to run. Reading the clock here (the impure entry point) keeps the
+// game layer itself pure.
+const bootSeed = (Date.now() & 0xffffffff) >>> 0;
+const game = createGameState(bootSeed);
 // The persistent Field Journal — loaded once at boot (safe no-op in private mode).
 // Phase 0 just proves the load path; the catch loop reads/writes it later.
 const journal = loadJournal();
