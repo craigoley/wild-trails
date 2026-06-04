@@ -32,7 +32,8 @@ import { missionBannerMessages } from './rendering/missionBanners';
 import { AudioEngine } from './audio/AudioEngine';
 import { createAutosaver, loadJournal, recordCatch, setBaitCounts } from './state/Journal';
 import { restoreBaitCounts } from './game/Bait';
-import { evaluateCatch } from './game/Missions';
+import { evaluateCatch, shouldCelebrateWin } from './game/Missions';
+import { WinScreen } from './rendering/WinScreen';
 import { unlockBiome } from './game/World';
 import { MAX_FRAME_DT, MISSION_ORDER, SIM_DT, TRACKING, type BiomeId } from './utils/constants';
 
@@ -105,6 +106,19 @@ const journalPanel = new JournalPanel(app);
 journalPanel.refresh(journal); // seed the roster from the loaded journal
 const missionPanel = new MissionPanel(app);
 refreshMissionPanel();
+// The "Field Guide Complete" win screen (Plan #10). maybeFireWin fires it ONCE —
+// when the win condition is first met (the persisted `won` flag guards re-firing)
+// — then dismissing it returns to free-roam. Checked at boot (so a save that
+// completed pre-#10 gets its celebration) and after each catch/mission update.
+const winScreen = new WinScreen(app);
+const maybeFireWin = (): void => {
+  if (shouldCelebrateWin(journal)) {
+    journal.won = true;
+    persist();
+    winScreen.show(journal);
+  }
+};
+maybeFireWin(); // boot check (a pre-#10 completed save earns its celebration now)
 // Transient banners for mission completions + biome unlocks (the missing
 // player-facing feedback — the unlock previously fired silently).
 const banner = new Banner(app);
@@ -202,6 +216,7 @@ function frame(nowMs: number): void {
       persist(); // catch + replenished bait = durable progress; autosave it
       journalPanel.refresh(journal);
       refreshMissionPanel();
+      maybeFireWin(); // this catch/mission may have completed the field guide
     }
   }
   const alpha = accumulator / SIM_DT;

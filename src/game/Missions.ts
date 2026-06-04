@@ -21,6 +21,7 @@ import {
   MISSION_ORDER,
   RANK,
   RANKS,
+  SPECIES_ORDER,
   type BiomeId,
   type DayPhase,
   type MissionRequirement,
@@ -125,4 +126,43 @@ export function currentRank(journal: Journal): RankDef {
   let rank = RANKS[0];
   for (const r of RANKS) if (total >= r.minPoints) rank = r;
   return rank;
+}
+
+// ---------------------------------------------------------------------------
+// Completion / win (Plan #10) — computed PURELY from journal state, no new
+// mechanic, no grind counter.
+// ---------------------------------------------------------------------------
+
+/** The biomes that have a mission SET (≥1 non-standalone mission) — the ones whose
+ *  completion counts toward the win. Derived from the data (standalone side-quests
+ *  like the badger track are excluded), so a future biome's set is auto-included. */
+export function missionSetBiomes(): BiomeId[] {
+  const seen = new Set<BiomeId>();
+  for (const id of MISSION_ORDER) {
+    const def = MISSIONS[id];
+    if (!def.standalone) seen.add(def.biome);
+  }
+  return [...seen];
+}
+
+/**
+ * Is the field guide complete (the §14 win)? Every species caught + every biome
+ * mission SET complete + top rank. Pure over the journal — earned through play, no
+ * grind: with the shipped content, catching all species + finishing the sets
+ * already clears the top-rank threshold, so the rank check is never a separate
+ * wall (see the achievability test). Standalone side-quests are NOT required.
+ */
+export function isGameComplete(journal: Journal): boolean {
+  if (foundCount(journal) < SPECIES_ORDER.length) return false;
+  for (const biome of missionSetBiomes()) {
+    if (!isBiomeSetComplete(journal, biome)) return false;
+  }
+  return currentRank(journal).name === RANKS[RANKS.length - 1].name;
+}
+
+/** Should the win celebration fire NOW? Complete AND not yet celebrated — the
+ *  persisted `won` flag is the double-fire guard (fires once; a won save reloading
+ *  doesn't re-celebrate). The boundary sets `won = true` + saves when this is true. */
+export function shouldCelebrateWin(journal: Journal): boolean {
+  return !journal.won && isGameComplete(journal);
 }
