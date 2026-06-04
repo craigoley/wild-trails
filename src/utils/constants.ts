@@ -194,6 +194,15 @@ export const ACTIVITY_LABEL: Record<ActivityWindow, string> = {
   night: 'Active at night',
 };
 
+/** Display for the HUD time-of-day indicator: a short label + a zero-asset
+ *  unicode glyph per phase (so a kid instantly reads "it's dusk"). */
+export const DAY_PHASE_DISPLAY: Record<DayPhase, { label: string; icon: string }> = {
+  dawn: { label: 'Dawn', icon: '🌅' },
+  day: { label: 'Day', icon: '☀️' },
+  dusk: { label: 'Dusk', icon: '🌆' },
+  night: { label: 'Night', icon: '🌙' },
+};
+
 /**
  * Day-night cycle. The cycle length is one full loop through dawn -> day ->
  * dusk -> night; each phase's START is a fraction of the cycle [0, 1). Dawn and
