@@ -10,21 +10,22 @@
  *    (Safari Private Mode throws on setItem).
  *  - Corrupt / unparseable JSON falls back to a fresh store.
  *  - The schema is VERSIONED; load routes through `migrate`, which UPGRADES old
- *    stores step by step (v1 -> v2 here) rather than resetting them. A v1 player
- *    keeps every caught species and gains empty progression state.
+ *    stores step by step (v1 -> v2 -> v3) rather than resetting them. An old
+ *    player keeps every caught species and gains new fields at safe defaults.
  *
- * SCHEMA v2: species dex (unchanged from v1) + missions progress + rank points +
- * mission-granted biome unlocks. Only CAUGHT species get a species entry
- * (absence === not found). Catch METHOD is still not persisted.
+ * SCHEMA v3: species dex + missions progress + rank points + mission-granted
+ * biome unlocks (all unchanged from v2) + DURABLE bait counts (Plan #13.3 — the
+ * one bit of session state worth persisting; the rest of the world is recomputed
+ * fresh on load). Only CAUGHT species get a species entry (absence === not found).
  */
 
-import type { BiomeId } from '../utils/constants';
+import { BAIT, BAIT_ORDER, type BaitId, type BiomeId } from '../utils/constants';
 
 const STORAGE_KEY = 'wild-trails:journal';
 
 /** Current persisted schema version. Bump + add a `migrate` step when the shape
  *  changes incompatibly, so old stores upgrade rather than reset. */
-export const JOURNAL_SCHEMA_VERSION = 2;
+export const JOURNAL_SCHEMA_VERSION = 3;
 
 /** Per-species dex record. An entry exists IFF the species has been caught. */
 export interface SpeciesRecord {
@@ -55,9 +56,19 @@ export interface Journal {
   rankPoints: number;
   /** Biome ids unlocked via missions (beyond the always-open Meadow). */
   unlockedBiomes: string[];
+  /** Durable bait counts per type — the one bit of session state persisted (v3).
+   *  The active deployment / selection / timer are transient (recomputed fresh). */
+  bait: Record<BaitId, number>;
 }
 
-/** A fresh, empty journal (nothing found, no progression). */
+/** Full-bait counts (the fresh-game / safe-default value), startingCount per type. */
+function defaultBait(): Record<BaitId, number> {
+  const counts = {} as Record<BaitId, number>;
+  for (const id of BAIT_ORDER) counts[id] = BAIT.startingCount;
+  return counts;
+}
+
+/** A fresh, empty journal (nothing found, no progression, full bait). */
 export function createJournal(): Journal {
   return {
     schemaVersion: JOURNAL_SCHEMA_VERSION,
@@ -65,6 +76,7 @@ export function createJournal(): Journal {
     missions: {},
     rankPoints: 0,
     unlockedBiomes: [],
+    bait: defaultBait(),
   };
 }
 
@@ -101,6 +113,12 @@ export function foundCount(journal: Journal): number {
  *  applies these at boot; missions add to them mid-session. */
 export function isBiomeUnlockedInJournal(journal: Journal, id: BiomeId): boolean {
   return journal.unlockedBiomes.includes(id);
+}
+
+/** Sync live bait counts into the journal for persistence (sanitized to the cap).
+ *  Called by autosave before a write so the durable counts are current. */
+export function setBaitCounts(journal: Journal, counts: Record<BaitId, number>): void {
+  journal.bait = sanitizeBait(counts);
 }
 
 // ---------------------------------------------------------------------------
@@ -145,6 +163,24 @@ function sanitizeUnlocked(raw: unknown): string[] {
 }
 
 /**
+ * Per-type bait counts, sanitized: a missing key / negative / non-finite value
+ * falls back to startingCount (a v2 upgrade or a corrupt count is never punished);
+ * valid counts are clamped to [0, maxCount] (no hoarding past the cap via a hand-
+ * edited store). Always returns a full set for every BAIT_ORDER type.
+ */
+function sanitizeBait(raw: unknown): Record<BaitId, number> {
+  const obj = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+  const out = {} as Record<BaitId, number>;
+  for (const id of BAIT_ORDER) {
+    const v = obj[id];
+    out[id] = typeof v === 'number' && Number.isFinite(v) && v >= 0
+      ? Math.min(v, BAIT.maxCount)
+      : BAIT.startingCount;
+  }
+  return out;
+}
+
+/**
  * Upgrade a v1 store to v2: keep ALL caught species, add empty mission/rank/
  * unlock state. This is the load-bearing step — a v1 player must lose nothing.
  */
@@ -159,6 +195,19 @@ function up_1to2(v1: Record<string, unknown>): Record<string, unknown> {
 }
 
 /**
+ * Upgrade a v2 store to v3: keep species/missions/rank/unlocks verbatim, add
+ * DURABLE bait at the safe default (full counts) — a returning v2 player isn't
+ * punished for the upgrade. Spreads the rest so nothing is dropped.
+ */
+function up_2to3(v2: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...v2,
+    schemaVersion: 3,
+    bait: defaultBait(),
+  };
+}
+
+/**
  * The migration HOOK: turn an arbitrary parsed payload into a valid current-
  * schema Journal. Old versions upgrade STEP BY STEP (v1 -> v2) BEFORE the version
  * reject, so existing data is preserved; anything still off-version (or garbage)
@@ -168,9 +217,10 @@ export function migrate(parsed: unknown): Journal {
   if (typeof parsed !== 'object' || parsed === null) return createJournal();
   let obj = parsed as Record<string, unknown>;
 
-  // Upgrade chain — each step bumps the version and fills new fields.
+  // Upgrade chain — each step bumps the version and fills new fields, so an old
+  // store flows all the way up (v1 -> up_1to2 -> v2 -> up_2to3 -> v3).
   if (obj.schemaVersion === 1) obj = up_1to2(obj);
-  // (future: if (obj.schemaVersion === 2) obj = up_2to3(obj); ...)
+  if (obj.schemaVersion === 2) obj = up_2to3(obj);
 
   if (obj.schemaVersion !== JOURNAL_SCHEMA_VERSION) return createJournal();
 
@@ -182,6 +232,7 @@ export function migrate(parsed: unknown): Journal {
     missions: sanitizeMissions(obj.missions),
     rankPoints,
     unlockedBiomes: sanitizeUnlocked(obj.unlockedBiomes),
+    bait: sanitizeBait(obj.bait),
   };
 }
 
@@ -210,4 +261,21 @@ export function saveJournal(journal: Journal): void {
   } catch {
     // Private-mode / quota failure: keep running with the in-memory journal.
   }
+}
+
+/**
+ * A dedup-guarded autosaver: writes only when the journal actually CHANGED since
+ * the last write, so rapid autosave triggers (bait deploys, tab blur right after a
+ * catch) don't thrash localStorage. Returns whether a write happened. The save fn
+ * is injected so the dedup is unit-testable without a real store.
+ */
+export function createAutosaver(save: (j: Journal) => void = saveJournal): (j: Journal) => boolean {
+  let lastSnapshot = '';
+  return (journal: Journal): boolean => {
+    const snapshot = JSON.stringify(journal);
+    if (snapshot === lastSnapshot) return false; // unchanged — skip the write
+    lastSnapshot = snapshot;
+    save(journal);
+    return true;
+  };
 }
