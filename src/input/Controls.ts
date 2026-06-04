@@ -71,12 +71,17 @@ export class Controls {
     this.baitBtn = this.makeActionButton(target, 'BAIT', 'action-bait', () => {
       this.intent.baitDeploy = true;
     });
+    // Top-right panel toggles share a flex container so they lay out side by
+    // side (and future toggles flow in without hand-placed coords / collisions).
+    const topRight = document.createElement('div');
+    topRight.className = 'hud-topright';
+    target.appendChild(topRight);
     // Field Journal toggle (also the 'J' key).
-    this.makeActionButton(target, '📓', 'action-journal', () => {
+    this.makeActionButton(topRight, '📓', 'action-journal', () => {
       this.intent.journalToggle = true;
     });
     // Missions toggle (also the 'M' key).
-    this.makeActionButton(target, '🎯', 'action-missions', () => {
+    this.makeActionButton(topRight, '🎯', 'action-missions', () => {
       this.intent.missionToggle = true;
     });
     // Bait tray — replaces the old ↻ cycler. One tappable chip per bait type,
