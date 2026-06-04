@@ -452,6 +452,17 @@ export const STARTER_TOOL: ToolId = 'net';
  *  nothing. Bait is a consumable with an in-memory count. */
 export const BAIT_ORDER: readonly BaitId[] = ['seeds', 'greens', 'insects'];
 
+/** The procedural diet-icon glyph a bait chip draws (CSS shapes, zero assets). */
+export type BaitIconKind = 'seeds' | 'leaf' | 'insect';
+
+/** Tray DISPLAY metadata per bait — a short label + which procedural icon to
+ *  draw. Diet legibility (§5): the icon teaches "what this bait IS". */
+export const BAIT_DISPLAY: Record<BaitId, { label: string; icon: BaitIconKind }> = {
+  seeds: { label: 'Seeds', icon: 'seeds' },
+  greens: { label: 'Greens', icon: 'leaf' },
+  insects: { label: 'Insects', icon: 'insect' },
+};
+
 export const BAIT = {
   /** Starting count per bait type (in-memory; no persistence until PR #7). */
   startingCount: 5,

@@ -189,13 +189,96 @@ body {
   width: 64px;
   height: 64px;
 }
-.action-cycle {
-  right: 140px;
-  bottom: 136px;
-  width: 44px;
-  height: 44px;
-  font-size: 18px;
+/* --- Bait tray (replaces the old ↻ cycler) ----------------------------- */
+/* Always-visible row of chips, bottom-left so it clears the bottom-right action
+ * buttons and the joystick area. pointer-events:auto so chips are tappable. */
+.bait-tray {
+  position: fixed;
+  left: 12px;
+  bottom: 16px;
+  z-index: 25;
+  display: flex;
+  gap: 8px;
+  pointer-events: none; /* the tray container is layout-only */
 }
+.bait-chip {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 8px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: rgba(20, 30, 20, 0.55);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.bait-chip .chip-count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+/* Selected chip: bright border + glow + lifted background. */
+.bait-chip.selected {
+  border-color: rgba(255, 207, 107, 0.95);
+  background: rgba(255, 179, 71, 0.22);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 207, 107, 0.45);
+}
+/* Empty bait: greyed + non-selectable (the #5.3 scarcity, made visible). */
+.bait-chip.empty {
+  opacity: 0.35;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(40, 40, 40, 0.4);
+}
+.bait-chip.empty.selected {
+  box-shadow: none;
+}
+
+/* Procedural diet icons (CSS shapes only — zero assets). */
+.chip-icon {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+/* SEEDS — a little cluster of dots. */
+.icon-seeds {
+  background:
+    radial-gradient(circle at 5px 6px, #e8c879 0 2.6px, transparent 3px),
+    radial-gradient(circle at 11px 5px, #e8c879 0 2.4px, transparent 2.8px),
+    radial-gradient(circle at 8px 11px, #e8c879 0 2.6px, transparent 3px);
+}
+/* GREENS — a rounded leaf. */
+.icon-leaf {
+  background: #6fbf52;
+  border-radius: 0 80% 0 80%;
+  transform: rotate(-12deg);
+}
+/* INSECTS — a body with legs. */
+.icon-insect {
+  background: #8a6cff;
+  border-radius: 50% 50% 45% 45%;
+  width: 11px;
+  height: 14px;
+  margin: 1px 2px;
+}
+.icon-insect::before,
+.icon-insect::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  width: 9px;
+  height: 1.6px;
+  background: #8a6cff;
+}
+.icon-insect::before { left: -7px; transform: rotate(18deg); box-shadow: 0 4px 0 #8a6cff, 0 8px 0 #8a6cff; }
+.icon-insect::after { right: -7px; transform: rotate(-18deg); box-shadow: 0 4px 0 #8a6cff, 0 8px 0 #8a6cff; }
 
 /* ?debug=1 readout — top left, monospace, unobtrusive. */
 .hud-debug {

@@ -38,6 +38,23 @@ export function cycleSelectedBait(state: BaitState): void {
   state.selected = BAIT_ORDER[(i + 1) % BAIT_ORDER.length];
 }
 
+/** Can the player SELECT this bait? Only if some remains (count > 0). Drives the
+ *  tray's greyed/non-selectable state, so the #5.3 economy is visible. */
+export function isBaitSelectable(state: BaitState, id: BaitId): boolean {
+  return state.counts[id] > 0;
+}
+
+/**
+ * Directly select a bait type (the tray's one-tap selector). A no-op if that
+ * bait is EMPTY — the previously-selected bait stays selected. Returns whether
+ * the selection changed (false = blocked because it was empty).
+ */
+export function setSelectedBait(state: BaitState, id: BaitId): boolean {
+  if (!isBaitSelectable(state, id)) return false;
+  state.selected = id;
+  return true;
+}
+
 /**
  * Deploy the SELECTED bait at (x, y) if any remain. Decrements the count, sets
  * the active deployment + timer. Returns true on success, false if out of that

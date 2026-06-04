@@ -4,18 +4,27 @@
  * input, so src/game/ stays Node-testable.
  *
  * Scheme:
- *  - Desktop: WASD / arrow keys move; SPACE/F = catch; B = deploy bait; Q =
- *    cycle bait type.
- *  - Mobile: an on-screen JOYSTICK (drag anywhere) + on-screen CATCH / BAIT / ↻
- *    buttons — one per edge action, mirroring the keys.
+ *  - Desktop: WASD / arrow keys move; SPACE/F = catch; B = deploy bait; 1/2/3 =
+ *    select bait (the tray); Q = cycle bait (fallback).
+ *  - Mobile: an on-screen JOYSTICK (drag anywhere), CATCH / BAIT buttons, and a
+ *    always-visible BAIT TRAY — tap a chip to select that bait.
  *
  * Keyboard and touch are at PARITY: both write the SAME axes / edge flags onto
  * the same intent. Edge actions are set on the PRESS and CONSUMED by the sim, so
  * one press = one action.
  */
 
-import { ACTION_KEYS, createIntent, dragAxes, keyAxes, type InputIntent } from '../game/Input';
-import { TOUCH } from '../utils/constants';
+import {
+  ACTION_KEYS,
+  baitIndexForKey,
+  createIntent,
+  dragAxes,
+  keyAxes,
+  type InputIntent,
+} from '../game/Input';
+import type { BaitState } from '../game/Bait';
+import { isBaitSelectable } from '../game/Bait';
+import { BAIT_DISPLAY, BAIT_ORDER, TOUCH } from '../utils/constants';
 
 const includes = (keys: readonly string[], k: string): boolean => keys.includes(k);
 
@@ -37,6 +46,11 @@ export class Controls {
   private readonly baitBtn: HTMLButtonElement;
   private readonly baitHint: HTMLDivElement;
 
+  // Bait tray — one chip per bait type; each shows icon + label + count, with a
+  // count span updated each frame and selected/empty classes toggled.
+  private readonly trayChips: HTMLButtonElement[] = [];
+  private readonly trayCounts: HTMLSpanElement[] = [];
+
   constructor(target: HTMLElement = document.body) {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
@@ -57,9 +71,9 @@ export class Controls {
     this.baitBtn = this.makeActionButton(target, 'BAIT', 'action-bait', () => {
       this.intent.baitDeploy = true;
     });
-    this.makeActionButton(target, '↻', 'action-cycle', () => {
-      this.intent.baitCycle = true;
-    });
+    // Bait tray — replaces the old ↻ cycler. One tappable chip per bait type,
+    // always visible, showing what you have / what's selected / how much is left.
+    this.buildBaitTray(target);
 
     // First-time affordance: a small "try bait" pointer near the BAIT button,
     // shown only when a target is armed but unbaited and bait was never used.
@@ -73,9 +87,48 @@ export class Controls {
     const hint = document.createElement('div');
     hint.className = 'touch-hint';
     hint.textContent = isTouch
-      ? 'Drag to roam · CATCH · BAIT'
-      : 'WASD roam · Space catch · B bait · Q cycle';
+      ? 'Drag to roam · CATCH · BAIT · tap a chip to pick bait'
+      : 'WASD roam · Space catch · B bait · 1/2/3 pick bait';
     target.appendChild(hint);
+  }
+
+  /** Build the always-visible bait tray: one chip per bait type. Tapping a chip
+   *  sets the direct-select intent (the sim ignores it if that bait is empty). */
+  private buildBaitTray(target: HTMLElement): void {
+    const tray = document.createElement('div');
+    tray.className = 'bait-tray';
+    BAIT_ORDER.forEach((id, index) => {
+      const disp = BAIT_DISPLAY[id];
+      const chip = document.createElement('button');
+      chip.className = `bait-chip chip-${disp.icon}`;
+      chip.innerHTML =
+        `<span class="chip-icon icon-${disp.icon}"></span>` +
+        `<span class="chip-label">${index + 1} ${disp.label}</span>`;
+      const count = document.createElement('span');
+      count.className = 'chip-count';
+      chip.appendChild(count);
+      chip.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        this.intent.baitSelect = index;
+      });
+      chip.addEventListener('touchstart', (e) => e.stopPropagation());
+      tray.appendChild(chip);
+      this.trayChips.push(chip);
+      this.trayCounts.push(count);
+    });
+    target.appendChild(tray);
+  }
+
+  /** Reflect bait state on the tray each frame: counts, the selected highlight,
+   *  and the greyed/non-selectable state for empty baits (the #5.3 scarcity made
+   *  visible). READS bait state; never mutates it. */
+  setBaitTray(bait: BaitState): void {
+    BAIT_ORDER.forEach((id, i) => {
+      const count = bait.counts[id];
+      this.trayCounts[i].textContent = `×${count}`;
+      this.trayChips[i].classList.toggle('selected', bait.selected === id);
+      this.trayChips[i].classList.toggle('empty', !isBaitSelectable(bait, id));
+    });
   }
 
   /** Create an on-screen button that fires an edge action on press. */
@@ -138,6 +191,9 @@ export class Controls {
     }
     if (includes(ACTION_KEYS.baitDeploy, k)) this.intent.baitDeploy = true;
     if (includes(ACTION_KEYS.baitCycle, k)) this.intent.baitCycle = true;
+    // 1/2/3 direct-select the corresponding bait chip.
+    const baitIdx = baitIndexForKey(k);
+    if (baitIdx >= 0) this.intent.baitSelect = baitIdx;
   };
 
   private onKeyUp = (e: KeyboardEvent): void => {

@@ -90,10 +90,9 @@ export class HUD {
   update(state: GameState): void {
     this.biomeLabel.textContent = BIOMES[state.currentBiome].displayName;
 
-    const bait = state.bait;
-    const count = bait.counts[bait.selected];
-    this.statusLine.textContent =
-      `Caught ${state.sessionCatches}   ·   Bait: ${bait.selected} ×${count}${count === 0 ? ' (out)' : ''}`;
+    // Bait counts/selection now live in the always-visible tray (Controls); the
+    // status line just carries the session catch count.
+    this.statusLine.textContent = `Caught ${state.sessionCatches}`;
 
     this.hiddenBadge.style.display = state.stealth.inCover ? 'block' : 'none';
 
