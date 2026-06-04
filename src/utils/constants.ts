@@ -584,3 +584,118 @@ export const KEY_LIGHT_POS = {
   y: CAMERA.offsetY * 1.5,
   z: CAMERA.offsetZ * 0.6,
 } as const;
+
+/**
+ * Lighting for the low-poly look. A flat-shaded model needs a clear KEY light to
+ * show its facets and a HEMISPHERE light (sky over ground) for soft fill — so a
+ * fox reads as faceted 3D, not a flat blob. Ambient is kept modest (a high
+ * ambient washes facets out).
+ */
+export const LIGHTING = {
+  /** Flat base fill so shadowed sides aren't pure black. */
+  ambient: 0.45,
+  /** Directional key light intensity (position = KEY_LIGHT_POS). */
+  keyIntensity: 0.9,
+  /** Hemisphere fill — warm sky over the meadow-green ground. */
+  hemiSky: 0xcfe4ff,
+  hemiGround: 0x35502f,
+  hemiIntensity: 0.5,
+} as const;
+
+// ===========================================================================
+// Procedural models (render-only — primitives, zero assets)
+// ===========================================================================
+
+/** Which procedural shape a species is built from. */
+export type ModelKind = 'mouse' | 'rabbit' | 'bird' | 'hedgehog';
+
+/** Low-poly segment count for spheres/cones/cylinders (kept low for facets). */
+export const MODEL_SEGMENTS = 8;
+
+/**
+ * The PLAYER figure — an upright human-ish silhouette (legs + torso + head +
+ * arms), built foot-origin (lowest point at y = 0) and facing +z. Dimensions in
+ * world units; clearly taller + bipedal so it never reads as an animal.
+ */
+export const PLAYER_MODEL = {
+  color: PALETTE.player,
+  /** Boots / pack accent. */
+  accent: 0x6b4a24,
+  legHeight: 0.34,
+  legRadius: 0.075,
+  legSpread: 0.12,
+  bodyHeight: 0.46,
+  bodyRadiusTop: 0.12,
+  bodyRadiusBottom: 0.17,
+  headRadius: 0.17,
+  armLength: 0.4,
+  armRadius: 0.05,
+} as const;
+
+/**
+ * Shared quadruped proportions, as RATIOS of a species' `size`, so every animal
+ * scales from one base and only its distinguishing features differ. The body is
+ * a capsule lying along z (head at +z front, tail at -z back).
+ */
+export const ANIMAL_MODEL_BASE = {
+  bodyLengthR: 1.6,
+  bodyRadiusR: 0.55,
+  legHeightR: 0.42,
+  legRadiusR: 0.13,
+  legInsetR: 0.45,
+  headRadiusR: 0.5,
+  headForwardR: 0.85,
+  snoutLengthR: 0.5,
+  snoutRadiusR: 0.22,
+} as const;
+
+/** Per-species model config: the shape KIND plus its distinguishing feature
+ *  dimensions (ratios of `size`) and accent colours. The body colour is the
+ *  species' own `color` from the SPECIES table. */
+export const SPECIES_MODEL: Record<
+  SpeciesId,
+  {
+    kind: ModelKind;
+    accent: number;
+    earHeightR?: number;
+    earRadiusR?: number;
+    tailLengthR?: number;
+    tailRadiusR?: number;
+    beakLengthR?: number;
+    crestHeightR?: number;
+    spikeCount?: number;
+    spikeLengthR?: number;
+  }
+> = {
+  // Tiny, round, small ears, long thin tail, pointed snout.
+  fieldmouse: {
+    kind: 'mouse',
+    accent: 0xf2c6b6,
+    earHeightR: 0.3,
+    earRadiusR: 0.26,
+    tailLengthR: 1.8,
+    tailRadiusR: 0.05,
+  },
+  // Round body, tall upright ears, little round tail.
+  rabbit: {
+    kind: 'rabbit',
+    accent: 0xfff2e6,
+    earHeightR: 1.5,
+    earRadiusR: 0.14,
+    tailRadiusR: 0.24,
+  },
+  // Plump little BIRD: round body, two stub legs, beak + head crest.
+  quail: {
+    kind: 'bird',
+    accent: 0x53381f,
+    beakLengthR: 0.5,
+    crestHeightR: 0.7,
+  },
+  // Low round body bristling with spikes, small snout.
+  hedgehog: {
+    kind: 'hedgehog',
+    accent: 0xd9c2a3,
+    spikeCount: 16,
+    spikeLengthR: 0.85,
+  },
+} as const;
