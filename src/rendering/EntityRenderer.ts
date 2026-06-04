@@ -1,36 +1,40 @@
 /**
- * Renders the dynamic entities: the PLAYER marker and the ANIMALS. Both follow
- * the same pooled pattern — meshes created ONCE, then only moved / shown / hidden
- * / recoloured each frame from the (read-only) game state. Nothing allocates
+ * Renders the dynamic entities — the PLAYER and the ANIMALS — as procedural
+ * low-poly MODELS (Groups of primitives), pooled exactly like the placeholder
+ * cubes were: every model is built ONCE and then only moved / rotated / scaled /
+ * shown / hidden each frame from the (read-only) game state. Nothing allocates
  * geometry or materials in the loop.
  *
- * The animal mesh pool is sized to the animal POOL (SPAWN.maxAnimals); each frame
- * the active animals claim the first N meshes (positioned + scaled + tinted from
- * their species) and the rest are hidden. Positions INTERPOLATE between each
- * entity's previous and current sim-step position by the frame `alpha`, so motion
- * is smooth at any refresh rate. Game (x, y) maps to three (x, z); the ground is
- * y = 0. This layer never mutates game state.
+ * Because each species has a distinct silhouette, the animal pool is keyed BY
+ * SPECIES: a fixed array of `SPAWN.maxAnimals` models per species (built once,
+ * hidden). Each frame the active animals claim models of their own species; the
+ * rest stay hidden. Models are built foot-origin (y = 0 at the feet) so they sit
+ * on the ground, rotate to face their travel direction, and squash toward the
+ * ground during a catch (feet planted). Positions INTERPOLATE between prev and
+ * current sim-step position by the frame `alpha`. Game (x, y) maps to three
+ * (x, z). This layer never mutates game state.
  */
 
 import {
-  BoxGeometry,
+  Group,
   Mesh,
   MeshBasicMaterial,
-  MeshStandardMaterial,
   RingGeometry,
   TorusGeometry,
   type Scene,
 } from 'three';
 import type { GameState } from '../game/GameState';
 import type { Encounter } from '../game/Encounter';
-import { getSpecies } from '../game/Species';
-import { CATCH, CATCH_FX, PALETTE, PLAYER, SPAWN } from '../utils/constants';
+import { buildAnimalModel, buildPlayerModel } from './models/builders';
+import { CATCH, CATCH_FX, PALETTE, SPAWN, SPECIES, SPECIES_ORDER, type SpeciesId } from '../utils/constants';
 import { clamp, lerp } from '../utils/math';
 
 export class EntityRenderer {
-  private readonly marker: Mesh;
-  /** One reusable unit-cube mesh per pool slot (scaled per-animal each frame). */
-  private readonly animalMeshes: Mesh[] = [];
+  private readonly player: Group;
+  /** A pool of built models per species (claimed by active animals each frame). */
+  private readonly animalPools: Record<SpeciesId, Group[]>;
+  /** Per-frame claim counter per species (reset each sync). */
+  private readonly claimed: Record<SpeciesId, number>;
   /** Ring under the current catch target ("who am I catching"). */
   private readonly targetRing: Mesh;
   private readonly targetRingMat: MeshBasicMaterial;
@@ -38,21 +42,22 @@ export class EntityRenderer {
   private readonly baitMarker: Mesh;
 
   constructor(scene: Scene) {
-    const s = PLAYER.radius * 2;
-    const mat = new MeshStandardMaterial({ color: PALETTE.player, roughness: 0.7 });
-    // A cube one body-size tall, resting ON the ground (origin lifted by half its
-    // height) so it sits on y = 0 rather than half-sunk into it.
-    this.marker = new Mesh(new BoxGeometry(s, s, s), mat);
-    scene.add(this.marker);
+    this.player = buildPlayerModel();
+    scene.add(this.player);
 
-    // Animal mesh pool — a shared unit-cube geometry, one material per slot (so
-    // each animal can carry its own species tint). Hidden until claimed.
-    const unitCube = new BoxGeometry(1, 1, 1);
-    for (let i = 0; i < SPAWN.maxAnimals; i++) {
-      const m = new Mesh(unitCube, new MeshStandardMaterial({ roughness: 0.8 }));
-      m.visible = false;
-      this.animalMeshes.push(m);
-      scene.add(m);
+    // Per-species model pools — built once, hidden until claimed.
+    this.animalPools = {} as Record<SpeciesId, Group[]>;
+    this.claimed = {} as Record<SpeciesId, number>;
+    for (const id of SPECIES_ORDER) {
+      const pool: Group[] = [];
+      for (let i = 0; i < SPAWN.maxAnimals; i++) {
+        const model = buildAnimalModel(SPECIES[id]);
+        model.visible = false;
+        pool.push(model);
+        scene.add(model);
+      }
+      this.animalPools[id] = pool;
+      this.claimed[id] = 0;
     }
 
     // Target ring — a flat torus that lies on the ground under the target.
@@ -74,44 +79,41 @@ export class EntityRenderer {
     scene.add(this.baitMarker);
   }
 
-  /** Sync all entity meshes to the interpolated game state. Reads only. */
+  /** Sync all entity models to the interpolated game state. Reads only. */
   sync(state: GameState, alpha: number): void {
     const p = state.player;
-    this.marker.position.set(
-      lerp(p.prevX, p.x, alpha),
-      PLAYER.radius,
-      lerp(p.prevY, p.y, alpha),
-    );
+    this.player.position.set(lerp(p.prevX, p.x, alpha), 0, lerp(p.prevY, p.y, alpha));
+    EntityRenderer.faceTravel(this.player, p.facingX, p.facingY);
 
-    // Active animals claim meshes in order; leftovers are hidden. (Pool sizes
-    // match, so this never runs short.)
+    // Claim a model of each active animal's species; squash the encounter target.
+    for (const id of SPECIES_ORDER) this.claimed[id] = 0;
     const enc = state.encounter;
-    let mi = 0;
     for (let idx = 0; idx < state.animals.length; idx++) {
       const a = state.animals[idx];
       if (!a.active) continue;
-      const mesh = this.animalMeshes[mi++];
-      const def = getSpecies(a.species);
-      const size = def.size;
-      mesh.position.set(
-        lerp(a.prevX, a.x, alpha),
-        size / 2,
-        lerp(a.prevY, a.y, alpha),
-      );
-      // The animal in the active encounter plays back the resolved shake DATA as
-      // a squash per beat (settle on catch). Everyone else is a plain cube.
+      const model = this.animalPools[a.species][this.claimed[a.species]++];
+      model.position.set(lerp(a.prevX, a.x, alpha), 0, lerp(a.prevY, a.y, alpha));
+      EntityRenderer.faceTravel(model, a.facingX, a.facingY);
       if (enc && enc.animalIndex === idx) {
-        EntityRenderer.applySquash(mesh, enc, size);
+        EntityRenderer.applySquash(model, enc);
       } else {
-        mesh.scale.set(size, size, size);
+        model.scale.set(1, 1, 1);
       }
-      (mesh.material as MeshStandardMaterial).color.setHex(def.color);
-      mesh.visible = true;
+      model.visible = true;
     }
-    for (; mi < this.animalMeshes.length; mi++) this.animalMeshes[mi].visible = false;
+    // Hide every unclaimed model in each species pool.
+    for (const id of SPECIES_ORDER) {
+      const pool = this.animalPools[id];
+      for (let i = this.claimed[id]; i < pool.length; i++) pool[i].visible = false;
+    }
 
     this.syncTargetRing(state, alpha);
     this.syncBaitMarker(state);
+  }
+
+  /** Yaw a model to face its travel direction (game facing -> three +z forward). */
+  private static faceTravel(g: Group, fx: number, fy: number): void {
+    if (fx !== 0 || fy !== 0) g.rotation.y = Math.atan2(fx, fy);
   }
 
   /** Ring under the current target — colour shows baited vs armed, with a gentle
@@ -143,32 +145,27 @@ export class EntityRenderer {
   }
 
   /**
-   * Squash the target's mesh to match the encounter's CURRENT beat — driven
-   * purely by the resolved data (phase / shakeIndex / beatTimer), never by a
-   * separate animation that could diverge from the odds. Each shake wobbles
-   * (squash down, bulge out); a caught animal shrinks into the net on the settle
-   * beat; an escapee stays full-size (it bolts once the encounter clears).
+   * Squash the target model to match the encounter's CURRENT beat — a scale
+   * FACTOR around 1 applied to the foot-origin Group (so it compresses toward the
+   * ground), driven purely by the resolved data (phase / beatTimer), never by a
+   * separate animation that could diverge from the odds.
    */
-  private static applySquash(mesh: Mesh, enc: Encounter, size: number): void {
+  private static applySquash(g: Group, enc: Encounter): void {
     if (enc.phase === 'shaking') {
       const progress = clamp(1 - enc.beatTimer / CATCH.shakeBeatSec, 0, 1);
       const pulse = Math.sin(progress * Math.PI); // 0 -> 1 -> 0 across the beat
       const s = pulse * CATCH.squashIntensity;
-      mesh.scale.set(size * (1 + s * CATCH.squashWidthRatio), size * (1 - s), size * (1 + s * CATCH.squashWidthRatio));
+      g.scale.set(1 + s * CATCH.squashWidthRatio, 1 - s, 1 + s * CATCH.squashWidthRatio);
     } else if (enc.phase === 'resolving' && enc.caught) {
       // Caught: shrink into the net over the settle beat.
-      const shrink = clamp(enc.beatTimer / CATCH.resolveBeatSec, 0, 1); // 1 -> 0
-      const s = size * shrink;
-      mesh.scale.set(s, s, s);
+      g.scale.setScalar(clamp(enc.beatTimer / CATCH.resolveBeatSec, 0, 1)); // 1 -> 0
     } else if (enc.phase === 'resolving') {
-      // Escape: a break-out POP that peaks early then settles — reads as "it
-      // lunged free" (the AI flee carries it away once the encounter clears).
+      // Escape: a break-out POP that peaks early then settles ("it lunged free").
       const progress = clamp(1 - enc.beatTimer / CATCH.resolveBeatSec, 0, 1); // 0 -> 1
       const pop = Math.sin(progress * Math.PI); // 0 -> 1 -> 0
-      const s = size * (1 + pop * (CATCH_FX.escapePop - 1));
-      mesh.scale.set(s, s, s);
+      g.scale.setScalar(1 + pop * (CATCH_FX.escapePop - 1));
     } else {
-      mesh.scale.set(size, size, size);
+      g.scale.set(1, 1, 1);
     }
   }
 }

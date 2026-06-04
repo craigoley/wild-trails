@@ -17,13 +17,14 @@ import {
   AmbientLight,
   Color,
   DirectionalLight,
+  HemisphereLight,
   OrthographicCamera,
   Scene,
   Vector3,
   WebGLRenderer,
 } from 'three';
 import type { GameState } from '../game/GameState';
-import { CAMERA, KEY_LIGHT_POS, PALETTE, TUNING } from '../utils/constants';
+import { CAMERA, KEY_LIGHT_POS, LIGHTING, PALETTE, TUNING } from '../utils/constants';
 import { deadZoneFollow, lerp, type Vec2 } from '../utils/math';
 
 export class SceneManager {
@@ -50,10 +51,12 @@ export class SceneManager {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(this.renderer.domElement);
 
-    // Slightly directional lighting so the marker's top reads against the
-    // ground. Lit from above and to one side so iso boxes cast readable shading.
-    this.scene.add(new AmbientLight(0xffffff, 0.85));
-    const key = new DirectionalLight(0xffffff, 0.6);
+    // Low-poly lighting: a modest ambient base, a directional KEY from above/one
+    // side (so flat-shaded facets read as 3D), and a hemisphere fill (warm sky
+    // over meadow-green ground) for a soft Monument-Valley gradient.
+    this.scene.add(new AmbientLight(0xffffff, LIGHTING.ambient));
+    this.scene.add(new HemisphereLight(LIGHTING.hemiSky, LIGHTING.hemiGround, LIGHTING.hemiIntensity));
+    const key = new DirectionalLight(0xffffff, LIGHTING.keyIntensity);
     key.position.set(KEY_LIGHT_POS.x, KEY_LIGHT_POS.y, KEY_LIGHT_POS.z);
     this.scene.add(key);
 
