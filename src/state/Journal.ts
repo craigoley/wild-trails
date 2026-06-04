@@ -18,7 +18,7 @@
  * (absence === not found). Catch METHOD is still not persisted.
  */
 
-import type { BiomeId, SpeciesId } from '../utils/constants';
+import type { BiomeId } from '../utils/constants';
 
 const STORAGE_KEY = 'wild-trails:journal';
 
@@ -211,6 +211,3 @@ export function saveJournal(journal: Journal): void {
     // Private-mode / quota failure: keep running with the in-memory journal.
   }
 }
-
-// Re-exported so the mission engine can type catch events without re-importing.
-export type { BiomeId, SpeciesId };

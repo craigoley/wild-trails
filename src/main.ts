@@ -48,7 +48,9 @@ const game = createGameState(bootSeed);
 const journal = loadJournal();
 // Apply persisted mission-granted unlocks to the live world at boot (so a
 // returning player keeps the regions they earned). Reuses World's unlock path.
-for (const id of journal.unlockedBiomes) unlockBiome(game.world, id as BiomeId);
+for (const id of journal.unlockedBiomes) {
+  if (id in game.world.biomes) unlockBiome(game.world, id as BiomeId);
+}
 if (isDebugEnabled()) {
   const species = Object.keys(journal.species).length;
   console.info(`[journal] v${journal.schemaVersion} loaded, ${species} species recorded`);
