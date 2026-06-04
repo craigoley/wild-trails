@@ -100,6 +100,54 @@ body {
 .action-btn:active {
   background: rgba(255, 179, 71, 0.4);
 }
+/* CATCH disarmed when no animal is in range — dimmed so the player learns range
+ * by seeing it "arm" on approach. */
+.action-btn.disabled {
+  opacity: 0.35;
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+}
+/* Brief confirmation flash when bait is deployed. */
+.action-bait.pulse {
+  animation: bait-pulse 0.32s ease-out;
+}
+@keyframes bait-pulse {
+  0% { background: rgba(255, 209, 102, 0.9); transform: scale(1.18); }
+  100% { background: rgba(255, 179, 71, 0.18); transform: scale(1); }
+}
+
+/* First-time "try bait" affordance, near the BAIT button. */
+.bait-hint {
+  position: fixed;
+  right: 120px;
+  bottom: 132px;
+  z-index: 26;
+  color: rgba(255, 209, 102, 0.95);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  animation: hint-bob 1s ease-in-out infinite;
+}
+@keyframes hint-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* The big result flash — centred, fades via inline opacity from the HUD. */
+.hud-result {
+  position: fixed;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  transition: opacity 0.1s linear;
+}
 .action-catch {
   right: 28px;
   bottom: 96px;

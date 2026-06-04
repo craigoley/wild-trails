@@ -24,6 +24,7 @@ import {
   activeAnimalCount,
   createAnimalPool,
   despawnAnimal,
+  nearestActiveAnimal,
   updateAnimal,
   type Animal,
 } from './Animal';
@@ -35,10 +36,20 @@ import {
   startEncounter,
   type Encounter,
 } from './Encounter';
-import { activeLure, createBaitState, cycleSelectedBait, deployBait, tickBait, type BaitState } from './Bait';
+import {
+  activeLure,
+  createBaitState,
+  cycleSelectedBait,
+  deployBait,
+  isCorrectBaitFor,
+  tickBait,
+  type BaitState,
+} from './Bait';
+import { finalCatchChance } from './Catch';
+import { getSpecies } from './Species';
 import { STARTER_TOOL, type ToolId } from './Tools';
 import { createRng, type Rng } from '../utils/rng';
-import { SPAWN } from '../utils/constants';
+import { CATCH, CATCH_FX, SPAWN } from '../utils/constants';
 import type { InputIntent } from './Input';
 
 /** Default seed when none is supplied (keeps no-arg callers/tests deterministic;
@@ -66,6 +77,15 @@ export interface Telemetry {
  *  fire the settle/break cue. Consumed (cleared) by the renderer. */
 export type EncounterOutcome = 'caught' | 'escaped' | null;
 
+/** A lingering "Got it!" / "It got away!" flash anchored at the animal, ticking
+ *  down so the renderer can fade it out. PR #5.1 legibility. */
+export interface ResultFlash {
+  outcome: 'caught' | 'escaped';
+  x: number;
+  y: number;
+  timer: number;
+}
+
 export interface GameState {
   player: PlayerState;
   world: World;
@@ -83,6 +103,23 @@ export interface GameState {
   encounter: Encounter | null;
   /** Outcome of the encounter that resolved THIS step (one-shot; for fx). */
   lastOutcome: EncounterOutcome;
+  /** A lingering result flash (caught/escaped), or null. */
+  resultFlash: ResultFlash | null;
+  // --- Targeting (PR #5.1 — "who am I catching") ---------------------------
+  /** Pool index of the current catch target (nearest in-range animal, or the
+   *  encounter's animal while one is in flight); -1 if none. */
+  targetIndex: number;
+  /** True when there's a target AND no encounter — i.e. CATCH would fire. */
+  catchArmed: boolean;
+  /** Live finalCatchChance for the current target (0 when none) — a preview that
+   *  jumps when the player baits, so the diet loop is legible. */
+  targetChance: number;
+  /** Is the correct bait active on the current target's species? */
+  targetBaited: boolean;
+  /** Has the player ever deployed bait? Gates the first-time "try bait" hint. */
+  usedBaitEver: boolean;
+  /** Bait was deployed THIS step (one-shot; for the deploy confirmation fx). */
+  baitJustDeployed: boolean;
   /** In-memory catches this session (Journal persistence is PR #7). */
   sessionCatches: number;
   telemetry: Telemetry;
@@ -103,6 +140,13 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
     bait: createBaitState(),
     encounter: null,
     lastOutcome: null,
+    resultFlash: null,
+    targetIndex: -1,
+    catchArmed: false,
+    targetChance: 0,
+    targetBaited: false,
+    usedBaitEver: false,
+    baitJustDeployed: false,
     sessionCatches: 0,
     telemetry: {
       eligible: 0,
@@ -121,7 +165,8 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
 
 /** Advance the simulation one fixed step. The ONLY mutation path. */
 export function update(game: GameState, intent: InputIntent, dt: number): void {
-  game.lastOutcome = null; // one-shot fx flag, fresh each step
+  game.lastOutcome = null; // one-shot fx flags, fresh each step
+  game.baitJustDeployed = false;
   game.timeSec += dt;
   updatePlayer(game.player, intent, dt, game.world);
 
@@ -136,9 +181,18 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
   }
   if (intent.baitDeploy) {
     intent.baitDeploy = false;
-    deployBait(game.bait, game.player.x, game.player.y);
+    if (deployBait(game.bait, game.player.x, game.player.y)) {
+      game.usedBaitEver = true;
+      game.baitJustDeployed = true; // one-shot: drives the deploy confirmation fx
+    }
   }
   tickBait(game.bait, dt);
+
+  // Tick down the lingering result flash.
+  if (game.resultFlash) {
+    game.resultFlash.timer -= dt;
+    if (game.resultFlash.timer <= 0) game.resultFlash = null;
+  }
 
   // --- Catch encounter -----------------------------------------------------
   if (game.encounter) {
@@ -194,6 +248,49 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
       game.telemetry.despawned++;
     }
   }
+
+  // --- Targeting (computed last, from final positions) ---------------------
+  updateTarget(game);
+}
+
+/**
+ * Recompute the catch target + its live preview chance. During an encounter the
+ * target is locked to the encounter's animal; otherwise it's the nearest active
+ * animal within reach (the same proximity gate startEncounter uses). PURE read.
+ */
+function updateTarget(game: GameState): void {
+  if (game.encounter) {
+    const a = game.animals[game.encounter.animalIndex];
+    game.targetIndex = game.encounter.animalIndex;
+    game.catchArmed = false; // already mid-attempt
+    game.targetChance = game.encounter.chance;
+    game.targetBaited = isCorrectBaitFor(getSpecies(a.species), game.bait);
+    return;
+  }
+  const idx = nearestActiveAnimal(
+    game.animals,
+    game.player.x,
+    game.player.y,
+    CATCH.attemptRadius,
+  );
+  game.targetIndex = idx;
+  game.catchArmed = idx >= 0;
+  if (idx < 0) {
+    game.targetChance = 0;
+    game.targetBaited = false;
+    return;
+  }
+  const a = game.animals[idx];
+  const def = getSpecies(a.species);
+  const dist = Math.hypot(a.x - game.player.x, a.y - game.player.y);
+  game.targetBaited = isCorrectBaitFor(def, game.bait);
+  game.targetChance = finalCatchChance(def, {
+    dist,
+    tool: game.tool,
+    biome: game.currentBiome,
+    correctBait: game.targetBaited,
+    fleeing: a.aiState === 'flee',
+  });
 }
 
 /** Apply a resolved encounter's outcome and clear it. */
@@ -201,6 +298,8 @@ function resolveOutcome(game: GameState, outcome: 'caught' | 'escaped'): void {
   const enc = game.encounter!;
   const animal = game.animals[enc.animalIndex];
   game.telemetry.shakesSurvived = shakesSurvived(enc);
+  // Anchor the lingering result flash at the animal before anything moves it.
+  game.resultFlash = { outcome, x: animal.x, y: animal.y, timer: CATCH_FX.resultFlashSec };
   if (outcome === 'caught') {
     despawnAnimal(animal);
     game.sessionCatches++;
