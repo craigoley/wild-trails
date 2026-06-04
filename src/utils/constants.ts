@@ -304,7 +304,8 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     activityWindow: 'any',
     tier: 1,
     // EASY: slow flee (2.6) + common. High base so a starter mouse is reliable.
-    baseCatchRate: 0.75,
+    // Plan #12 spread (~0.82): 0.75 -> 0.62 so skill (bait/proximity) matters more.
+    baseCatchRate: 0.62,
     bait: 'seeds',
     color: 0x8a7b6b,
     size: 0.45,
@@ -323,7 +324,8 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     activityWindow: 'any',
     tier: 1,
     // MEDIUM: brisk flee (3.8) — catchable bare, but the right bait clearly helps.
-    baseCatchRate: 0.5,
+    // Plan #12 spread (~0.82): 0.50 -> 0.41.
+    baseCatchRate: 0.41,
     bait: 'greens',
     color: 0xb8a584,
     size: 0.55,
@@ -343,7 +345,8 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     tier: 1,
     // HARD: fastest + wariest (flee 4.0, detection 4.0). Low base so seeds (its
     // diet) are effectively REQUIRED — the moment bait stops feeling optional.
-    baseCatchRate: 0.32,
+    // Plan #12 spread (~0.82): 0.32 -> 0.26.
+    baseCatchRate: 0.26,
     bait: 'seeds',
     color: 0x9c7b4a,
     size: 0.5,
@@ -360,7 +363,9 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     activityWindow: 'dusk',
     tier: 1,
     // EASIEST: slowest + most docile (flee 1.8). The confidence-building catch.
-    baseCatchRate: 0.85,
+    // Plan #12 spread (~0.82): 0.85 -> 0.70 (still the most catchable; point-blank
+    // ~0.91 bare, so even the easy one isn't a guaranteed tap without help).
+    baseCatchRate: 0.7,
     bait: 'insects',
     color: 0x5c4a3a,
     size: 0.5,
@@ -379,7 +384,8 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     detectionRadius: 4.2,
     activityWindow: 'day',
     tier: 2,
-    baseCatchRate: 0.42,
+    // Plan #12 spread (~0.82): 0.42 -> 0.34.
+    baseCatchRate: 0.34,
     bait: 'seeds',
     color: 0xb5632a,
     size: 0.5,
@@ -391,13 +397,14 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     displayName: 'Robin',
     biome: 'woodland',
     spawnWeight: 3,
-    // TIER 2: the hardest yet — baseCatchRate 0.30 (below the Meadow min 0.32),
-    // flee 4.6 (above the Meadow max 4.0). A flighty dawn songbird.
+    // TIER 2: the hardest yet — baseCatchRate (below the Meadow min), flee 4.6
+    // (above the Meadow max 4.0). A flighty dawn songbird.
     baseFleeSpeed: 4.6,
     detectionRadius: 4.5,
     activityWindow: 'dawn',
     tier: 2,
-    baseCatchRate: 0.3,
+    // Plan #12 spread (~0.82): 0.30 -> 0.25 (still the hardest; > 0, catchable).
+    baseCatchRate: 0.25,
     bait: 'insects',
     color: 0x9c5042,
     size: 0.42,
