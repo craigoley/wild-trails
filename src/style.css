@@ -1,0 +1,91 @@
+/**
+ * Global styles. The game is a single full-viewport WebGL canvas with an HTML
+ * overlay (HUD + the on-screen joystick) on top. No scrolling, no selection,
+ * no tap-highlight — it must feel like a native game, not a web page.
+ */
+
+:root {
+  color-scheme: dark;
+  --bg: #0d1f12;
+  --player: #ffb347;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  /* Native-game feel: no text selection, no long-press menu, no tap flash. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  overscroll-behavior: none;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+}
+
+/* The WebGL canvas fills the viewport. */
+#app canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* HTML overlay layer — above the canvas, click-through by default. */
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* --- On-screen touch joystick ------------------------------------------- */
+/* Base + thumb are absolutely positioned and centred on their (left, top) via a
+ * -50% translate, so the JS only sets the centre point. */
+.touch-stick-base,
+.touch-stick-thumb {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.touch-stick-base {
+  width: 120px;
+  height: 120px;
+  border: 2px solid rgba(255, 179, 71, 0.4);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.touch-stick-thumb {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 179, 71, 0.55);
+}
+
+/* Control hint — bottom-centre, fades into the corner. */
+.touch-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  z-index: 20;
+}
