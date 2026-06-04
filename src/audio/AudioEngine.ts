@@ -51,6 +51,19 @@ export class AudioEngine {
     this.tone(AUDIO.baitHz, AUDIO.baitDuration, 'sine', AUDIO.baitGain);
   }
 
+  /** A two-note rising chime on a mission completion. */
+  missionTone(): void {
+    this.tone(AUDIO.missionHz, AUDIO.missionDuration, 'triangle', AUDIO.missionGain);
+    this.tone(AUDIO.missionHz * AUDIO.missionHarmonicRatio, AUDIO.missionDuration, 'triangle', AUDIO.missionGain, AUDIO.missionDuration);
+  }
+
+  /** A three-note rising fanfare when a new area unlocks (the spine's payoff). */
+  unlockFanfare(): void {
+    this.tone(AUDIO.unlockHz, AUDIO.missionDuration, 'triangle', AUDIO.unlockGain);
+    this.tone(AUDIO.unlockHz * AUDIO.unlockNote2Ratio, AUDIO.missionDuration, 'triangle', AUDIO.unlockGain, AUDIO.missionDuration);
+    this.tone(AUDIO.unlockHz * AUDIO.unlockNote3Ratio, AUDIO.missionDuration * AUDIO.unlockNote3DurScale, 'triangle', AUDIO.unlockGain, AUDIO.missionDuration * 2);
+  }
+
   /** A low "denied" buzz when a deploy is blocked (out of bait). */
   denyBlip(): void {
     this.tone(AUDIO.denyHz, AUDIO.denyDuration, 'square', AUDIO.denyGain);
