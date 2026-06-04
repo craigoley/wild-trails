@@ -1,74 +1,133 @@
 /**
- * The Field Journal — the player's persistent creature dex, backed by
- * localStorage. This is the ONLY persistence in the game: a static, client-side
- * title with no backend, no accounts, and no network calls.
+ * The Field Journal — the player's persistent creature dex, and the OleyArcade
+ * fleet's FIRST real localStorage collection. A static, client-side title: no
+ * backend, no accounts, no network. The journal is cross-session meta-progress,
+ * so it lives at the boundary (main), NOT in the per-run GameState.
  *
- * Every access is wrapped in try/catch: Safari Private Mode throws on
- * `localStorage` writes (and can throw on reads), so the game must degrade to an
- * in-memory journal rather than crash. Load also tolerates a partial or
- * older-version payload (it merges over the defaults) so a malformed entry never
- * takes the game down.
+ * SAFETY (load-bearing — this is the fleet's first persistence):
+ *  - Every localStorage access is wrapped in try/catch. Safari Private Mode
+ *    throws on setItem (and can throw on reads); a failed read/write is a no-op
+ *    that degrades to an in-memory journal — it NEVER escapes as an exception.
+ *  - Corrupt / unparseable stored JSON falls back to a fresh empty store.
+ *  - The schema is VERSIONED and load routes through a migration hook, so Plan
+ *    #8 can bump the version and upgrade old stores without a reset.
  *
- * Phase 0 ships only the shape + safe load/save + a version field; NO species
- * are populated yet. The catch loop writes `seen`/`caught`/`bestCatchShakes` per
- * species in a later phased PR — this guard is what those writes go through.
+ * SCHEMA (v1): only CAUGHT species get an entry — absence === not found yet, so
+ * the "silhouette" logic is just "does this species have an entry". The record
+ * is a clean what/when: caught + how many times + when first caught. Catch METHOD
+ * (bait/tool/cover) is deliberately NOT persisted.
  */
 
 const STORAGE_KEY = 'wild-trails:journal';
 
-/** Bump when the persisted shape changes incompatibly; load() migrates/falls
- *  back to defaults on a mismatch rather than trusting a stale shape. */
-export const JOURNAL_VERSION = 1;
+/** Current persisted schema version. Bump when the shape changes incompatibly;
+ *  add a step to `migrate` so old stores upgrade rather than reset. */
+export const JOURNAL_SCHEMA_VERSION = 1;
 
-/** Per-species record in the Field Journal. */
+/** Per-species record. An entry exists IFF the species has been caught. */
 export interface SpeciesRecord {
-  /** Has the player ever encountered this species in the wild? */
-  seen: boolean;
-  /** Has the player ever successfully caught this species? */
-  caught: boolean;
-  /** Fewest shakes a successful catch ever took (lower = a cleaner catch);
-   *  0 = never caught. */
-  bestCatchShakes: number;
+  /** Always true (an entry only exists once caught) — explicit for the schema. */
+  caught: true;
+  /** How many times this species has been caught. */
+  catchCount: number;
+  /** When it was FIRST caught (epoch ms). Never changes after the first catch. */
+  firstCaughtAt: number;
 }
 
 export interface Journal {
-  /** Schema version of the persisted payload. */
-  version: number;
-  /** Per-species progress, keyed by species id. Empty until the catch loop
-   *  lands; populated lazily as species are seen/caught. */
+  /** Persisted schema version. */
+  schemaVersion: number;
+  /** Per-species progress, keyed by species id. Only caught species appear. */
   species: Record<string, SpeciesRecord>;
 }
 
+/** A fresh, empty journal (nothing found yet). */
 export function createJournal(): Journal {
-  return { version: JOURNAL_VERSION, species: {} };
+  return { schemaVersion: JOURNAL_SCHEMA_VERSION, species: {} };
+}
+
+// ---------------------------------------------------------------------------
+// Pure record + query API (no DOM — fully Node-testable)
+// ---------------------------------------------------------------------------
+
+/**
+ * Record a successful catch. The FIRST catch of a species creates its entry
+ * (catchCount = 1, firstCaughtAt = now); subsequent catches increment catchCount
+ * and LEAVE firstCaughtAt unchanged (re-stamping the date on every catch is the
+ * classic bug this guards against). `nowMs` is passed in so the pure layer never
+ * reads the clock.
+ */
+export function recordCatch(journal: Journal, speciesId: string, nowMs: number): void {
+  const entry = journal.species[speciesId];
+  if (entry) {
+    entry.catchCount += 1;
+  } else {
+    journal.species[speciesId] = { caught: true, catchCount: 1, firstCaughtAt: nowMs };
+  }
+}
+
+/** Has this species been found (caught at least once)? Drives the silhouette. */
+export function isFound(journal: Journal, speciesId: string): boolean {
+  return journal.species[speciesId] !== undefined;
+}
+
+/** Number of species found (caught) — the "X of N found" header count. */
+export function foundCount(journal: Journal): number {
+  return Object.keys(journal.species).length;
+}
+
+// ---------------------------------------------------------------------------
+// Migration + (de)serialization
+// ---------------------------------------------------------------------------
+
+/** Type guard for a well-formed v1 species record. */
+function isSpeciesRecord(v: unknown): v is SpeciesRecord {
+  if (typeof v !== 'object' || v === null) return false;
+  const r = v as Record<string, unknown>;
+  return r.caught === true && typeof r.catchCount === 'number' && typeof r.firstCaughtAt === 'number';
 }
 
 /**
- * Load the Field Journal from localStorage, degrading SAFELY to a fresh in-memory
- * journal on any failure (private mode, quota, corrupt JSON) or version mismatch.
- * Never throws.
+ * The migration HOOK: turn an arbitrary parsed payload into a valid current-
+ * schema Journal. Routes by `schemaVersion`. v1 has nothing to migrate FROM, so
+ * a current-version payload is sanitized through and anything older/missing/
+ * unknown resets to a fresh store — but the hook EXISTS and fires, so Plan #8
+ * can add `case 1 -> 2` upgrade steps here without touching callers.
+ */
+export function migrate(parsed: unknown): Journal {
+  if (typeof parsed !== 'object' || parsed === null) return createJournal();
+  const obj = parsed as { schemaVersion?: unknown; species?: unknown };
+
+  // Future upgrades insert here: e.g. if (obj.schemaVersion === 1) obj = up_1to2(obj).
+  if (obj.schemaVersion !== JOURNAL_SCHEMA_VERSION) return createJournal();
+
+  const species: Record<string, SpeciesRecord> = {};
+  if (typeof obj.species === 'object' && obj.species !== null) {
+    for (const [id, rec] of Object.entries(obj.species as Record<string, unknown>)) {
+      if (isSpeciesRecord(rec)) species[id] = rec;
+    }
+  }
+  return { schemaVersion: JOURNAL_SCHEMA_VERSION, species };
+}
+
+/**
+ * Load the journal from localStorage, degrading SAFELY to a fresh store on ANY
+ * failure (private mode, quota, corrupt JSON, version mismatch). Never throws.
  */
 export function loadJournal(): Journal {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return createJournal();
-    const parsed = JSON.parse(raw) as Partial<Journal>;
-    // Unknown / older version: don't trust the shape — start fresh. (Real
-    // migrations slot in here when the schema first changes.)
-    if (parsed.version !== JOURNAL_VERSION) return createJournal();
-    return {
-      version: JOURNAL_VERSION,
-      species: parsed.species ?? {},
-    };
+    return migrate(JSON.parse(raw));
   } catch {
     return createJournal();
   }
 }
 
 /**
- * Persist the Field Journal. A private-mode / quota failure is swallowed so the
- * game keeps running with the in-memory journal — a failed save must NEVER crash
- * the game.
+ * Persist the journal. A private-mode / quota failure is swallowed (a no-op) so
+ * the game keeps running with the in-memory journal — a failed save must NEVER
+ * crash the game.
  */
 export function saveJournal(journal: Journal): void {
   try {
