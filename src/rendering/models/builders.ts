@@ -84,9 +84,43 @@ export function buildAnimalModel(def: SpeciesDef): Group {
       return buildBird(def);
     case 'hedgehog':
       return buildHedgehog(def);
+    case 'frog':
+      return buildFrog(def);
     default:
-      return buildQuadruped(def); // mouse + rabbit share the quadruped base
+      return buildQuadruped(def); // mouse + rabbit + squirrel share the quadruped base
   }
+}
+
+/** A squat frog: a low wide body, two big eye-bumps near the front, and folded
+ *  back haunches (the jumper's legs). Its own minimal build — zero assets. */
+function buildFrog(def: SpeciesDef): Group {
+  const B = ANIMAL_MODEL_BASE;
+  const cfg = SPECIES_MODEL[def.id];
+  const s = def.size;
+  const g = new Group();
+  const body = flatMat(def.color);
+  const accent = flatMat(cfg.accent);
+
+  const bodyR = s * B.bodyRadiusR * 1.3; // wide for its height
+  const bodyY = bodyR * 0.55; // sits low to the ground
+  const bodyMesh = add(g, new SphereGeometry(bodyR, SEG, SEG), body, 0, bodyY, 0);
+  bodyMesh.scale.set(1.15, 0.7, 1.3); // flattened + stretched forward
+
+  // Two big eye-bumps on top, near the front.
+  const eyeR = s * (cfg.eyeRadiusR ?? 0.25);
+  const eyeY = bodyY + bodyR * 0.45;
+  const eyeZ = bodyR * 0.55;
+  for (const sx of [-1, 1]) {
+    add(g, new SphereGeometry(eyeR, SEG, SEG), accent, sx * bodyR * 0.4, eyeY, eyeZ);
+  }
+
+  // Folded back haunches — two angled bumps at the rear.
+  const hauR = bodyR * 0.55;
+  for (const sx of [-1, 1]) {
+    const hau = add(g, new SphereGeometry(hauR, SEG, SEG), body, sx * bodyR * 0.7, bodyY, -bodyR * 0.6);
+    hau.scale.set(0.7, 0.7, 1.1);
+  }
+  return g;
 }
 
 /** Shared quadruped: capsule body along z, four legs, head + snout at +z. */
