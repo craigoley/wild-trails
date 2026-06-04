@@ -123,12 +123,12 @@ export class Controls {
    *  and the greyed/non-selectable state for empty baits (the #5.3 scarcity made
    *  visible). READS bait state; never mutates it. */
   setBaitTray(bait: BaitState): void {
-    BAIT_ORDER.forEach((id, i) => {
-      const count = bait.counts[id];
-      this.trayCounts[i].textContent = `×${count}`;
+    for (let i = 0; i < BAIT_ORDER.length; i++) {
+      const id = BAIT_ORDER[i];
+      this.trayCounts[i].textContent = `×${bait.counts[id]}`;
       this.trayChips[i].classList.toggle('selected', bait.selected === id);
       this.trayChips[i].classList.toggle('empty', !isBaitSelectable(bait, id));
-    });
+    }
   }
 
   /** Create an on-screen button that fires an edge action on press. */
