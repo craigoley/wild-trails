@@ -21,9 +21,9 @@ describe('Spawn — eligibility gating (biome + time of day)', () => {
   });
 
   it('gates by biome: biomes with no roster yet have no eligible species', () => {
-    // Woodland gained a roster in Plan #8; Wetland + Highlands are still empty.
-    expect(eligibleSpecies('wetland', 'dawn')).toHaveLength(0);
+    // Wetland gained a roster in Plan #9; only Highlands is still empty.
     expect(eligibleSpecies('highlands', 'day')).toHaveLength(0);
+    expect(eligibleSpecies('highlands', 'night')).toHaveLength(0);
   });
 });
 

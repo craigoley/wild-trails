@@ -230,7 +230,12 @@ export type SpeciesId =
   | 'hedgehog'
   // Woodland (tier 2 — rarer / faster / warier than the Meadow roster).
   | 'redsquirrel'
-  | 'robin';
+  | 'robin'
+  | 'badger'
+  | 'roedeer'
+  // Wetland (tier 3 — the hardest roster yet).
+  | 'mallard'
+  | 'frog';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -285,6 +290,10 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'hedgehog',
   'redsquirrel',
   'robin',
+  'badger',
+  'roedeer',
+  'mallard',
+  'frog',
 ];
 
 /**
@@ -410,6 +419,77 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     size: 0.42,
     profile:
       'Robins sing from first light and hunt insects, worms and grubs — often following a digging gardener for an easy meal. They are bold but flighty, quick to flit off.',
+  },
+  // --- Woodland, tier 2 (Plan #9) — deepen the biome ---
+  badger: {
+    id: 'badger',
+    displayName: 'Badger',
+    biome: 'woodland',
+    spawnWeight: 3,
+    // SLOW but WARY: low flee (3.6) yet a low catch rate — it's caution, not speed
+    // (wide detection). The night-only animal: be out after dark to find it.
+    baseFleeSpeed: 3.6,
+    detectionRadius: 4.0,
+    activityWindow: 'night',
+    tier: 2,
+    baseCatchRate: 0.32,
+    bait: 'insects',
+    color: 0x44444a,
+    size: 0.6,
+    profile:
+      'Badgers live underground in setts and come out at night to snuffle for earthworms, their favourite food. Their bold black-and-white striped face is a warning to leave them be.',
+  },
+  roedeer: {
+    id: 'roedeer',
+    displayName: 'Roe Deer',
+    biome: 'woodland',
+    spawnWeight: 2,
+    // FAST + skittish: flee 4.6 (tied with the robin), a low rate. A dusk browser.
+    baseFleeSpeed: 4.6,
+    detectionRadius: 4.4,
+    activityWindow: 'dusk',
+    tier: 2,
+    baseCatchRate: 0.28,
+    bait: 'greens',
+    color: 0xa9784e,
+    size: 0.7,
+    profile:
+      'Roe deer browse on leaves, shoots and brambles at dawn and dusk, slipping between the trees. They freeze at the faintest sound, then bound away with a sharp bark.',
+  },
+  // --- Wetland, tier 3 (Plan #9) — the hardest roster: rate below the Woodland band ---
+  mallard: {
+    id: 'mallard',
+    displayName: 'Mallard',
+    biome: 'wetland',
+    spawnWeight: 4,
+    baseFleeSpeed: 4.4,
+    detectionRadius: 4.2,
+    activityWindow: 'day',
+    tier: 3,
+    baseCatchRate: 0.24,
+    bait: 'greens',
+    color: 0x2f5d3a,
+    size: 0.5,
+    profile:
+      'Mallards dabble at the water\'s surface, tipping upside-down to reach pondweed and seeds. The male\'s glossy green head shines in the sun; both burst into noisy flight when startled.',
+  },
+  frog: {
+    id: 'frog',
+    displayName: 'Common Frog',
+    biome: 'wetland',
+    spawnWeight: 5,
+    // HARDEST yet (0.20): tiny, skittish, the fastest flee (4.8) — a single leap to
+    // the water. Catchable, but only with the right approach + bait.
+    baseFleeSpeed: 4.8,
+    detectionRadius: 4.5,
+    activityWindow: 'dawn',
+    tier: 3,
+    baseCatchRate: 0.2,
+    bait: 'insects',
+    color: 0x5f8f3f,
+    size: 0.32,
+    profile:
+      'Common frogs catch insects, slugs and worms with a flick of their sticky tongue. They breathe through damp skin and escape danger with one powerful leap back into the water.',
   },
 };
 
@@ -808,7 +888,7 @@ export const LIGHTING = {
 // ===========================================================================
 
 /** Which procedural shape a species is built from. */
-export type ModelKind = 'mouse' | 'rabbit' | 'bird' | 'hedgehog' | 'squirrel';
+export type ModelKind = 'mouse' | 'rabbit' | 'bird' | 'hedgehog' | 'squirrel' | 'frog';
 
 /** Low-poly segment count for spheres/cones/cylinders (kept low for facets). */
 export const MODEL_SEGMENTS = 8;
@@ -866,6 +946,8 @@ export const SPECIES_MODEL: Record<
     crestHeightR?: number;
     spikeCount?: number;
     spikeLengthR?: number;
+    /** Frog: eye-bump radius as a fraction of body size. */
+    eyeRadiusR?: number;
   }
 > = {
   // Tiny, round, small ears, long thin tail, pointed snout.
@@ -915,6 +997,36 @@ export const SPECIES_MODEL: Record<
     beakLengthR: 0.45,
     crestHeightR: 0.4,
   },
+  // Low broad quadruped, dark with a pale snout + small ears + a short tail.
+  badger: {
+    kind: 'mouse',
+    accent: 0xe8e8ec,
+    earHeightR: 0.22,
+    earRadiusR: 0.16,
+    tailLengthR: 0.5,
+    tailRadiusR: 0.08,
+  },
+  // Tall slender quadruped with upright ears + a tiny rump tail (the deer read).
+  roedeer: {
+    kind: 'rabbit',
+    accent: 0xf0e6d2,
+    earHeightR: 0.65,
+    earRadiusR: 0.16,
+    tailRadiusR: 0.16,
+  },
+  // A duck — reuses the BIRD build; long bill, no crest.
+  mallard: {
+    kind: 'bird',
+    accent: 0xd9a441,
+    beakLengthR: 0.7,
+    crestHeightR: 0.15,
+  },
+  // Squat amphibian with two big eye-bumps (its own minimal build).
+  frog: {
+    kind: 'frog',
+    accent: 0xcfe8a8,
+    eyeRadiusR: 0.28,
+  },
 } as const;
 
 // ===========================================================================
@@ -942,7 +1054,13 @@ export interface MissionDef {
 }
 
 /** Deterministic mission order (offer + display). */
-export const MISSION_ORDER: readonly string[] = ['meadow-survey', 'meadow-dawn', 'meadow-dusk'];
+export const MISSION_ORDER: readonly string[] = [
+  'meadow-survey',
+  'meadow-dawn',
+  'meadow-dusk',
+  'woodland-survey',
+  'woodland-night',
+];
 
 /**
  * The mission table — DATA. The Meadow set teaches by APPLICATION: roam + catch
@@ -974,12 +1092,32 @@ export const MISSIONS: Record<string, MissionDef> = {
     requirement: { kind: 'catch-in-timephase', phase: 'dusk', count: 2 },
     rewardPoints: 15,
   },
+  // Woodland set (Plan #9) — completing BOTH unlocks the Wetland. Both genuinely
+  // require the woodland: survey is catch-in-biome, and the only night-active
+  // animal (the badger) lives there — so the set can't be cheated from the meadow.
+  'woodland-survey': {
+    id: 'woodland-survey',
+    biome: 'woodland',
+    title: 'Into the Trees',
+    description: 'Get to know the woodland — catch 4 animals among the trees.',
+    requirement: { kind: 'catch-in-biome', biome: 'woodland', count: 4 },
+    rewardPoints: 25,
+  },
+  'woodland-night': {
+    id: 'woodland-night',
+    biome: 'woodland',
+    title: 'After Dark',
+    description: 'Badgers only emerge once it is properly dark. Catch 1 at night.',
+    requirement: { kind: 'catch-in-timephase', phase: 'night', count: 1 },
+    rewardPoints: 25,
+  },
 };
 
 /** Completing ALL of a biome's missions unlocks the mapped biome (lateral reward
  *  — a new region + its species, not flat power, §5.5). */
 export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, BiomeId>> = {
   meadow: 'woodland',
+  woodland: 'wetland',
 };
 
 /** Field Researcher rank — a SOFT gate (missions are the hard gate, §5.5).

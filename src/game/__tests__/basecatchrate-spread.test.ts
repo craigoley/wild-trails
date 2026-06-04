@@ -19,7 +19,8 @@ describe('baseCatchRate spread (Plan #12 rebalance)', () => {
   it('keeps the hardest species catchable (> 0, not clamped to uncatchable)', () => {
     const min = Math.min(...SPECIES_ORDER.map((id) => SPECIES[id].baseCatchRate));
     expect(min).toBeGreaterThan(0);
-    expect(SPECIES.robin.baseCatchRate).toBe(min); // robin is the floor
+    // Plan #9: the Wetland frog (0.20) is the new floor, below the woodland robin (0.25).
+    expect(SPECIES.frog.baseCatchRate).toBe(min);
   });
 
   it('lands the new spread values (the rebalance, reviewable as data)', () => {
