@@ -16,6 +16,7 @@
 import {
   BoxGeometry,
   ConeGeometry,
+  CylinderGeometry,
   GridHelper,
   Group,
   Mesh,
@@ -26,7 +27,14 @@ import {
 } from 'three';
 import type { World } from '../game/World';
 import { isUnlocked, sharedBorder } from '../game/World';
-import { BIOME_RENDER, HIDING_RENDER, type HidingSpotDef, PALETTE } from '../utils/constants';
+import {
+  BIOME_RENDER,
+  HIDING_RENDER,
+  SIGN_RENDER,
+  TRACK_SIGNS,
+  type HidingSpotDef,
+  PALETTE,
+} from '../utils/constants';
 import type { Rect } from '../utils/math';
 
 /** Darken a 0xRRGGBB colour by `f` (0..1), per channel. */
@@ -96,8 +104,30 @@ export class WorldRenderer {
     // built once here; nothing per frame). Shows the player WHERE cover is.
     for (const spot of world.hidingSpots) this.addGrassCluster(spot);
 
+    // Tracking signs (Plan #8b) — static dug-earth marks in the woodland (the
+    // breadcrumb-region, not a trail). Built once; nothing per frame.
+    this.addTrackSigns();
+
     this.addGrid(world);
     scene.add(this.group);
+  }
+
+  /** A little cluster of flat dark dug-earth marks per track sign (zero-asset,
+   *  deterministic golden-angle spread — matches the hiding-spot prop pattern). */
+  private addTrackSigns(): void {
+    const markGeo = new CylinderGeometry(SIGN_RENDER.markRadius, SIGN_RENDER.markRadius, SIGN_RENDER.markHeight, 6);
+    const markMat = new MeshStandardMaterial({ color: SIGN_RENDER.color, roughness: 1 });
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    for (const sign of TRACK_SIGNS) {
+      const fill = sign.radius * SIGN_RENDER.spread;
+      for (let i = 0; i < SIGN_RENDER.markCount; i++) {
+        const r = fill * Math.sqrt((i + 0.5) / SIGN_RENDER.markCount);
+        const a = i * golden;
+        const mark = new Mesh(markGeo, markMat);
+        mark.position.set(sign.x + Math.cos(a) * r, SIGN_RENDER.markHeight / 2, sign.y + Math.sin(a) * r);
+        this.group.add(mark);
+      }
+    }
   }
 
   /** A cluster of thin tall-grass blades filling a hiding spot's radius. The

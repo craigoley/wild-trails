@@ -66,7 +66,7 @@ describe('Bait tray — selection flows through the intent into GameState', () =
     const before = g.bait.selected;
     update(g, { ...createIntent(), baitSelect: 1 }, SIM_DT);
     expect(g.bait.selected).toBe(before); // unchanged (no-op)
-    expect(g.baitNotice).not.toBeNull(); // surfaced the scarcity
+    expect(g.notice).not.toBeNull(); // surfaced the scarcity (now the generic notice channel)
   });
 });
 

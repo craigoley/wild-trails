@@ -50,13 +50,22 @@ export interface MissionEval {
 
 /** Does a catch event satisfy a requirement? The ONLY place the kinds differ. */
 function meets(req: MissionRequirement, ev: CatchEvent): boolean {
-  return req.kind === 'catch-in-timephase' ? ev.phase === req.phase : ev.biome === req.biome;
+  switch (req.kind) {
+    case 'catch-in-timephase':
+      return ev.phase === req.phase;
+    case 'catch-in-biome':
+      return ev.biome === req.biome;
+    case 'track-and-catch':
+      return ev.species === req.species; // the target only appears via tracking
+  }
 }
 
-/** Are all of a biome's missions completed? */
+/** Are all of a biome's SET missions completed? Standalone side-quests (Plan #8b
+ *  tracking) are optional and don't count toward set-completion / the unlock. */
 export function isBiomeSetComplete(journal: Journal, biome: BiomeId): boolean {
   for (const id of MISSION_ORDER) {
-    if (MISSIONS[id].biome !== biome) continue;
+    const def = MISSIONS[id];
+    if (def.biome !== biome || def.standalone) continue;
     if (!journal.missions[id]?.completed) return false;
   }
   return true;

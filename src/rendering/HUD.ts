@@ -15,7 +15,7 @@ import { getSpecies } from '../game/Species';
 import { effectiveDetectionRadius } from '../game/Detection';
 import { catchSuccessRate, type CatchBreakdown } from '../game/catchDiagnostics';
 import { clamp } from '../utils/math';
-import { BAIT, BAIT_ORDER, BIOMES, CATCH_FX, CSS_PALETTE, PLAYER } from '../utils/constants';
+import { BAIT_ORDER, BIOMES, CATCH_FX, CSS_PALETTE, PLAYER, TRACK_SIGNS } from '../utils/constants';
 
 /** `?debug=1` in the URL turns on funnel telemetry + (later) the tuning panel. */
 export function isDebugEnabled(): boolean {
@@ -102,11 +102,12 @@ export class HUD {
 
     this.hiddenBadge.style.display = state.stealth.inCover ? 'block' : 'none';
 
-    // Lingering bait notice (out of bait / wrong bait), fading over its lifetime.
-    const notice = state.baitNotice;
+    // Lingering transient notice (bait scarcity / tracking hint), fading over its
+    // own lifetime (ttl) so any source fades correctly.
+    const notice = state.notice;
     if (notice) {
       this.baitNotice.textContent = notice.text;
-      this.baitNotice.style.opacity = String(clamp(notice.timer / BAIT.noticeSec, 0, 1));
+      this.baitNotice.style.opacity = String(clamp(notice.timer / notice.ttl, 0, 1));
     } else {
       this.baitNotice.style.opacity = '0';
     }
@@ -156,7 +157,12 @@ export class HUD {
         `\n--- stealth ---\n` +
         `inCover: ${state.stealth.inCover ? 'yes' : 'no'}  sneaking: ${state.stealth.sneaking ? 'yes' : 'no'}  ` +
         `factor: ${state.stealth.factor.toFixed(2)}` +
-        stealthTargetLine(state);
+        stealthTargetLine(state) +
+        // Plan #8b tracking funnel: offered -> signs found -> located -> caught.
+        `\n--- track ---\n` +
+        `offered: ${state.activeTrackTarget ? state.activeTrackTarget : '-'}  ` +
+        `signs: ${state.track.signsFound}/${TRACK_SIGNS.length}  ` +
+        `located: ${state.track.located ? 'yes' : 'no'}  caught: ${state.track.caught}`;
 
       // During an attempt, show the live chance + per-shake DATA so the on-screen
       // animation can be checked against the resolved odds.

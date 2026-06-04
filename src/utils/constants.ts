@@ -1037,7 +1037,11 @@ export const SPECIES_MODEL: Record<
  *  they read — the engine has ONE code path over these (no per-type branch). */
 export type MissionRequirement =
   | { kind: 'catch-in-timephase'; phase: DayPhase; count: number }
-  | { kind: 'catch-in-biome'; biome: BiomeId; count: number };
+  | { kind: 'catch-in-biome'; biome: BiomeId; count: number }
+  // Plan #8b — TRACKING: catch a specific target species. The target only appears
+  // via the tracking flow (signs + a seeded sett spawn), so catching it IS the
+  // proof you tracked it. Gates on applied journal knowledge, not recall (§5.5).
+  | { kind: 'track-and-catch'; species: SpeciesId; count: number };
 
 export interface MissionDef {
   id: string;
@@ -1051,6 +1055,10 @@ export interface MissionDef {
   requirement: MissionRequirement;
   /** Field-Researcher rank points awarded on completion. */
   rewardPoints: number;
+  /** STANDALONE missions (Plan #8b tracking) are optional side-quests — they do
+   *  NOT count toward their biome's set-completion (so they don't gate an unlock).
+   *  Omitted/false = a normal set mission. */
+  standalone?: boolean;
 }
 
 /** Deterministic mission order (offer + display). */
@@ -1060,6 +1068,7 @@ export const MISSION_ORDER: readonly string[] = [
   'meadow-dusk',
   'woodland-survey',
   'woodland-night',
+  'track-badger',
 ];
 
 /**
@@ -1111,6 +1120,18 @@ export const MISSIONS: Record<string, MissionDef> = {
     requirement: { kind: 'catch-in-timephase', phase: 'night', count: 1 },
     rewardPoints: 25,
   },
+  // Plan #8b — the first TRACKING puzzle (STANDALONE side-quest; doesn't gate the
+  // wetland unlock). The journal already told you the badger is a nocturnal
+  // woodland digger — use that: follow the diggings to the sett, after dark.
+  'track-badger': {
+    id: 'track-badger',
+    biome: 'woodland',
+    title: 'On the Trail',
+    description: 'Fresh diggings in the woodland. Read the signs, find the sett, and catch the badger.',
+    requirement: { kind: 'track-and-catch', species: 'badger', count: 1 },
+    rewardPoints: 15,
+    standalone: true,
+  },
 };
 
 /** Completing ALL of a biome's missions unlocks the mapped biome (lateral reward
@@ -1119,6 +1140,69 @@ export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, BiomeId>> = {
   meadow: 'woodland',
   woodland: 'wetland',
 };
+
+// ===========================================================================
+// Tracking puzzle (Plan #8b)
+// ===========================================================================
+
+/** A procedural ground sign (paw-prints / dug earth) marking a tracking region.
+ *  Static DATA, placed like HIDING_SPOTS; signs MARK a region, not a step trail. */
+export interface TrackSignDef {
+  biome: BiomeId;
+  x: number;
+  y: number;
+  /** Investigate radius — the player within this distance reads the sign. */
+  radius: number;
+}
+
+/**
+ * The badger tracking puzzle. The SETT is the region the target dens in (and where
+ * its hidden spawn is biased to, at night); the SIGNS cluster around it so a player
+ * who knows "badger = nocturnal woodland digger" can reason toward it. All in the
+ * woodland; the journal facts (night + woodland) are the real clue.
+ */
+export const TRACKING = {
+  /** Which species this first tracking puzzle targets. */
+  target: 'badger' as SpeciesId,
+  /** The sett region — a point + radius in the woodland (biology-consistent: deep
+   *  in the trees, away from the meadow edge). The hidden spawn lands here. */
+  sett: { biome: 'woodland' as BiomeId, x: -8, y: 46, radius: 4.0 },
+  /** The target's hidden spawn reveals when the player is within this distance of
+   *  the sett (at night) — it appears as you reach the signed region, not the
+   *  moment you enter the woodland. */
+  revealRadius: 12,
+  /** Teaching hints (the wrong-guess-TEACHES rule, §6.5) — they use the species'
+   *  real facts; they NEVER reset progress. */
+  freshHint: 'Fresh diggings — a badger passed here recently.',
+  coldHint: 'These tracks are cold — badgers only forage at night.',
+} as const;
+
+/** Procedural signs around the sett — they mark the region (a loose cluster
+ *  pointing inward), NOT a node-to-node breadcrumb trail. */
+export const TRACK_SIGNS: readonly TrackSignDef[] = [
+  { biome: 'woodland', x: 2, y: 30, radius: 2.4 },
+  { biome: 'woodland', x: -3, y: 37, radius: 2.4 },
+  { biome: 'woodland', x: -6, y: 42, radius: 2.4 },
+];
+
+/** How a track sign renders — a little cluster of flat dark dug-earth marks on
+ *  the ground (zero-asset). Built once, deterministic (golden-angle spread). */
+export const SIGN_RENDER = {
+  color: 0x3a2a1c,
+  markCount: 5,
+  markRadius: 0.22,
+  markHeight: 0.04,
+  spread: 0.7,
+} as const;
+
+/** Generic transient HUD notice timing (Plan #8b generalised the bait notice into
+ *  a shared channel). Each notice carries its own ttl so the fade is correct for
+ *  any source. */
+export const NOTICE = {
+  /** How long a tracking teaching-hint lingers, seconds (a touch longer than a
+   *  bait blip — it's a sentence to read). */
+  trackSec: 2.4,
+} as const;
 
 /** Field Researcher rank — a SOFT gate (missions are the hard gate, §5.5).
  *  Total rank points = mission rewards + a bonus per species found. */

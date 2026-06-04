@@ -9,7 +9,7 @@
  * deterministic and unit-testable.
  */
 
-import { SPAWN, type BiomeId, type DayPhase, type SpeciesDef } from '../utils/constants';
+import { SPAWN, type BiomeId, type DayPhase, type SpeciesDef, type SpeciesId } from '../utils/constants';
 import { eligibleSpecies } from './Species';
 import { isInsideBiome, type World } from './World';
 import { spawnAnimal, activeAnimalCount, type Animal } from './Animal';
@@ -87,4 +87,23 @@ export function trySpawn(
     return { outcome: 'pool-full', eligibleCount: eligible.length, animal: null };
   }
   return { outcome: 'spawned', eligibleCount: eligible.length, animal };
+}
+
+/**
+ * Spawn the tracking TARGET at a SEEDED point inside the sett region (Plan #8b).
+ * Reuses the seeded rng + spawnAnimal — NO new Math.random. The position is
+ * deterministic for a given rng state, and always inside the sett radius, so the
+ * signs (which cluster around the sett) actually lead to the animal. Returns the
+ * spawned animal, or null if the pool is full.
+ */
+export function spawnTrackingTarget(
+  pool: Animal[],
+  sett: { x: number; y: number; radius: number },
+  species: SpeciesId,
+  rng: Rng,
+): Animal | null {
+  if (activeAnimalCount(pool) >= SPAWN.maxAnimals) return null;
+  const ang = rng.next() * Math.PI * 2;
+  const r = rng.next() * sett.radius;
+  return spawnAnimal(pool, species, sett.x + Math.cos(ang) * r, sett.y + Math.sin(ang) * r);
 }
