@@ -10,13 +10,13 @@
  *    (Safari Private Mode throws on setItem).
  *  - Corrupt / unparseable JSON falls back to a fresh store.
  *  - The schema is VERSIONED; load routes through `migrate`, which UPGRADES old
- *    stores step by step (v1 -> v2 -> v3) rather than resetting them. An old
+ *    stores step by step (v1 -> v2 -> v3 -> v4) rather than resetting them. An old
  *    player keeps every caught species and gains new fields at safe defaults.
  *
- * SCHEMA v3: species dex + missions progress + rank points + mission-granted
- * biome unlocks (all unchanged from v2) + DURABLE bait counts (Plan #13.3 — the
- * one bit of session state worth persisting; the rest of the world is recomputed
- * fresh on load). Only CAUGHT species get a species entry (absence === not found).
+ * SCHEMA v4: species dex + missions progress + rank points + mission-granted
+ * biome unlocks + durable bait counts + `won` flag (Plan #10 — the "Field Guide
+ * Complete" celebration fires once, then free-roam forever). Only CAUGHT species
+ * get a species entry (absence === not found).
  */
 
 import { BAIT, BAIT_ORDER, type BaitId, type BiomeId } from '../utils/constants';
@@ -234,7 +234,7 @@ export function migrate(parsed: unknown): Journal {
   let obj = parsed as Record<string, unknown>;
 
   // Upgrade chain — each step bumps the version and fills new fields, so an old
-  // store flows all the way up (v1 -> up_1to2 -> v2 -> up_2to3 -> v3).
+  // store flows all the way up (v1 -> v2 -> v3 -> v4).
   if (obj.schemaVersion === 1) obj = up_1to2(obj);
   if (obj.schemaVersion === 2) obj = up_2to3(obj);
   if (obj.schemaVersion === 3) obj = up_3to4(obj);
