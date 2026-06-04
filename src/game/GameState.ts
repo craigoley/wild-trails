@@ -50,6 +50,14 @@ import {
   type BaitState,
 } from './Bait';
 import { finalCatchChance } from './Catch';
+import {
+  computeBreakdown,
+  createDiagnostics,
+  recordAttempt,
+  recordCatchSuccess,
+  recordOutOfBait,
+  type DiagnosticCounters,
+} from './catchDiagnostics';
 import { getSpecies } from './Species';
 import { STARTER_TOOL, type ToolId } from './Tools';
 import { createRng, type Rng } from '../utils/rng';
@@ -62,7 +70,7 @@ export const DEFAULT_SEED = 0x5eed;
 
 /** Funnel telemetry for the spawn -> roam -> catch pipeline. `eligible` and
  *  `lastChance` are latest-value; the rest are cumulative counts. */
-export interface Telemetry {
+export interface Telemetry extends DiagnosticCounters {
   eligible: number;
   attempts: number;
   spawned: number;
@@ -191,6 +199,7 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
       shakesSurvived: 0,
       caught: 0,
       escaped: 0,
+      ...createDiagnostics(),
     },
   };
 }
@@ -247,6 +256,7 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
     } else {
       // Out of that bait — blocked.
       game.baitDeployFailed = true;
+      recordOutOfBait(game.telemetry); // diagnostics: bait-scarcity signal (cause b)
       game.baitNotice = { text: `Out of ${selected}!`, timer: BAIT.noticeSec };
     }
   }
@@ -281,6 +291,21 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
       game.encounter = enc;
       game.telemetry.catchAttempts++;
       game.telemetry.lastChance = enc.chance;
+      // Diagnostics (Plan #12, read-only): recompute this attempt's multiplier
+      // breakdown for the SAME target the encounter chose, from the same animal
+      // state this tick (Catch.ts/Encounter.ts untouched — observe their inputs).
+      const a = game.animals[enc.animalIndex];
+      const def = getSpecies(a.species);
+      const correctBait = isCorrectBaitFor(def, game.bait);
+      const breakdown = computeBreakdown({
+        species: def,
+        dist: Math.hypot(a.x - game.player.x, a.y - game.player.y),
+        tool: game.tool,
+        biome: game.currentBiome,
+        correctBait,
+        fleeing: a.aiState === 'flee',
+      });
+      recordAttempt(game.telemetry, enc.animalIndex, breakdown, correctBait, game.telemetry.catchAttempts);
     }
   }
 
@@ -383,6 +408,8 @@ function resolveOutcome(game: GameState, outcome: 'caught' | 'escaped'): void {
     despawnAnimal(animal);
     game.sessionCatches++;
     game.telemetry.caught++;
+    // Diagnostics: bucket this success as bait-on/off + close the per-target chain.
+    recordCatchSuccess(game.telemetry);
     // One-shot catch event for the boundary (journal + missions): species + the
     // biome and day phase it happened in.
     game.lastCaughtSpecies = enc.species;

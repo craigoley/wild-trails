@@ -13,6 +13,7 @@ import { liveAnimalCount } from '../game/GameState';
 import { clampActive } from '../game/World';
 import { getSpecies } from '../game/Species';
 import { effectiveDetectionRadius } from '../game/Detection';
+import { catchSuccessRate, type CatchBreakdown } from '../game/catchDiagnostics';
 import { clamp } from '../utils/math';
 import { BAIT, BAIT_ORDER, BIOMES, CATCH_FX, CSS_PALETTE, PLAYER } from '../utils/constants';
 
@@ -24,6 +25,11 @@ export function isDebugEnabled(): boolean {
 /** One-line "seeds×N greens×N insects×N" for the debug panel. */
 function baitDebugCounts(state: GameState): string {
   return BAIT_ORDER.map((id) => `${id}×${state.bait.counts[id]}`).join('  ');
+}
+
+/** "0.85/1.00/1.20/3.50/1.00" — a catch breakdown's five factors for the panel. */
+function fmtBreakdown(b: CatchBreakdown): string {
+  return [b.base, b.tool, b.proximity, b.calm, b.biome].map((v) => v.toFixed(2)).join('/');
 }
 
 /** Per-target detection readout: detected y/n + effective vs base radius — the
@@ -129,6 +135,14 @@ export class HUD {
         `--- catch ---\n` +
         `attempts: ${t.catchAttempts}  caught: ${t.caught}  escaped: ${t.escaped}\n` +
         `lastChance: ${t.lastChance.toFixed(3)}  shakesSurvived: ${t.shakesSurvived}\n` +
+        // Plan #12 diagnostics: which of the three "too easy" causes dominates.
+        `--- catch diag (a:rate b:bait c:spam) ---\n` +
+        `successRate: ${catchSuccessRate(t.caught, t.catchAttempts).toFixed(2)}  ` +
+        `baitOn: ${t.caughtBaitOn}  baitOff: ${t.caughtBaitOff}\n` +
+        `presses/target: ${t.attemptsThisTarget} (max ${t.maxAttemptsPerTarget})  ` +
+        `outOfBait: ${t.outOfBaitDeploys}\n` +
+        `last  base/tool/prox/calm/biome: ${fmtBreakdown(t.lastBreakdown)}\n` +
+        `avg   base/tool/prox/calm/biome: ${fmtBreakdown(t.avgBreakdown)}\n` +
         `--- target ---\n` +
         `idx: ${state.targetIndex}  armed: ${state.catchArmed ? 'yes' : 'no'}  ` +
         `baited: ${state.targetBaited ? 'yes' : 'no'}\n` +
