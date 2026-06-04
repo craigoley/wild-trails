@@ -30,7 +30,8 @@ import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
 import { Banner } from './rendering/Banner';
 import { missionBannerMessages } from './rendering/missionBanners';
 import { AudioEngine } from './audio/AudioEngine';
-import { loadJournal, recordCatch, saveJournal } from './state/Journal';
+import { createAutosaver, loadJournal, recordCatch, setBaitCounts } from './state/Journal';
+import { restoreBaitCounts } from './game/Bait';
 import { evaluateCatch } from './game/Missions';
 import { unlockBiome } from './game/World';
 import { MAX_FRAME_DT, MISSION_ORDER, SIM_DT, type BiomeId } from './utils/constants';
@@ -54,6 +55,22 @@ const journal = loadJournal();
 for (const id of journal.unlockedBiomes) {
   if (id in game.world.biomes) unlockBiome(game.world, id as BiomeId);
 }
+// Rehydrate the ONE durable bit of session state — bait counts (Plan #13.3).
+// Everything else (player position, clock, animals) is recomputed fresh by
+// createGameState; only the bait stockpile carries across a reload.
+restoreBaitCounts(game.bait, journal.bait);
+
+// Autosave: silent, dedup-guarded. persist() syncs the live bait into the journal
+// then writes (only if the store actually changed). Fired on durable milestones
+// (catch / mission) + bait deploy + tab blur — never per-frame.
+const autosave = createAutosaver();
+const persist = (): void => {
+  setBaitCounts(journal, game.bait.counts);
+  autosave(journal);
+};
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') persist();
+});
 if (isDebugEnabled()) {
   const species = Object.keys(journal.species).length;
   console.info(`[journal] v${journal.schemaVersion} loaded, ${species} species recorded`);
@@ -149,6 +166,7 @@ function frame(nowMs: number): void {
     if (game.baitJustDeployed) {
       audio.baitBlip();
       controls.pulseBait();
+      persist(); // a deploy spent bait (durable) — autosave it (dedup-guarded)
     }
     if (game.baitDeployFailed) audio.denyBlip();
 
@@ -173,7 +191,7 @@ function frame(nowMs: number): void {
       missionTelemetry.progressed += evalResult.progressed.length;
       missionTelemetry.completed += evalResult.completed.length;
       missionTelemetry.rewardsClaimed += evalResult.completed.length;
-      saveJournal(journal);
+      persist(); // catch + replenished bait = durable progress; autosave it
       journalPanel.refresh(journal);
       refreshMissionPanel();
     }

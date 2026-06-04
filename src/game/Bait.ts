@@ -32,6 +32,15 @@ export function createBaitState(): BaitState {
   return { activeType: null, timer: 0, x: 0, y: 0, selected: BAIT_ORDER[0], counts };
 }
 
+/** Restore persisted bait COUNTS onto a (fresh) bait state — the only durable bait
+ *  field (Plan #13.3). The active deployment / selection / timer stay transient.
+ *  A missing key keeps the existing (default) count. */
+export function restoreBaitCounts(state: BaitState, counts: Record<BaitId, number>): void {
+  for (const id of BAIT_ORDER) {
+    if (typeof counts[id] === 'number') state.counts[id] = counts[id];
+  }
+}
+
 /** Cycle the selected bait type to the next in order. */
 export function cycleSelectedBait(state: BaitState): void {
   const i = BAIT_ORDER.indexOf(state.selected);
