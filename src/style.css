@@ -931,6 +931,36 @@ body.modal-open .touch-stick-thumb {
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.78);
 }
+/* §4.1a richer card — the field-note SYNTHESIS is the hero (leads the card); the
+ * behaviour / did-you-know / status sections read as a field-guide page. */
+.card-fieldnote {
+  margin: 2px 0 6px;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+  color: rgba(231, 226, 166, 0.95);
+}
+.card-section {
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.78);
+}
+.card-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(180, 230, 190, 0.7);
+}
+/* Status reads HOPEFUL — a warm, living green, never a grim warning. */
+.card-status {
+  color: rgba(174, 255, 196, 0.85);
+}
+.card-status .card-label {
+  color: rgba(109, 255, 155, 0.6);
+}
 .card-meta {
   margin-top: 6px;
   font-size: 11.5px;
