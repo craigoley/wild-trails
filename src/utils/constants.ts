@@ -612,23 +612,51 @@ export const STEALTH = {
   sneakSpeedFrac: 0.45,
 } as const;
 
-/** A hiding-spot (tall-grass) prop — DATA. A player within `radius` of (x, y) is
- *  "in cover". Same discipline as the species table. */
+/** Ecology-appropriate cover shape per biome — the renderer dispatches on this so
+ *  cover looks like the place (no grass in a marsh). Stealth treats every kind the
+ *  same (isInCover is geometry-only). */
+export type CoverKind = 'grass' | 'ferns' | 'reeds' | 'rocks';
+
+/** A hiding-spot (cover) prop — DATA. A player within `radius` of (x, y) is "in
+ *  cover" (any kind). Same discipline as the species table. */
 export interface HidingSpotDef {
   biome: BiomeId;
   x: number;
   y: number;
   radius: number;
+  kind: CoverKind;
 }
 
-/** Hiding spots, per biome. The Meadow ([-20,20]²) gets a handful of tall-grass
- *  clusters spread across it so stealth has somewhere to happen. */
+/** Hiding spots, per biome — a handful spread across each cell so stealth has
+ *  somewhere to happen everywhere, in the biome's own cover: Meadow tall grass,
+ *  Woodland bracken ferns, Wetland water's-edge reeds, Highlands boulders/scree.
+ *  Comparable density + radii (1.8–2.4) so the cover stealth lever (×0.45) is
+ *  equally viable in every biome. */
 export const HIDING_SPOTS: readonly HidingSpotDef[] = [
-  { biome: 'meadow', x: -8, y: -6, radius: 2.2 },
-  { biome: 'meadow', x: 7, y: -10, radius: 2.0 },
-  { biome: 'meadow', x: 10, y: 8, radius: 2.4 },
-  { biome: 'meadow', x: -6, y: 11, radius: 2.0 },
-  { biome: 'meadow', x: 1, y: 3, radius: 1.8 },
+  // Meadow — tall grass ([-20,20]²). Visual UNCHANGED; just tagged 'grass'.
+  { biome: 'meadow', x: -8, y: -6, radius: 2.2, kind: 'grass' },
+  { biome: 'meadow', x: 7, y: -10, radius: 2.0, kind: 'grass' },
+  { biome: 'meadow', x: 10, y: 8, radius: 2.4, kind: 'grass' },
+  { biome: 'meadow', x: -6, y: 11, radius: 2.0, kind: 'grass' },
+  { biome: 'meadow', x: 1, y: 3, radius: 1.8, kind: 'grass' },
+  // Woodland — bracken ferns (x∈[-20,20], y∈[20,60]); spread clear of the badger sett.
+  { biome: 'woodland', x: -12, y: 28, radius: 2.2, kind: 'ferns' },
+  { biome: 'woodland', x: 9, y: 34, radius: 2.0, kind: 'ferns' },
+  { biome: 'woodland', x: 12, y: 50, radius: 2.4, kind: 'ferns' },
+  { biome: 'woodland', x: -11, y: 55, radius: 2.0, kind: 'ferns' },
+  { biome: 'woodland', x: 3, y: 44, radius: 1.8, kind: 'ferns' },
+  // Wetland — water's-edge reeds (x∈[20,60], y∈[-20,20]).
+  { biome: 'wetland', x: 28, y: -6, radius: 2.2, kind: 'reeds' },
+  { biome: 'wetland', x: 48, y: 8, radius: 2.0, kind: 'reeds' },
+  { biome: 'wetland', x: 52, y: -10, radius: 2.4, kind: 'reeds' },
+  { biome: 'wetland', x: 34, y: 12, radius: 2.0, kind: 'reeds' },
+  { biome: 'wetland', x: 44, y: -2, radius: 1.8, kind: 'reeds' },
+  // Highlands — boulders / scree (x∈[20,60], y∈[20,60]).
+  { biome: 'highlands', x: 30, y: 32, radius: 2.2, kind: 'rocks' },
+  { biome: 'highlands', x: 50, y: 46, radius: 2.0, kind: 'rocks' },
+  { biome: 'highlands', x: 52, y: 30, radius: 2.4, kind: 'rocks' },
+  { biome: 'highlands', x: 34, y: 53, radius: 2.0, kind: 'rocks' },
+  { biome: 'highlands', x: 42, y: 40, radius: 1.8, kind: 'rocks' },
 ];
 
 /** Procedural tall-grass cluster look (render-only, zero assets). */
@@ -642,6 +670,44 @@ export const HIDING_RENDER = {
   spread: 0.82,
   /** Tall-grass green. */
   color: 0x4e7d3a,
+} as const;
+
+/** Woodland bracken — low arching fronds (shorter than grass, tilted outward so it
+ *  reads as understory, not upright blades). Built like the grass cluster. */
+export const FERN_RENDER = {
+  frondCount: 9,
+  frondHeight: 0.7,
+  frondRadius: 0.05,
+  spread: 0.85,
+  /** Outward tilt (radians) so fronds arch low rather than stand up. */
+  tiltRad: 0.55,
+  color: 0x3e6b2f,
+} as const;
+
+/** Wetland reeds — tall, thin VERTICAL blades, a few topped with a brown cattail. */
+export const REED_RENDER = {
+  bladeCount: 9,
+  bladeHeight: 1.6,
+  bladeRadius: 0.045,
+  spread: 0.78,
+  color: 0x6b7d4a,
+  /** A cattail head caps every Nth reed. */
+  cattailEvery: 3,
+  cattailHeight: 0.22,
+  cattailRadius: 0.085,
+  cattailColor: 0x6b4a2a,
+} as const;
+
+/** Highlands boulders / scree — a ground-hugging cluster of low grey rocks whose
+ *  sizes vary deterministically with index (no RNG). */
+export const ROCK_RENDER = {
+  rockCount: 7,
+  spread: 0.8,
+  minSize: 0.22,
+  maxSize: 0.52,
+  /** Height-to-width ratio — rocks are squashed, not cubes. */
+  heightRatio: 0.7,
+  color: 0x8a8f97,
 } as const;
 
 // ===========================================================================

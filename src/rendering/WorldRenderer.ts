@@ -31,6 +31,9 @@ import { walledEdges } from './lockedRegions';
 import {
   BIOME_RENDER,
   HIDING_RENDER,
+  FERN_RENDER,
+  REED_RENDER,
+  ROCK_RENDER,
   SIGN_RENDER,
   TRACK_SIGNS,
   type HidingSpotDef,
@@ -62,7 +65,7 @@ export class WorldRenderer {
     this.group.add(this.dynamic);
 
     // Static props — built ONCE (unlock-independent): cover, tracking signs, grid.
-    for (const spot of world.hidingSpots) this.addGrassCluster(spot);
+    for (const spot of world.hidingSpots) this.addCover(spot);
     this.addTrackSigns();
     this.addGrid(world);
 
@@ -147,6 +150,84 @@ export class WorldRenderer {
         mark.position.set(sign.x + Math.cos(a) * r, SIGN_RENDER.markHeight / 2, sign.y + Math.sin(a) * r);
         this.group.add(mark);
       }
+    }
+  }
+
+  /** Build a cover prop in the shape that fits its biome (the kind dispatch). The
+   *  stealth mechanic treats every kind identically — only the look differs. */
+  private addCover(spot: HidingSpotDef): void {
+    switch (spot.kind) {
+      case 'grass':
+        this.addGrassCluster(spot);
+        break;
+      case 'ferns':
+        this.addFernCluster(spot);
+        break;
+      case 'reeds':
+        this.addReedCluster(spot);
+        break;
+      case 'rocks':
+        this.addRockCluster(spot);
+        break;
+    }
+  }
+
+  /** Even golden-angle spiral radius for the i-th of n props in a spot (shared
+   *  placement so every cover kind fills its radius the same deterministic way). */
+  private static spiral(spot: HidingSpotDef, spread: number, n: number, i: number): { x: number; z: number } {
+    const fill = spot.radius * spread;
+    const r = fill * Math.sqrt((i + 0.5) / n);
+    const a = i * (Math.PI * (3 - Math.sqrt(5))); // golden angle
+    return { x: spot.x + Math.cos(a) * r, z: spot.y + Math.sin(a) * r };
+  }
+
+  /** Woodland bracken — low arching fronds (cones tilted outward so they read as
+   *  understory, not upright grass). Same deterministic spiral fill. */
+  private addFernCluster(spot: HidingSpotDef): void {
+    const geo = new ConeGeometry(FERN_RENDER.frondRadius, FERN_RENDER.frondHeight, 5);
+    const mat = new MeshStandardMaterial({ color: FERN_RENDER.color, roughness: 1 });
+    for (let i = 0; i < FERN_RENDER.frondCount; i++) {
+      const p = WorldRenderer.spiral(spot, FERN_RENDER.spread, FERN_RENDER.frondCount, i);
+      const a = i * (Math.PI * (3 - Math.sqrt(5)));
+      const frond = new Mesh(geo, mat);
+      frond.position.set(p.x, FERN_RENDER.frondHeight / 2, p.z);
+      frond.rotation.z = Math.cos(a) * FERN_RENDER.tiltRad; // arch outward from centre
+      frond.rotation.x = Math.sin(a) * FERN_RENDER.tiltRad;
+      this.group.add(frond);
+    }
+  }
+
+  /** Wetland reeds — tall thin vertical blades, a brown cattail head on every Nth. */
+  private addReedCluster(spot: HidingSpotDef): void {
+    const bladeGeo = new CylinderGeometry(REED_RENDER.bladeRadius, REED_RENDER.bladeRadius, REED_RENDER.bladeHeight, 5);
+    const bladeMat = new MeshStandardMaterial({ color: REED_RENDER.color, roughness: 1 });
+    const headGeo = new CylinderGeometry(REED_RENDER.cattailRadius, REED_RENDER.cattailRadius, REED_RENDER.cattailHeight, 6);
+    const headMat = new MeshStandardMaterial({ color: REED_RENDER.cattailColor, roughness: 1 });
+    for (let i = 0; i < REED_RENDER.bladeCount; i++) {
+      const p = WorldRenderer.spiral(spot, REED_RENDER.spread, REED_RENDER.bladeCount, i);
+      const blade = new Mesh(bladeGeo, bladeMat);
+      blade.position.set(p.x, REED_RENDER.bladeHeight / 2, p.z);
+      this.group.add(blade);
+      if (i % REED_RENDER.cattailEvery === 0) {
+        const head = new Mesh(headGeo, headMat);
+        head.position.set(p.x, REED_RENDER.bladeHeight + REED_RENDER.cattailHeight / 2, p.z);
+        this.group.add(head);
+      }
+    }
+  }
+
+  /** Highlands boulders — a ground-hugging cluster of low grey rocks whose sizes
+   *  vary deterministically with index (no RNG). */
+  private addRockCluster(spot: HidingSpotDef): void {
+    const mat = new MeshStandardMaterial({ color: ROCK_RENDER.color, roughness: 1 });
+    for (let i = 0; i < ROCK_RENDER.rockCount; i++) {
+      const p = WorldRenderer.spiral(spot, ROCK_RENDER.spread, ROCK_RENDER.rockCount, i);
+      const t = (i % 3) / 2; // 0, 0.5, 1 — deterministic size variation across the cluster
+      const size = ROCK_RENDER.minSize + (ROCK_RENDER.maxSize - ROCK_RENDER.minSize) * t;
+      const rock = new Mesh(new BoxGeometry(size, size * ROCK_RENDER.heightRatio, size), mat);
+      rock.position.set(p.x, (size * ROCK_RENDER.heightRatio) / 2, p.z);
+      rock.rotation.y = i * (Math.PI * (3 - Math.sqrt(5))); // vary facing
+      this.group.add(rock);
     }
   }
 
