@@ -10,7 +10,7 @@
 import type { MissionEval } from '../game/Missions';
 import { BIOMES, MISSIONS } from '../utils/constants';
 
-export type BannerKind = 'mission' | 'unlock';
+export type BannerKind = 'mission' | 'unlock' | 'hint';
 
 export interface BannerMessage {
   text: string;
@@ -30,6 +30,11 @@ export function missionBannerMessages(result: MissionEval): BannerMessage[] {
   }
   for (const id of result.unlocked) {
     out.push({ text: `New area unlocked: ${BIOMES[id].displayName}!`, kind: 'unlock' });
+  }
+  // §4.1b teaching hints (warm misses on active research challenges) — gentle, never
+  // a failure. Only one per event (dedup) so a catch can't spam the same hint twice.
+  for (const hint of [...new Set(result.hints)]) {
+    out.push({ text: hint, kind: 'hint' });
   }
   return out;
 }

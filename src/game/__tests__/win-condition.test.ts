@@ -90,16 +90,15 @@ describe('achievability — the win is REACHABLE with shipped content (no grind)
 
   it('the max achievable rank points clear the top threshold by a margin', () => {
     // Every mission reward + every species bonus — the ceiling with shipped content.
-    // Highlands content shift: + the first Wetland set (survey 25 + dawn 20 + day 20
-    // = +65) and +3 species. Mission points 130 -> 195; roster 10 -> 13.
+    // §4.1b added 3 standalone research challenges (+12 each = +36 to the ceiling):
+    // mission points 195 -> 231. They're OPTIONAL (standalone), so the win doesn't
+    // require them — they only RAISE the achievable ceiling.
     const missionPts = MISSION_ORDER.reduce((s, id) => s + MISSIONS[id].rewardPoints, 0);
     const speciesPts = SPECIES_ORDER.length * RANK.perSpeciesFound;
     const top = RANKS[RANKS.length - 1].minPoints;
-    expect(missionPts).toBe(195); // pin the post-Highlands total (the points-shift check)
+    expect(missionPts).toBe(231); // post-research-challenge ceiling (the points-shift check)
     expect(SPECIES_ORDER.length).toBe(13); // bigger roster, bigger win bar
-    expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // 299 >= 120 — clears with margin
-    // Every gate mission is count-1 of a window-locked species (or a small survey) —
-    // no grind: the win is earned by catching each species + finishing the sets once.
+    expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // clears with margin
   });
 
   it('every species in the roster actually exists (the win can be filled)', () => {

@@ -1364,7 +1364,13 @@ export type MissionRequirement =
   // Plan #8b — TRACKING: catch a specific target species. The target only appears
   // via the tracking flow (signs + a seeded sett spawn), so catching it IS the
   // proof you tracked it. Gates on applied journal knowledge, not recall (§5.5).
-  | { kind: 'track-and-catch'; species: SpeciesId; count: number };
+  | { kind: 'track-and-catch'; species: SpeciesId; count: number }
+  // §4.1b RESEARCH challenge: catch a species UNDER its biological condition (its
+  // activity phase). BOTH dimensions are required, so completing it PROVES applied
+  // knowledge — you can't catch the dusk-only roe deer except in the woodland at
+  // dusk. The clue describes TRAITS, never the name, so the player identifies it
+  // from the field-guide cards (#45). Anti-accident by construction.
+  | { kind: 'research'; species: SpeciesId; phase: DayPhase; count: number };
 
 export interface MissionDef {
   id: string;
@@ -1378,11 +1384,27 @@ export interface MissionDef {
   requirement: MissionRequirement;
   /** Field-Researcher rank points awarded on completion. */
   rewardPoints: number;
-  /** STANDALONE missions (Plan #8b tracking) are optional side-quests — they do
-   *  NOT count toward their biome's set-completion (so they don't gate an unlock).
-   *  Omitted/false = a normal set mission. */
+  /** STANDALONE missions (Plan #8b tracking, §4.1b research challenges) are optional
+   *  side-quests — they do NOT count toward their biome's set-completion (so they
+   *  don't gate an unlock). Omitted/false = a normal set mission. */
   standalone?: boolean;
+  /** §4.1b — a one-time credit bonus on completion (research challenges). Count-1, so
+   *  it can't be farmed. Kept below the biome-complete reward so discovery stays the
+   *  bigger payoff. */
+  creditReward?: number;
+  /** §4.1b — the teaching HINT shown on a "warm miss" (a catch in this challenge's
+   *  biome that doesn't satisfy it). Re-frames the trait clue; never punishes. */
+  hint?: string;
 }
+
+/** §4.1b research-challenge rewards. The credit bonus is MEANINGFUL but ONE-TIME
+ *  (challenges are count-1, so it can't be farmed) and BOUNDED below the
+ *  biome-journal-complete reward (CREDITS.perBiomeComplete = 25) — discovery stays
+ *  the bigger payoff. Rank points are modest. Tune on playtest. */
+export const RESEARCH = {
+  rewardPoints: 12,
+  creditReward: 18,
+} as const;
 
 /** Deterministic mission order (offer + display). */
 export const MISSION_ORDER: readonly string[] = [
@@ -1396,6 +1418,10 @@ export const MISSION_ORDER: readonly string[] = [
   'wetland-survey',
   'wetland-dawn',
   'wetland-day',
+  // §4.1b research challenges (standalone — don't gate unlocks / the win).
+  'research-dawn-songbird',
+  'research-night-digger',
+  'research-dusk-browser',
 ];
 
 /**
@@ -1495,6 +1521,45 @@ export const MISSIONS: Record<string, MissionDef> = {
     description: 'Mallards dabble on the open water by day. Catch the mallard.',
     requirement: { kind: 'catch-species', species: 'mallard', count: 1 },
     rewardPoints: 20,
+  },
+  // §4.1b RESEARCH challenges — standalone applied-knowledge side-quests. The clue
+  // describes TRAITS (the player identifies the species from the #45 cards); the
+  // condition (species + activity phase) is anti-accident; a warm miss teaches.
+  'research-dawn-songbird': {
+    id: 'research-dawn-songbird',
+    biome: 'woodland',
+    title: 'Research: First Light',
+    description:
+      'A dawn insect-hunter of the woodland floor — it drops from a low perch at first light to snatch grubs and worms. Identify it from your field guide, then catch it at dawn.',
+    requirement: { kind: 'research', species: 'robin', phase: 'dawn', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not the one — you are after a DAWN insect-hunter of the woodland floor. Come back at first light.',
+  },
+  'research-night-digger': {
+    id: 'research-night-digger',
+    biome: 'woodland',
+    title: 'Research: After Dark',
+    description:
+      'A night-digging insectivore of the deep woodland — it leaves its sett after dark to root out earthworms. Identify it from your field guide, then catch it at night.',
+    requirement: { kind: 'research', species: 'badger', phase: 'night', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not the one — you are after a NIGHT-digger of the deep woodland. It only emerges after dark.',
+  },
+  'research-dusk-browser': {
+    id: 'research-dusk-browser',
+    biome: 'woodland',
+    title: 'Research: The Evening Edge',
+    description:
+      'A crepuscular browser of the woodland clearings — it steps out to feed on leaves and shoots as the light fades. Identify it from your field guide, then catch it at dusk.',
+    requirement: { kind: 'research', species: 'roedeer', phase: 'dusk', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not the one — you are after a DUSK browser of the clearings. Watch the clearing edges as the light fades.',
   },
 };
 
