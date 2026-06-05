@@ -926,11 +926,6 @@ body.modal-open .touch-stick-thumb {
   font-size: 12px;
   color: rgba(180, 230, 190, 0.95);
 }
-.card-profile {
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.78);
-}
 /* §4.1a richer card — the field-note SYNTHESIS is the hero (leads the card); the
  * behaviour / did-you-know / status sections read as a field-guide page. */
 .card-fieldnote {
