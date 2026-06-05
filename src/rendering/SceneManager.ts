@@ -36,6 +36,11 @@ export class SceneManager {
   /** Camera focus point on the ground plane (game x, game y). */
   private focusX = 0;
   private focusY = 0;
+  /** Last applied canvas size — lets resize() skip redundant setSize() (the WebGL
+   *  buffer realloc) when a trigger fires with unchanged dimensions (e.g. the many
+   *  visualViewport events during an iOS URL-bar animation). */
+  private lastW = 0;
+  private lastH = 0;
   /** Reused scratch for the dead-zone follow result (no per-frame allocation). */
   private readonly _focusOut: Vec2 = { x: 0, y: 0 };
 
@@ -118,6 +123,11 @@ export class SceneManager {
   private resize = (): void => {
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
+    // No-op if nothing changed — the new visualViewport/deferred triggers can fire
+    // repeatedly with identical dimensions; skip the redundant buffer realloc.
+    if (w === this.lastW && h === this.lastH) return;
+    this.lastW = w;
+    this.lastH = h;
     const aspect = w / h;
     const v = CAMERA.viewSize;
     // Shift the frustum window up by frameBiasY*v so the focus (player) renders
