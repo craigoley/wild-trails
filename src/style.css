@@ -596,6 +596,36 @@ body.modal-open .touch-stick-thumb {
 .mission-section:first-child {
   margin-top: 0;
 }
+/* §17.1 "Reach new lands" carrot lines — the set→biome-unlock relationship, inside
+ * the scroll body (the scroll architecture is untouched). */
+.unlock-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(122, 200, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(20, 40, 60, 0.4);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 13px;
+}
+.unlock-goal {
+  font-weight: 700;
+}
+.unlock-prog {
+  font-weight: 800;
+  color: #bfe3ff;
+  white-space: nowrap;
+}
+/* Already unlocked — a quiet ✓ of the path walked (de-emphasised, like done). */
+.unlock-line.done {
+  border-color: rgba(109, 255, 155, 0.28);
+  background: rgba(16, 40, 24, 0.32);
+  color: rgba(174, 255, 196, 0.82);
+  font-size: 12.5px;
+  padding: 6px 10px;
+}
 .mission-row {
   padding: 11px 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);

@@ -11,9 +11,10 @@
 
 import type { Journal } from '../state/Journal';
 import { currentRank, rankPointsTotal } from '../game/Missions';
-import { MISSIONS, MISSION_ORDER, PANEL_LABELS } from '../utils/constants';
+import { MISSIONS, MISSION_ORDER, PANEL_LABELS, UNLOCK_COPY } from '../utils/constants';
 import { addOverlayDismiss } from './overlayDismiss';
 import { groupMissions } from './missionGroups';
+import { unlockLines } from './unlockLines';
 
 /** Funnel counts for the mission pipeline (debug-only, §5.5). */
 export interface MissionTelemetry {
@@ -98,6 +99,9 @@ export class MissionPanel {
     // the same journal state). An empty section renders no header (no forlorn empty
     // "Completed" early game).
     this.list.replaceChildren();
+    // §17.1 — the "Reach new lands" carrot: make the set→biome-unlock link legible,
+    // at the top of the scroll body (above the missions). Pure (unlockLines).
+    this.appendUnlockBlock(journal);
     const { active, completed } = groupMissions(journal);
     this.appendSection(PANEL_LABELS.missionsActive, active, journal);
     this.appendSection(PANEL_LABELS.missionsCompleted, completed, journal);
@@ -110,6 +114,30 @@ export class MissionPanel {
       this.debugLine.style.display = 'block';
     } else {
       this.debugLine.style.display = 'none';
+    }
+  }
+
+  /** The "Reach new lands" block (§17.1): one line per gating set that unlocks a
+   *  biome — in-progress shows the goal + "done of total"; an earned one shows a
+   *  quiet ✓; terminal sets (no onward biome) are omitted. No-op if none apply. */
+  private appendUnlockBlock(journal: Journal): void {
+    const lines = unlockLines(journal).filter((l) => l.unlocks !== null);
+    if (lines.length === 0) return;
+    const head = document.createElement('div');
+    head.className = 'mission-section';
+    head.textContent = UNLOCK_COPY.blockHeader;
+    this.list.appendChild(head);
+    for (const l of lines) {
+      const row = document.createElement('div');
+      row.className = `unlock-line${l.alreadyUnlocked ? ' done' : ''}`;
+      if (l.alreadyUnlocked) {
+        row.textContent = UNLOCK_COPY.opened(l.unlocksName!);
+      } else {
+        row.innerHTML =
+          `<div class="unlock-goal">${UNLOCK_COPY.toReach(l.setName, l.unlocksName!)}</div>` +
+          `<div class="unlock-prog">${l.done} of ${l.total}</div>`;
+      }
+      this.list.appendChild(row);
     }
   }
 
