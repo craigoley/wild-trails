@@ -168,7 +168,7 @@ export class WorldRenderer {
     wall(seg, s.wallThickness, off, -half);
     // Pyramid roof (a 4-sided cone, rotated 45° so its faces align with the walls).
     const roof = new Mesh(
-      new ConeGeometry(s.size * 0.78 + s.roofOverhang, s.roofHeight, 4),
+      new ConeGeometry(s.size * s.roofRadiusFactor + s.roofOverhang, s.roofHeight, 4),
       new MeshStandardMaterial({ color: s.roofColor, roughness: 1 }),
     );
     roof.position.set(cx, s.wallHeight + s.roofHeight / 2, cz);

@@ -761,6 +761,8 @@ export const SUPPLY_RENDER = {
   doorWidth: 0.7,
   /** Pyramid roof height above the walls + its overhang past the walls. */
   roofHeight: 0.7,
+  /** Cone base-radius = size × this factor (≈ half-diagonal of the square). */
+  roofRadiusFactor: 0.78,
   roofOverhang: 0.2,
   wallColor: 0x8a6b44,
   roofColor: 0x5a3d22,
