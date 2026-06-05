@@ -1,8 +1,8 @@
 /**
  * The mission engine — PURE, Node-testable, ZERO three/DOM/Date.now. Missions are
  * DATA (the MISSIONS table in constants); this is the behaviour over them. The
- * two requirement KINDS (catch-in-timephase, catch-in-biome) share ONE code path
- * — they differ only in which catch-context field `meets` reads.
+ * requirement KINDS share ONE code path — they differ only in which catch-context
+ * field `meets` reads.
  *
  * Missions evaluate on a CATCH EVENT (species, biome, phase — all passed in, no
  * clock read here). Progress + completion + rank points + biome unlocks all live
@@ -63,8 +63,8 @@ function meets(req: MissionRequirement, ev: CatchEvent): boolean {
   }
 }
 
-/** Are all of a biome's SET missions completed? Standalone side-quests (Plan #8b
- *  tracking) are optional and don't count toward set-completion / the unlock. */
+/** Are all of a biome's SET missions completed? Missions marked `standalone` are
+ *  optional and don't count toward set-completion / the unlock. */
 export function isBiomeSetComplete(journal: Journal, biome: BiomeId): boolean {
   for (const id of MISSION_ORDER) {
     const def = MISSIONS[id];
@@ -136,8 +136,8 @@ export function currentRank(journal: Journal): RankDef {
 // ---------------------------------------------------------------------------
 
 /** The biomes that have a mission SET (≥1 non-standalone mission) — the ones whose
- *  completion counts toward the win. Derived from the data (standalone side-quests
- *  like the badger track are excluded), so a future biome's set is auto-included. */
+ *  completion counts toward the win. Derived from the data, so a new biome's set
+ *  is auto-included. */
 export function missionSetBiomes(): BiomeId[] {
   const seen = new Set<BiomeId>();
   for (const id of MISSION_ORDER) {
@@ -152,7 +152,7 @@ export function missionSetBiomes(): BiomeId[] {
  * mission SET complete + top rank. Pure over the journal — earned through play, no
  * grind: with the shipped content, catching all species + finishing the sets
  * already clears the top-rank threshold, so the rank check is never a separate
- * wall (see the achievability test). Standalone side-quests are NOT required.
+ * wall (see the achievability test).
  */
 export function isGameComplete(journal: Journal): boolean {
   if (foundCount(journal) < SPECIES_ORDER.length) return false;
