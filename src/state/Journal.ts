@@ -10,13 +10,12 @@
  *    (Safari Private Mode throws on setItem).
  *  - Corrupt / unparseable JSON falls back to a fresh store.
  *  - The schema is VERSIONED; load routes through `migrate`, which UPGRADES old
- *    stores step by step (v1 -> v2 -> v3 -> v4) rather than resetting them. An old
- *    player keeps every caught species and gains new fields at safe defaults.
+ *    stores step by step (v1 -> v2 -> v3 -> v4 -> v5) rather than resetting them.
+ *    An old player keeps every caught species and gains new fields at safe defaults.
  *
- * SCHEMA v4: species dex + missions progress + rank points + mission-granted
- * biome unlocks + durable bait counts + `won` flag (Plan #10 — the "Field Guide
- * Complete" celebration fires once, then free-roam forever). Only CAUGHT species
- * get a species entry (absence === not found).
+ * SCHEMA v5: species dex + missions progress + rank points + mission-granted
+ * biome unlocks + durable bait counts + `won` flag (Plan #10) + `credits` balance
+ * (§12 economy). Only CAUGHT species get a species entry (absence === not found).
  */
 
 import { BAIT, BAIT_ORDER, type BaitId, type BiomeId } from '../utils/constants';
