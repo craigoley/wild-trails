@@ -39,17 +39,30 @@ export class JournalPanel {
     panel.className = 'journal-panel';
     this.root.appendChild(panel);
 
+    // NON-scrolling header BAR (title + the ✕) — stays put while the body scrolls,
+    // so the close target never scrolls away on touch (Plan #7/#16 follow-up). The
+    // title is its own element (refresh sets THAT, so it can't wipe the ✕).
+    const headerBar = document.createElement('div');
+    headerBar.className = 'journal-header';
+    panel.appendChild(headerBar);
+
     this.header = document.createElement('div');
-    this.header.className = 'journal-header';
-    panel.appendChild(this.header);
+    this.header.className = 'journal-title';
+    headerBar.appendChild(this.header);
+
+    // Dedicated SCROLL BODY (flex:1; min-height:0 — the iOS scroll enabler). The
+    // grid lives inside it so it scrolls within the bounded panel, not past it.
+    const scroll = document.createElement('div');
+    scroll.className = 'journal-scroll';
+    panel.appendChild(scroll);
 
     this.grid = document.createElement('div');
     this.grid.className = 'journal-grid';
-    panel.appendChild(this.grid);
+    scroll.appendChild(this.grid);
 
-    // Close paths (✕ / backdrop tap / Escape) — without these the modal is a
-    // soft-trap on touch (its toggle button is occluded by the open overlay).
-    addOverlayDismiss(this.root, panel, () => this.open, () => this.setOpen(false));
+    // Close paths (✕ / backdrop tap / Escape). The ✕ mounts in the fixed header bar
+    // (not the scroll body) so it's always visible + thumb-reachable on mobile.
+    addOverlayDismiss(this.root, panel, () => this.open, () => this.setOpen(false), headerBar);
 
     container.appendChild(this.root);
   }

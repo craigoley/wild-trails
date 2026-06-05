@@ -40,20 +40,31 @@ export class MissionPanel {
     panel.className = 'mission-panel';
     this.root.appendChild(panel);
 
+    // NON-scrolling header BAR (title + the ✕) — the close target never scrolls
+    // away. The title is its own element so refresh can't wipe the ✕.
+    const headerBar = document.createElement('div');
+    headerBar.className = 'mission-header';
+    panel.appendChild(headerBar);
+
     this.header = document.createElement('div');
-    this.header.className = 'mission-header';
-    panel.appendChild(this.header);
+    this.header.className = 'mission-title';
+    headerBar.appendChild(this.header);
+
+    // Dedicated SCROLL BODY (flex:1; min-height:0) — the list + debug scroll here.
+    const scroll = document.createElement('div');
+    scroll.className = 'mission-scroll';
+    panel.appendChild(scroll);
 
     this.list = document.createElement('div');
     this.list.className = 'mission-list';
-    panel.appendChild(this.list);
+    scroll.appendChild(this.list);
 
     this.debugLine = document.createElement('div');
     this.debugLine.className = 'mission-debug';
-    panel.appendChild(this.debugLine);
+    scroll.appendChild(this.debugLine);
 
-    // Same close paths as the journal (this panel had the identical soft-trap).
-    addOverlayDismiss(this.root, panel, () => this.open, () => this.setOpen(false));
+    // The ✕ mounts in the fixed header bar (always visible + thumb-reachable).
+    addOverlayDismiss(this.root, panel, () => this.open, () => this.setOpen(false), headerBar);
 
     container.appendChild(this.root);
   }

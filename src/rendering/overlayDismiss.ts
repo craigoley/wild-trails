@@ -16,8 +16,11 @@ export function addOverlayDismiss(
   panel: HTMLElement,
   isOpen: () => boolean,
   close: () => void,
+  /** Where the ✕ mounts — pass a NON-scrolling header so the close target never
+   *  scrolls away on touch (Plan #7/#16 follow-up). Defaults to the panel. */
+  mount: HTMLElement = panel,
 ): void {
-  // ✕ close button, pinned to the panel's top-right corner.
+  // ✕ close button — a ≥44px tap target (Apple HIG minimum) in the mount element.
   const x = document.createElement('button');
   x.className = 'overlay-close';
   x.setAttribute('aria-label', 'Close');
@@ -28,7 +31,7 @@ export function addOverlayDismiss(
     e.stopPropagation();
     close();
   });
-  panel.appendChild(x);
+  mount.appendChild(x);
 
   // Backdrop tap: a press on the overlay itself (not bubbled from the panel).
   root.addEventListener('pointerdown', (e) => {

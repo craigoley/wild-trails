@@ -512,30 +512,49 @@ body {
   justify-content: center;
   background: rgba(6, 14, 8, 0.78);
   pointer-events: auto;
-  padding: 16px;
+  /* Safe-area insets so the panel + its header ✕ clear the iOS notch / home bar. */
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
 }
+/* Same flex-column / bounded-scroll-body structure as the journal (both shared the
+ * iOS scroll bug — the fix is the architecture, not more pan-y). */
 .mission-panel {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(520px, 94vw);
-  max-height: 88vh;
-  overflow-y: auto;
-  /* Same touch-scroll fix as the journal panel — both shared the overflow bug. */
-  touch-action: pan-y;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  max-height: 88dvh;
+  min-height: 0;
+  overflow: hidden;
   background: rgba(16, 26, 18, 0.98);
   border: 2px solid rgba(122, 200, 255, 0.4);
   border-radius: 14px;
-  padding: 16px 18px 20px;
   color: rgba(255, 255, 255, 0.92);
 }
 .mission-header {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 8px 56px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mission-title {
   font-size: 17px;
   font-weight: 800;
   letter-spacing: 0.03em;
   text-align: center;
-  margin-bottom: 14px;
   color: #bfe3ff;
+}
+.mission-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 14px 18px 18px;
 }
 .mission-list {
   display: grid;
@@ -587,56 +606,81 @@ body {
   justify-content: center;
   background: rgba(6, 14, 8, 0.78);
   pointer-events: auto;
-  padding: 16px;
+  /* Safe-area insets so the panel + its header ✕ clear the iOS notch / home bar. */
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
 }
+/* Flex-column modal: a NON-scrolling header bar + a bounded scroll BODY. The body
+ * (not the panel) is the scroll container, with min-height:0 — the missing iOS
+ * enabler (#16's pan-y alone couldn't scroll a flex child whose min-height:auto
+ * never let overflow establish a viewport). dvh, not vh, so iOS doesn't hide the
+ * bottom under the URL bar. */
 .journal-panel {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(560px, 94vw);
-  max-height: 88vh;
-  overflow-y: auto;
-  /* The global body{touch-action:none} (native-game feel) otherwise eats the
-   * touch-pan gesture INSIDE the panel — so 6+ species couldn't be scrolled on
-   * mobile. Re-enable vertical pan here; contain stops it chaining to the page. */
-  touch-action: pan-y;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  max-height: 88dvh;
+  min-height: 0;
+  overflow: hidden; /* clip to the rounded corners; the body scrolls */
   background: rgba(16, 26, 18, 0.98);
   border: 2px solid rgba(255, 207, 107, 0.45);
   border-radius: 14px;
-  padding: 16px 18px 20px;
   color: rgba(255, 255, 255, 0.92);
 }
 
-/* The ✕ close button — pinned to the panel's top-right corner (sticky so it
- * stays reachable even if the roster scrolls). Touch + mouse hittable. */
+/* The ✕ close button — a ≥44px tap target (Apple HIG minimum), pinned in the
+ * NON-scrolling header bar so it's always visible + thumb-reachable on mobile. */
 .overlay-close {
-  position: sticky;
-  top: 0;
-  float: right;
-  margin: -6px -6px 2px 8px;
-  width: 34px;
-  height: 34px;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.85);
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1;
   cursor: pointer;
   pointer-events: auto;
   touch-action: manipulation;
-  z-index: 1;
+  z-index: 2;
 }
 .overlay-close:active {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* The header BAR — never scrolls (flex:0 0 auto); holds the title + the ✕. */
 .journal-header {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 8px 56px; /* room for the 44px ✕ on the right */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.journal-title {
   font-size: 17px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-align: center;
-  margin-bottom: 14px;
   color: #ffe2a6;
+}
+/* The bounded scroll BODY — the actual touch-scroll viewport (min-height:0). */
+.journal-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 14px 18px 18px;
 }
 .journal-grid {
   display: grid;
