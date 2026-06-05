@@ -20,10 +20,15 @@ describe('Spawn — eligibility gating (biome + time of day)', () => {
     expect(day).not.toContain('quail');
   });
 
-  it('gates by biome: biomes with no roster yet have no eligible species', () => {
-    // Wetland gained a roster in Plan #9; only Highlands is still empty.
-    expect(eligibleSpecies('highlands', 'day')).toHaveLength(0);
+  it('gates Highlands by biome + window: its alpine roster is in-window only', () => {
+    // Highlands gained its roster in the Highlands content round (the grid is full).
+    const day = eligibleSpecies('highlands', 'day').map((s) => s.id);
+    expect(day).toContain('ptarmigan');
+    expect(day).toContain('dotterel');
+    expect(eligibleSpecies('highlands', 'dusk').map((s) => s.id)).toContain('mountainhare');
+    // No highland species is active at night or dawn -> empty in those windows.
     expect(eligibleSpecies('highlands', 'night')).toHaveLength(0);
+    expect(eligibleSpecies('highlands', 'dawn')).toHaveLength(0);
   });
 });
 

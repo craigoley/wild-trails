@@ -233,9 +233,13 @@ export type SpeciesId =
   | 'robin'
   | 'badger'
   | 'roedeer'
-  // Wetland (tier 3 — the hardest roster yet).
+  // Wetland (tier 3 — the hardest lowland roster).
   | 'mallard'
-  | 'frog';
+  | 'frog'
+  // Highlands (tier 4 — alpine high-tops, the hardest roster of all).
+  | 'ptarmigan'
+  | 'mountainhare'
+  | 'dotterel';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -294,6 +298,9 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'roedeer',
   'mallard',
   'frog',
+  'ptarmigan',
+  'mountainhare',
+  'dotterel',
 ];
 
 /**
@@ -490,6 +497,60 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     size: 0.32,
     profile:
       'Common frogs catch insects, slugs and worms with a flick of their sticky tongue. They breathe through damp skin and escape danger with one powerful leap back into the water.',
+  },
+  // --- Highlands (tier 4 — alpine high-tops, below the Wetland floor 0.20) ------
+  ptarmigan: {
+    id: 'ptarmigan',
+    displayName: 'Rock Ptarmigan',
+    biome: 'highlands',
+    spawnWeight: 5,
+    // A ground grouse — relies on camouflage, then flushes; moderate flee, but a
+    // tier-4 catch rate (0.18, below the frog's 0.20).
+    baseFleeSpeed: 4.2,
+    detectionRadius: 4.0,
+    activityWindow: 'day',
+    tier: 4,
+    baseCatchRate: 0.18,
+    bait: 'greens',
+    color: 0xb8b4a4,
+    size: 0.36,
+    profile:
+      'Rock ptarmigan live higher up the mountain than almost any other bird. They swap their speckled brown summer feathers for pure white in winter, vanishing against the snow.',
+  },
+  mountainhare: {
+    id: 'mountainhare',
+    displayName: 'Mountain Hare',
+    biome: 'highlands',
+    // The FASTEST flee in the game (5.2, still below the player's maxSpeed 6 — so
+    // catchable on foot, but only just): alpine hares are explosively quick.
+    spawnWeight: 4,
+    baseFleeSpeed: 5.2,
+    detectionRadius: 5.0,
+    activityWindow: 'dusk',
+    tier: 4,
+    baseCatchRate: 0.15,
+    bait: 'greens',
+    color: 0x9aa3ad,
+    size: 0.46,
+    profile:
+      "Britain's only native hare of the high tops, the mountain hare turns blue-grey then white in winter for camouflage. It can bound away faster than almost anything on the hill.",
+  },
+  dotterel: {
+    id: 'dotterel',
+    displayName: 'Dotterel',
+    biome: 'highlands',
+    // The HARDEST catch (0.12): a small, rare wader of the highest tops.
+    spawnWeight: 3,
+    baseFleeSpeed: 3.8,
+    detectionRadius: 4.2,
+    activityWindow: 'day',
+    tier: 4,
+    baseCatchRate: 0.12,
+    bait: 'insects',
+    color: 0xa9763f,
+    size: 0.3,
+    profile:
+      'Dotterel nest on the highest, stoniest ground of all. Unusually, it is the female who is brighter coloured — the male sits on the eggs and raises the chicks alone.',
   },
 };
 
@@ -1027,6 +1088,28 @@ export const SPECIES_MODEL: Record<
     accent: 0xcfe8a8,
     eyeRadiusR: 0.28,
   },
+  // A plump alpine grouse — reuses the BIRD build (round body + beak + low crest).
+  ptarmigan: {
+    kind: 'bird',
+    accent: 0xf0f0ec, // white winter belly
+    beakLengthR: 0.4,
+    crestHeightR: 0.25,
+  },
+  // A big hare — the RABBIT build with longer ears + a pale winter coat accent.
+  mountainhare: {
+    kind: 'rabbit',
+    accent: 0xeef0f2,
+    earHeightR: 1.3,
+    earRadiusR: 0.13,
+    tailRadiusR: 0.2,
+  },
+  // A small highland wader — the BIRD build, slim beak + a pale eyestripe accent.
+  dotterel: {
+    kind: 'bird',
+    accent: 0xf2e4c4,
+    beakLengthR: 0.35,
+    crestHeightR: 0.15,
+  },
 } as const;
 
 // ===========================================================================
@@ -1075,6 +1158,9 @@ export const MISSION_ORDER: readonly string[] = [
   'woodland-dawn',
   'woodland-dusk',
   'track-badger',
+  'wetland-survey',
+  'wetland-dawn',
+  'wetland-day',
 ];
 
 /**
@@ -1148,6 +1234,33 @@ export const MISSIONS: Record<string, MissionDef> = {
     requirement: { kind: 'track-and-catch', species: 'badger', count: 1 },
     rewardPoints: 15,
   },
+  // Wetland set (Highlands content) — the FIRST Wetland gate (Wetland was terminal).
+  // Teaches both wetland windows + an explore baseline (the #33 "don't ask too
+  // little" shape); completing it unlocks the Highlands (the final diagonal cell).
+  'wetland-survey': {
+    id: 'wetland-survey',
+    biome: 'wetland',
+    title: 'Into the Marsh',
+    description: 'Get to know the wetland — catch 3 animals among the reeds.',
+    requirement: { kind: 'catch-in-biome', biome: 'wetland', count: 3 },
+    rewardPoints: 25,
+  },
+  'wetland-dawn': {
+    id: 'wetland-dawn',
+    biome: 'wetland',
+    title: 'Dawn Chorus',
+    description: 'Frogs call from the water at first light. Catch the frog at dawn.',
+    requirement: { kind: 'catch-species', species: 'frog', count: 1 },
+    rewardPoints: 20,
+  },
+  'wetland-day': {
+    id: 'wetland-day',
+    biome: 'wetland',
+    title: 'On the Water',
+    description: 'Mallards dabble on the open water by day. Catch the mallard.',
+    requirement: { kind: 'catch-species', species: 'mallard', count: 1 },
+    rewardPoints: 20,
+  },
 };
 
 /** Completing ALL of a biome's missions unlocks the mapped biome (lateral reward
@@ -1155,6 +1268,7 @@ export const MISSIONS: Record<string, MissionDef> = {
 export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, BiomeId>> = {
   meadow: 'woodland',
   woodland: 'wetland',
+  wetland: 'highlands',
 };
 
 // ===========================================================================
