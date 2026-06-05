@@ -104,7 +104,7 @@ describe('Balance — bait economy (consume, block at 0, replenish, cap)', () =>
   });
 });
 
-describe('Balance — a catch replenishes the caught species diet bait', () => {
+describe('Balance — a catch NO LONGER refills bait (§12 scarcity: catch -> credits, bait shop-only)', () => {
   /** A game with spawning paused and one test animal at (x, y). */
   function gameWithAnimalAt(species: 'hedgehog', x: number, y: number): GameState {
     const g = createGameState(7);
@@ -114,15 +114,15 @@ describe('Balance — a catch replenishes the caught species diet bait', () => {
     return g;
   }
 
-  it('catching a hedgehog grants insects (its diet), capped', () => {
-    const g = gameWithAnimalAt('hedgehog', 0.5, 0); // baseRate 0.85 -> point-blank net == 1
-    const before = g.bait.counts.insects;
+  it('catching a hedgehog does NOT change any bait count (the refill loop is gone)', () => {
+    const g = gameWithAnimalAt('hedgehog', 0.5, 0); // easy: point-blank net catches bait-less
+    const before = { ...g.bait.counts };
 
-    update(g, { ...createIntent(), catchPressed: true }, SIM_DT); // start encounter
+    update(g, { ...createIntent(), catchPressed: true }, SIM_DT); // start encounter (no bait deployed)
     expect(g.encounter).not.toBeNull();
     for (let i = 0; i < 400 && g.encounter; i++) update(g, createIntent(), SIM_DT);
 
-    expect(g.sessionCatches).toBe(1);
-    expect(g.bait.counts.insects).toBe(Math.min(BAIT.maxCount, before + BAIT.rewardPerCatch));
+    expect(g.sessionCatches).toBe(1); // caught it BAIT-LESS (the anti-lockout valve)
+    expect(g.bait.counts).toEqual(before); // catching added NO bait — bait is shop-only now
   });
 });

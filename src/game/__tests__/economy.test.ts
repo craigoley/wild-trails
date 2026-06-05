@@ -84,8 +84,8 @@ describe('Economy — credits are SEPARATE from rank, and free-baseline is untou
     const j = createJournal();
     addCredits(j, 50);
     expect(Object.keys(j)).toContain('credits');
-    // No bait was consumed or granted by the economy; the free catch-replenish loop
-    // (BAIT.rewardPerCatch) is the baseline and lives entirely in the bait system.
+    // The economy module never touches bait — bait lives entirely in the bait system
+    // (and is now shop-only; catching grants credits, not bait — §12 scarcity).
     expect(j.bait).toBeDefined();
   });
 });

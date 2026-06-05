@@ -834,12 +834,9 @@ export const BAIT = {
   lureRadius: 8,
   /** Approach speed while lured, world units/sec. */
   approachSpeed: 2.0,
-  /** Bait is a CONSUMED resource: 1 is spent on every deploy (a wrong/wasted
-   *  deploy still costs, which teaches). To keep it managed rather than a
-   *  dead-end, a successful catch REPLENISHES the caught species' diet bait
-   *  (you learned what it eats) by this much, capped at maxCount. */
-  rewardPerCatch: 2,
-  /** Upper bound on any one bait type's count (no infinite hoarding). */
+  /** Bait is a CONSUMED, SCARCE resource (§12): 1 is spent on every deploy, and the
+   *  ONLY source is the Field Supply shop — catching no longer refills it. It can
+   *  run out; easy animals stay catchable bait-less (the anti-lockout valve). */
   maxCount: 9,
   /** Seconds the on-screen bait notice ("Out of …" / "Wrong bait") lingers. */
   noticeSec: 1.4,
