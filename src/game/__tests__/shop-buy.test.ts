@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { addCredits, baitBuyState, buyBait } from '../Economy';
-import { createBaitState, addBait } from '../Bait';
+import { createBaitState } from '../Bait';
 import { createJournal, JOURNAL_SCHEMA_VERSION } from '../../state/Journal';
 import { BAIT, SHOP } from '../../utils/constants';
 
@@ -70,11 +70,14 @@ describe('Field Supply — guardrails (separate from rank, free baseline, no sch
     expect(j.rankPoints).toBe(40);
   });
 
-  it('the FREE catch-replenish loop (addBait) is untouched — core bait acquisition still works', () => {
+  it('the shop is the bait source: buyBait is the path that adds bait (§12 scarcity)', () => {
+    // Bait no longer refills on catch — the only way to gain it is a purchase.
+    const j = createJournal();
+    addCredits(j, 10);
     const bait = createBaitState();
     bait.counts.seeds = 3;
-    addBait(bait, 'seeds', BAIT.rewardPerCatch); // what a catch does for free
-    expect(bait.counts.seeds).toBe(3 + BAIT.rewardPerCatch);
+    expect(buyBait(j, bait, 'seeds')).toBe(true);
+    expect(bait.counts.seeds).toBe(3 + SHOP.buyQuantity); // the shop added it
   });
 
   it('buying mutates existing v5 fields only — NO schema bump / migration', () => {

@@ -40,7 +40,6 @@ import {
 } from './Encounter';
 import {
   activeLure,
-  addBait,
   clearActiveBait,
   createBaitState,
   cycleSelectedBait,
@@ -512,9 +511,10 @@ function resolveOutcome(game: GameState, outcome: 'caught' | 'escaped'): void {
     game.lastCaughtSpecies = enc.species;
     game.lastCaughtBiome = game.currentBiome;
     game.lastCaughtPhase = game.dayPhase;
-    // Replenish the caught species' diet bait (you learned what it eats), and
-    // spend the active lure — it was "used up" on the catch, so it disappears.
-    addBait(game.bait, getSpecies(enc.species).bait, BAIT.rewardPerCatch);
+    // Bait scarcity (§12): a catch NO LONGER refills bait — it grants CREDITS (at the
+    // boundary, 1a's creditsForCatch) + journal/mission progress. Bait is shop-only
+    // now and can run out; easy animals stay catchable bait-less (the anti-lockout
+    // valve). The deployed lure is still spent — it was "used up" on the catch.
     clearActiveBait(game.bait);
   } else {
     animal.aiState = 'flee'; // a spooked escapee bolts
