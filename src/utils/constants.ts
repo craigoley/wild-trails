@@ -1038,6 +1038,11 @@ export const SPECIES_MODEL: Record<
 export type MissionRequirement =
   | { kind: 'catch-in-timephase'; phase: DayPhase; count: number }
   | { kind: 'catch-in-biome'; biome: BiomeId; count: number }
+  // Catch a specific species — no tracking implied. Because a species is locked to
+  // its biome + activity window, "catch the dawn robin" IS "play the woodland at
+  // dawn" (the knowledge applied), without overloading track-and-catch's tracking
+  // connotation onto un-tracked species (Woodland gate tune).
+  | { kind: 'catch-species'; species: SpeciesId; count: number }
   // Plan #8b — TRACKING: catch a specific target species. The target only appears
   // via the tracking flow (signs + a seeded sett spawn), so catching it IS the
   // proof you tracked it. Gates on applied journal knowledge, not recall (§5.5).
@@ -1067,7 +1072,8 @@ export const MISSION_ORDER: readonly string[] = [
   'meadow-dawn',
   'meadow-dusk',
   'woodland-survey',
-  'woodland-night',
+  'woodland-dawn',
+  'woodland-dusk',
   'track-badger',
 ];
 
@@ -1101,9 +1107,12 @@ export const MISSIONS: Record<string, MissionDef> = {
     requirement: { kind: 'catch-in-timephase', phase: 'dusk', count: 2 },
     rewardPoints: 15,
   },
-  // Woodland set (Plan #9) — completing BOTH unlocks the Wetland. Both genuinely
-  // require the woodland: survey is catch-in-biome, and the only night-active
-  // animal (the badger) lives there — so the set can't be cheated from the meadow.
+  // Woodland set (Plan #9, gate tune) — a FOUR-WINDOW gate: the unlock now means
+  // "you learned to hunt the woodland at every time of day," not "catch 4 squirrels."
+  // Each window-locked species forces its window — explore (survey/day), the dawn
+  // robin, the dusk roe deer, and the nocturnal badger via the tracking hunt. All
+  // count-1 of a window-locked species (knowledge, not grind). track-badger now
+  // GATES (no longer a standalone side-quest) — the signature lesson is required.
   'woodland-survey': {
     id: 'woodland-survey',
     biome: 'woodland',
@@ -1112,17 +1121,25 @@ export const MISSIONS: Record<string, MissionDef> = {
     requirement: { kind: 'catch-in-biome', biome: 'woodland', count: 4 },
     rewardPoints: 25,
   },
-  'woodland-night': {
-    id: 'woodland-night',
+  'woodland-dawn': {
+    id: 'woodland-dawn',
     biome: 'woodland',
-    title: 'After Dark',
-    description: 'Badgers only emerge once it is properly dark. Catch 1 at night.',
-    requirement: { kind: 'catch-in-timephase', phase: 'night', count: 1 },
-    rewardPoints: 25,
+    title: 'First Light',
+    description: 'Robins sing the woodland awake. Catch the robin at dawn.',
+    requirement: { kind: 'catch-species', species: 'robin', count: 1 },
+    rewardPoints: 20,
   },
-  // Plan #8b — the first TRACKING puzzle (STANDALONE side-quest; doesn't gate the
-  // wetland unlock). The journal already told you the badger is a nocturnal
-  // woodland digger — use that: follow the diggings to the sett, after dark.
+  'woodland-dusk': {
+    id: 'woodland-dusk',
+    biome: 'woodland',
+    title: 'The Evening Browse',
+    description: 'Roe deer step out to browse as the light fades. Catch the roe deer at dusk.',
+    requirement: { kind: 'catch-species', species: 'roedeer', count: 1 },
+    rewardPoints: 20,
+  },
+  // Plan #8b — the first TRACKING puzzle. Now a GATING mission (the woodland's
+  // signature lesson is required, not optional): the journal told you the badger is
+  // a nocturnal woodland digger — use that, follow the diggings to the sett at night.
   'track-badger': {
     id: 'track-badger',
     biome: 'woodland',
@@ -1130,7 +1147,6 @@ export const MISSIONS: Record<string, MissionDef> = {
     description: 'Fresh diggings in the woodland. Read the signs, find the sett, and catch the badger.',
     requirement: { kind: 'track-and-catch', species: 'badger', count: 1 },
     rewardPoints: 15,
-    standalone: true,
   },
 };
 

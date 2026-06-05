@@ -56,6 +56,8 @@ function meets(req: MissionRequirement, ev: CatchEvent): boolean {
       return ev.phase === req.phase;
     case 'catch-in-biome':
       return ev.biome === req.biome;
+    case 'catch-species':
+      return ev.species === req.species; // a specific species (no tracking implied)
     case 'track-and-catch':
       return ev.species === req.species; // the target only appears via tracking
   }

@@ -18,9 +18,13 @@ const ev = (over: Partial<CatchEvent>): CatchEvent => ({
 });
 
 describe('Plan #9 — Wetland unlock via the Woodland mission set', () => {
+  // The four-window gate (Woodland gate tune): survey + dawn robin + dusk roe deer
+  // + the tracked night badger.
   function completeWoodlandSet(j: ReturnType<typeof createJournal>) {
-    for (let i = 0; i < 4; i++) evaluateCatch(j, ev({ biome: 'woodland', phase: 'day' })); // survey
-    return evaluateCatch(j, ev({ biome: 'woodland', phase: 'night' })); // after-dark (badger)
+    for (let i = 0; i < 4; i++) evaluateCatch(j, ev({ biome: 'woodland', phase: 'day' })); // survey ×4
+    evaluateCatch(j, ev({ species: 'robin', biome: 'woodland', phase: 'dawn' })); // woodland-dawn
+    evaluateCatch(j, ev({ species: 'roedeer', biome: 'woodland', phase: 'dusk' })); // woodland-dusk
+    return evaluateCatch(j, ev({ species: 'badger', biome: 'woodland', phase: 'night' })); // track-badger -> set complete
   }
 
   it('completing the Woodland set unlocks the Wetland (data-driven, once)', () => {
@@ -31,6 +35,31 @@ describe('Plan #9 — Wetland unlock via the Woodland mission set', () => {
     expect(last.unlocked).toContain('wetland');
     // Idempotent — a further woodland catch doesn't re-unlock.
     expect(evaluateCatch(j, ev({ biome: 'woodland', phase: 'day' })).unlocked).toEqual([]);
+  });
+
+  it('the OLD too-easy condition alone (survey ×4 + a night catch) NO LONGER unlocks', () => {
+    // The pre-tune gate: 4 woodland catches + 1 night catch. Without the dawn robin
+    // AND dusk roe deer, the four-window set is incomplete -> no Wetland.
+    const j = createJournal();
+    for (let i = 0; i < 4; i++) evaluateCatch(j, ev({ species: 'redsquirrel', biome: 'woodland', phase: 'day' }));
+    const r = evaluateCatch(j, ev({ species: 'badger', biome: 'woodland', phase: 'night' }));
+    expect(isBiomeSetComplete(j, 'woodland')).toBe(false);
+    expect(r.unlocked).not.toContain('wetland');
+  });
+
+  it('the new catch-species kind matches the right species only (dawn robin / dusk roe deer)', () => {
+    const j = createJournal();
+    // A wrong species in the dawn window does NOT complete woodland-dawn.
+    evaluateCatch(j, ev({ species: 'redsquirrel', biome: 'woodland', phase: 'dawn' }));
+    expect(j.missions['woodland-dawn'].completed).toBe(false);
+    // The robin does.
+    evaluateCatch(j, ev({ species: 'robin', biome: 'woodland', phase: 'dawn' }));
+    expect(j.missions['woodland-dawn'].completed).toBe(true);
+    // The roe deer completes woodland-dusk; a wrong species doesn't.
+    evaluateCatch(j, ev({ species: 'redsquirrel', biome: 'woodland', phase: 'dusk' }));
+    expect(j.missions['woodland-dusk'].completed).toBe(false);
+    evaluateCatch(j, ev({ species: 'roedeer', biome: 'woodland', phase: 'dusk' }));
+    expect(j.missions['woodland-dusk'].completed).toBe(true);
   });
 
   it('the EXISTING Meadow->Woodland unlock still fires (the chain did not break)', () => {
