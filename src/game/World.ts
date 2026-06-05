@@ -15,6 +15,7 @@ import {
   BIOMES,
   BIOME_ORDER,
   HIDING_SPOTS,
+  SUPPLY_POSTS,
   type BiomeDef,
   type BiomeId,
   type HidingSpotDef,
@@ -142,6 +143,17 @@ export function isInCover(world: World, x: number, y: number): boolean {
     if (Math.hypot(x - s.x, y - s.y) <= s.radius) return true;
   }
   return false;
+}
+
+/** Which biome's Field Supply post the player is standing in (within its zone), or
+ *  null. A post only counts once its biome is UNLOCKED (it doesn't exist before).
+ *  A proximity zone, not a wall — no collision (§12 1b-revise). Pure. */
+export function supplyPostAt(world: World, x: number, y: number): BiomeId | null {
+  for (const p of SUPPLY_POSTS) {
+    if (!world.biomes[p.biome].unlocked) continue;
+    if (Math.hypot(x - p.x, y - p.y) <= p.radius) return p.biome;
+  }
+  return null;
 }
 
 /** Is the biome enterable? */

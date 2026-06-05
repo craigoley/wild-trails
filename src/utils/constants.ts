@@ -732,6 +732,40 @@ export const ROCK_RENDER = {
   color: 0x8a8f97,
 } as const;
 
+/** A Field Supply post — a walk-in building (§12 1b-revise). One per biome; it only
+ *  exists (renders + opens) once the biome is unlocked. Walking into `radius`
+ *  (a proximity zone, NOT a wall — no collision) opens the Field Supply panel. */
+export interface SupplyPostDef {
+  biome: BiomeId;
+  x: number;
+  y: number;
+  radius: number;
+}
+
+/** One post per biome, placed clear of spawn (0,0), cover, and the badger sett. */
+export const SUPPLY_POSTS: readonly SupplyPostDef[] = [
+  { biome: 'meadow', x: 14, y: -14, radius: 2.5 },
+  { biome: 'woodland', x: 15, y: 25, radius: 2.5 },
+  { biome: 'wetland', x: 55, y: -14, radius: 2.5 },
+  { biome: 'highlands', x: 55, y: 55, radius: 2.5 },
+];
+
+/** Procedural zero-asset hut: a square of timber walls with a doorway gap in the
+ *  front, under a pyramid roof. Built once per unlocked biome in rebuildDynamic. */
+export const SUPPLY_RENDER = {
+  /** Footprint (square side) + wall height/thickness, world units. */
+  size: 1.7,
+  wallHeight: 1.1,
+  wallThickness: 0.16,
+  /** Doorway gap width in the front (-y facing) wall. */
+  doorWidth: 0.7,
+  /** Pyramid roof height above the walls + its overhang past the walls. */
+  roofHeight: 0.7,
+  roofOverhang: 0.2,
+  wallColor: 0x8a6b44,
+  roofColor: 0x5a3d22,
+} as const;
+
 // ===========================================================================
 // Tools
 // ===========================================================================
