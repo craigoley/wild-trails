@@ -30,12 +30,19 @@ import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
 import { Banner } from './rendering/Banner';
 import { missionBannerMessages } from './rendering/missionBanners';
 import { AudioEngine } from './audio/AudioEngine';
-import { createAutosaver, loadJournal, recordCatch, setBaitCounts } from './state/Journal';
+import { createAutosaver, foundCount, loadJournal, recordCatch, setBaitCounts } from './state/Journal';
+import {
+  createOnboarding,
+  skipOnboarding,
+  tickOnboarding,
+  type PromptStep,
+} from './game/Onboarding';
+import { StartScreen } from './rendering/StartScreen';
 import { restoreBaitCounts } from './game/Bait';
 import { evaluateCatch, shouldCelebrateWin } from './game/Missions';
 import { WinScreen } from './rendering/WinScreen';
 import { unlockBiome } from './game/World';
-import { MAX_FRAME_DT, MISSION_ORDER, SIM_DT, TRACKING, type BiomeId } from './utils/constants';
+import { MAX_FRAME_DT, MISSION_ORDER, ONBOARDING, SIM_DT, TRACKING, type BiomeId } from './utils/constants';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('#app container not found');
@@ -119,6 +126,25 @@ const maybeFireWin = (): void => {
   }
 };
 maybeFireWin(); // boot check (a pre-#10 completed save earns its celebration now)
+
+// Onboarding (Plan #11) — first-run only (an empty journal); a returning player is
+// never re-onboarded. The contextual prompts flow through the game.notice channel.
+const firstRun = foundCount(journal) === 0;
+const onboarding = createOnboarding(firstRun);
+let hasMoved = false;
+const onboardSit = { moved: false, animalNearby: false, catchArmed: false, caughtAny: false };
+const showOnboardPrompt = (step: PromptStep): void => {
+  game.notice = { text: ONBOARDING.prompts[step], timer: ONBOARDING.beatSec, ttl: ONBOARDING.beatSec };
+};
+// The warm title splash: dismissing it begins play (+ the first prompt on a first
+// run); Skip suppresses the contextual prompts. Closeable (overlayDismiss).
+const startScreen = new StartScreen(app, {
+  onStart: () => {
+    if (onboarding.active) showOnboardPrompt('move'); // first prompt, once in play
+  },
+  onSkip: () => skipOnboarding(onboarding),
+});
+startScreen.show(firstRun);
 // Transient banners for mission completions + biome unlocks (the missing
 // player-facing feedback — the unlock previously fired silently).
 const banner = new Banner(app);
@@ -220,6 +246,20 @@ function frame(nowMs: number): void {
     }
   }
   const alpha = accumulator / SIM_DT;
+
+  // Onboarding (Plan #11): advance the contextual prompt machine from the player's
+  // situation. It GUIDES, never gates — the sim above already ran regardless.
+  if (onboarding.active) {
+    if (Math.abs(controls.intent.moveX) > ONBOARDING.moveThreshold || Math.abs(controls.intent.moveY) > ONBOARDING.moveThreshold) {
+      hasMoved = true;
+    }
+    onboardSit.moved = hasMoved;
+    onboardSit.animalNearby = game.animals.some((a) => a.active);
+    onboardSit.catchArmed = game.catchArmed;
+    onboardSit.caughtAny = game.sessionCatches > 0;
+    const step = tickOnboarding(onboarding, onboardSit, dt);
+    if (step) showOnboardPrompt(step);
+  }
 
   // Fade the mission/unlock banner on real frame time (it's render-side feedback).
   banner.tick(dt);

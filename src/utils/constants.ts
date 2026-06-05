@@ -1235,3 +1235,38 @@ export const WIN = {
   /** The free-roam invitation: an OPTION, never a pressure; progress never resets. */
   freeRoam: 'The wild keeps turning. Roam on whenever you like — nothing here ever resets.',
 } as const;
+
+// ===========================================================================
+// Onboarding + start screen (Plan #11)
+// ===========================================================================
+
+/** The warm title / start splash. Zero-asset, NOT a lore wall. */
+export const START_SCREEN = {
+  title: 'Wild Trails',
+  tagline: 'Wander the wild, track its creatures, and fill your field guide.',
+  start: 'Start',
+  continue: 'Continue',
+  skip: 'Skip tutorial',
+} as const;
+
+/**
+ * First-session contextual onboarding (Plan #11). ONE mechanic at a time, each
+ * prompt triggered by the player's situation, taught by DOING in the Meadow — the
+ * prompts GUIDE, they never gate play. Prompt text names both the touch + keyboard
+ * control so it reads on either. Bait is handled by the existing demand-driven
+ * baitHint (not duplicated here). Reward (journal) fires before direction (missions).
+ */
+export const ONBOARDING = {
+  /** Intent-magnitude threshold for "the player has moved" (dead-zone filter). */
+  moveThreshold: 0.01,
+  /** How long each prompt shows, seconds (a touch longer than a bait blip — it's
+   *  teaching). Also the linger before the journal -> missions beat advances. */
+  beatSec: 4,
+  prompts: {
+    move: 'Drag to roam — or use WASD / arrow keys.',
+    approach: 'An animal is about! Move closer to it.',
+    catch: 'In range — press CATCH (or Space) to try a catch.',
+    journal: 'Caught one! Open your Field Journal (J / 📓) to see your find.',
+    missions: 'Missions show you what to do next (M / 🎯).',
+  },
+} as const;
