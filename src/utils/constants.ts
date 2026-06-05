@@ -705,6 +705,8 @@ export const ROCK_RENDER = {
   spread: 0.8,
   minSize: 0.22,
   maxSize: 0.52,
+  /** Height-to-width ratio — rocks are squashed, not cubes. */
+  heightRatio: 0.7,
   color: 0x8a8f97,
 } as const;
 

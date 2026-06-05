@@ -224,8 +224,8 @@ export class WorldRenderer {
       const p = WorldRenderer.spiral(spot, ROCK_RENDER.spread, ROCK_RENDER.rockCount, i);
       const t = (i % 3) / 2; // 0, 0.5, 1 — deterministic size variation across the cluster
       const size = ROCK_RENDER.minSize + (ROCK_RENDER.maxSize - ROCK_RENDER.minSize) * t;
-      const rock = new Mesh(new BoxGeometry(size, size * 0.7, size), mat);
-      rock.position.set(p.x, size * 0.35, p.z);
+      const rock = new Mesh(new BoxGeometry(size, size * ROCK_RENDER.heightRatio, size), mat);
+      rock.position.set(p.x, (size * ROCK_RENDER.heightRatio) / 2, p.z);
       rock.rotation.y = i * (Math.PI * (3 - Math.sqrt(5))); // vary facing
       this.group.add(rock);
     }
