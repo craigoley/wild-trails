@@ -326,6 +326,115 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
 ];
 
 /**
+ * Richer field-guide knowledge per species (§4.1a) — a PARALLEL reference table,
+ * kept SEPARATE from SpeciesDef (gameplay tuning). Pure data; the journal card pulls
+ * it open. The `fieldNote` is the hero: the naturalist-gaze SYNTHESIS that connects
+ * WHEN + WHAT-IT-EATS + WHERE + BEHAVIOUR into "so look there, then" — teaching the
+ * SYSTEM, not listing facts (P2). `status` is real but HOPEFUL — what helps the
+ * animal thrive, never preachy or grim. (habitat/diet/activity are derived from
+ * SpeciesDef; `profile` stays the fun-fact.)
+ */
+export interface SpeciesInfo {
+  fieldNote: string;
+  behaviour: string;
+  status: string;
+}
+
+export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
+  fieldmouse: {
+    fieldNote:
+      'A round-the-clock seed-eater of the meadow — the field mouse forages day and night among the grass stems for seeds and grain. There is no wrong hour to find one in the long grass.',
+    behaviour:
+      'Darts in quick bursts between cover with its cheeks stuffed with seeds, climbing grass stalks and tunnelling runways through the thatch.',
+    status: 'Common and thriving — meadows and field margins full of seeding grasses keep mice everywhere.',
+  },
+  rabbit: {
+    fieldNote:
+      'A grazer of the open meadow — the rabbit crops grass and clover at all hours, never far from a burrow. Scan the short turf near hedges and banks.',
+    behaviour:
+      'Feeds in the open but bolts for the burrow at the first alarm, thumping a hind foot to warn the others; busiest at dawn and dusk.',
+    status: 'Very common — rabbits breed quickly, and a meadow with banks to dig in suits them well.',
+  },
+  quail: {
+    fieldNote:
+      'A dawn seed-eater hidden in the meadow grass — the quail creeps through tall cover at first light, picking up seeds and small insects. Look low at dawn.',
+    behaviour:
+      'Stays on the ground, running through the grass rather than flying; its three-note call carries far before sunrise.',
+    status: 'A summer visitor — quail do best where meadows are left tall and uncut for them to hide and feed.',
+  },
+  hedgehog: {
+    fieldNote:
+      'A dusk insectivore of the meadow edge — the hedgehog snuffles out beetles, worms and slugs as evening falls. Watch the long grass at dusk.',
+    behaviour:
+      'Roams at night by smell; when startled it curls into a spiny ball, trusting its roughly 5,000 spines over running.',
+    status: 'Once common, now declining — it needs messy hedges and gaps between gardens to roam and feed.',
+  },
+  redsquirrel: {
+    fieldNote:
+      'A daytime seed-eater of the treetops — the red squirrel works the woodland canopy by day for seeds, nuts and pine cones. Look up among the branches in daylight.',
+    behaviour:
+      'Leaps between branches using its bushy tail for balance, and buries caches of seeds to dig up through the winter.',
+    status: 'Rare and protected — red squirrels hold on where conifer woods give them seeds and space of their own.',
+  },
+  robin: {
+    fieldNote:
+      'A dawn insect-hunter of the woodland floor — the robin watches from low perches at first light, dropping to snatch grubs and worms. First light, low among the trees.',
+    behaviour:
+      'Bold and curious, it follows digging animals to grab disturbed insects, and sings to defend its patch all year round.',
+    status: 'Common and thriving — robins do well in woods, hedges and gardens alike.',
+  },
+  badger: {
+    fieldNote:
+      'A night-digging insectivore of the deep woodland — the badger emerges after dark to root out earthworms and grubs. A creature of the night, near its sett among the trees.',
+    behaviour:
+      'Lives in family groups in a sett of tunnels, following the same well-worn paths each night with its nose to the ground.',
+    status: 'Common but shy — badgers thrive where old woods give them undisturbed ground to dig their setts.',
+  },
+  roedeer: {
+    fieldNote:
+      'A dusk browser of the woodland clearings — the roe deer steps out as the light fades to feed on leaves, shoots and brambles. Watch the clearing edges at dusk.',
+    behaviour:
+      'Browses delicately at the wood’s edge, freezing at any sound before bounding away with a sharp bark of alarm.',
+    status: 'Common and increasing — roe deer thrive where woodland meets open ground.',
+  },
+  mallard: {
+    fieldNote:
+      'A daytime dabbler of the open water — the mallard up-ends in the shallows by day for water plants and seeds. Out on the wetland, in daylight.',
+    behaviour:
+      'Tips tail-up to feed underwater without diving; the green-headed drake and the streaky brown duck pair up on the water.',
+    status: 'Very common — mallards are at home on almost any pond, lake or wetland.',
+  },
+  frog: {
+    fieldNote:
+      'A dawn insectivore of the water’s edge — the common frog waits in the shallows at first light, hunting insects, slugs and worms. Look low along the wetland margins as the sun comes up.',
+    behaviour:
+      'Sits motionless, then ambushes with a flick of its long sticky tongue; one powerful leap carries it back to the safety of the water.',
+    status: 'Common but sensitive — frogs breathe through their skin, so clean ponds and wetlands keep them thriving.',
+  },
+  ptarmigan: {
+    fieldNote:
+      'A daytime plant-eater of the high tops — the rock ptarmigan picks at shoots, buds and berries by day, higher up the mountain than almost any other bird. Look on the open ground, in daylight.',
+    behaviour:
+      'Relies on camouflage over flight, sitting tight until almost stepped on; it turns from speckled brown to pure white for the winter.',
+    status: 'Doing well on the high tops — ptarmigan thrive where the mountains stay cold and wild.',
+  },
+  mountainhare: {
+    fieldNote:
+      'A dusk grazer of the high moor — the mountain hare crops heather and grasses as the light fades on the open tops. Watch the slopes at dusk.',
+    behaviour:
+      'Rests in a shallow scrape by day and feeds at dusk and dawn; it can bound away faster than almost anything on the hill, and turns blue-grey then white in winter.',
+    status: 'At home on the high moor — mountain hares thrive where heather is managed and cold winters favour their pale coat.',
+  },
+  dotterel: {
+    fieldNote:
+      'A daytime insect-hunter of the highest tops — the dotterel picks insects and spiders from the bare stony ground by day, on the very roof of the hills. Look on the open summits, in daylight.',
+    behaviour:
+      'Unusually tame, it lets you come close; and unusually, the brighter female leaves the duller male to sit on the eggs and raise the chicks.',
+    status: 'A rare summer visitor — dotterel nest only on the highest, wildest ground, which keeps them safe and undisturbed.',
+  },
+};
+
+/**
  * The species table — DATA. The Meadow's tier-1 roster: common, slow, docile
  * animals with varied activity windows so time-of-day gating is real
  * (fieldmouse + rabbit are out all day; quail forages at dawn; the hedgehog is

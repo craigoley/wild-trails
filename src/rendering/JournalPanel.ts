@@ -21,6 +21,7 @@ import {
   BIOMES,
   PANEL_LABELS,
   SPECIES,
+  SPECIES_INFO,
   SPECIES_ORDER,
 } from '../utils/constants';
 
@@ -124,14 +125,21 @@ export class JournalPanel {
     const body = document.createElement('div');
     body.className = 'card-body';
     const date = new Date(rec.firstCaughtAt).toLocaleDateString();
+    const info = SPECIES_INFO[id as keyof typeof SPECIES_INFO];
+    // A field-guide PAGE, not a flashcard (§4.1a, P2): the field note SYNTHESIS leads
+    // (when + diet + habitat + behaviour -> "look there, then"); the discrete facts
+    // stay below as a quiet at-a-glance reference.
     body.innerHTML =
       `<div class="card-name">${def.displayName}</div>` +
+      `<div class="card-fieldnote">${info.fieldNote}</div>` +
       `<div class="card-facts">` +
       `<span>Diet: ${BAIT_DISPLAY[def.bait].label}</span>` +
       `<span>Habitat: ${BIOMES[def.biome].displayName}</span>` +
       `<span>${ACTIVITY_LABEL[def.activityWindow]}</span>` +
       `</div>` +
-      `<div class="card-profile">${def.profile}</div>` +
+      `<div class="card-section"><span class="card-label">Behaviour</span>${info.behaviour}</div>` +
+      `<div class="card-section card-funfact"><span class="card-label">Did you know</span>${def.profile}</div>` +
+      `<div class="card-section card-status"><span class="card-label">Status</span>${info.status}</div>` +
       `<div class="card-meta">Caught ×${rec.catchCount} · first ${date}</div>`;
     card.appendChild(body);
     return card;
