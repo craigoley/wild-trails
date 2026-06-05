@@ -25,6 +25,9 @@ function fullyCompletedJournal() {
   evaluateCatch(j, { species: 'robin', biome: 'woodland', phase: 'dawn' });
   evaluateCatch(j, { species: 'roedeer', biome: 'woodland', phase: 'dusk' });
   evaluateCatch(j, { species: 'badger', biome: 'woodland', phase: 'night' });
+  // Complete the Wetland set (Highlands content): survey ×3 (+ day mallard) + dawn frog.
+  for (let i = 0; i < 3; i++) evaluateCatch(j, { species: 'mallard', biome: 'wetland', phase: 'day' });
+  evaluateCatch(j, { species: 'frog', biome: 'wetland', phase: 'dawn' });
   return j;
 }
 
@@ -87,16 +90,16 @@ describe('achievability — the win is REACHABLE with shipped content (no grind)
 
   it('the max achievable rank points clear the top threshold by a margin', () => {
     // Every mission reward + every species bonus — the ceiling with shipped content.
-    // Gate tune points shift: -woodland-night(25), +woodland-dawn(20) +woodland-dusk(20),
-    // and track-badger(15) now counts toward a set (it always awarded on completion).
-    // Net mission points 115 -> 130; the win is REACHABLE with the harder gate.
+    // Highlands content shift: + the first Wetland set (survey 25 + dawn 20 + day 20
+    // = +65) and +3 species. Mission points 130 -> 195; roster 10 -> 13.
     const missionPts = MISSION_ORDER.reduce((s, id) => s + MISSIONS[id].rewardPoints, 0);
     const speciesPts = SPECIES_ORDER.length * RANK.perSpeciesFound;
     const top = RANKS[RANKS.length - 1].minPoints;
-    expect(missionPts).toBe(130); // pin the post-tune total (the points-shift check)
-    expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // 210 >= 120 — clears with margin
-    // Every gate mission is count-1 of a window-locked species (or survey ×4) — no
-    // grind: the points are earned by playing the woodland through, not repetition.
+    expect(missionPts).toBe(195); // pin the post-Highlands total (the points-shift check)
+    expect(SPECIES_ORDER.length).toBe(13); // bigger roster, bigger win bar
+    expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // 299 >= 120 — clears with margin
+    // Every gate mission is count-1 of a window-locked species (or a small survey) —
+    // no grind: the win is earned by catching each species + finishing the sets once.
   });
 
   it('every species in the roster actually exists (the win can be filled)', () => {
