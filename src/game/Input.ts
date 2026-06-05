@@ -68,6 +68,7 @@ export const ACTION_KEYS = {
   baitCycle: ['q'],
   journal: ['j'],
   missions: ['m'],
+  shop: ['p'],
 } as const;
 
 /** Number keys for DIRECT bait selection, positional: index 0 = '1', 1 = '2', …

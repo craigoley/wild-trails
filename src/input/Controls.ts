@@ -225,6 +225,7 @@ export class Controls {
     if (includes(ACTION_KEYS.baitCycle, k)) this.intent.baitCycle = true;
     if (includes(ACTION_KEYS.journal, k)) this.intent.journalToggle = true;
     if (includes(ACTION_KEYS.missions, k)) this.intent.missionToggle = true;
+    if (includes(ACTION_KEYS.shop, k)) this.intent.shopToggle = true;
     // 1/2/3 direct-select the corresponding bait chip.
     const baitIdx = baitIndexForKey(k);
     if (baitIdx >= 0) this.intent.baitSelect = baitIdx;

@@ -106,7 +106,7 @@ export class ShopPanel {
       btn.textContent = `${CREDITS.glyph} ${SHOP.baitPrice}`;
       btn.disabled = state === 'cant-afford'; // greyed; the price reads as "needed"
     }
-    // A disabled button doesn't fire pointerdown; buyBait also guards (defence in depth).
+    // Disabled buttons still fire pointerdown (unlike click); buyBait guards (defence in depth).
     btn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       if (buyBait(journal, baitState, id)) {
