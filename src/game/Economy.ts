@@ -8,8 +8,9 @@
  * shop, no premium bait, no catch-rate effect — credits buy lateral enrichment later.
  */
 
-import { CREDITS, SPECIES, SPECIES_ORDER, type SpeciesId } from '../utils/constants';
+import { BAIT, CREDITS, SHOP, SPECIES, SPECIES_ORDER, type BaitId, type SpeciesId } from '../utils/constants';
 import { isFound, type Journal } from '../state/Journal';
+import { addBait, type BaitState } from './Bait';
 
 /** Add credits. A non-positive delta is a no-op; the balance only ever grows here. */
 export function addCredits(journal: Journal, n: number): void {
@@ -52,4 +53,31 @@ export function creditsForCatch(journal: Journal, speciesId: SpeciesId): CatchCr
     (newSpecies ? CREDITS.perNewSpecies : 0) +
     (biomeComplete ? CREDITS.perBiomeComplete : 0);
   return { total, newSpecies, biomeComplete };
+}
+
+// ---------------------------------------------------------------------------
+// The Field Supply — buy extra baseline-bait quantity (§12 slice 1b)
+// ---------------------------------------------------------------------------
+
+/** Whether a bait type can be bought right now (and why not). 'at-cap' is checked
+ *  BEFORE 'cant-afford' so a full type never reads as "save up" — it's just full. */
+export type BaitBuyState = 'ok' | 'cant-afford' | 'at-cap';
+
+export function baitBuyState(journal: Journal, baitState: BaitState, baitId: BaitId): BaitBuyState {
+  if (baitState.counts[baitId] >= BAIT.maxCount) return 'at-cap';
+  if (journal.credits < SHOP.baitPrice) return 'cant-afford';
+  return 'ok';
+}
+
+/**
+ * Buy one purchase of a bait type. The CAP IS CHECKED BEFORE SPENDING — at the cap
+ * we no-op and return false, so credits are NEVER spent for bait that addBait would
+ * silently clamp away (that would read as a scam). Only on 'ok' do we spend then
+ * add. Pure transaction over the existing v5 state — no schema change.
+ */
+export function buyBait(journal: Journal, baitState: BaitState, baitId: BaitId): boolean {
+  if (baitBuyState(journal, baitState, baitId) !== 'ok') return false;
+  spendCredits(journal, SHOP.baitPrice); // guaranteed to succeed (we just checked affordability)
+  addBait(baitState, baitId, SHOP.buyQuantity); // capped at maxCount; we're below it
+  return true;
 }

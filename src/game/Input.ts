@@ -34,6 +34,8 @@ export interface InputIntent {
   journalToggle: boolean;
   /** Toggle the Missions overlay (open/close). UI-only edge action. */
   missionToggle: boolean;
+  /** Toggle the Field Supply (shop) overlay (open/close). UI-only edge action. */
+  shopToggle: boolean;
 }
 
 export function createIntent(): InputIntent {
@@ -46,6 +48,7 @@ export function createIntent(): InputIntent {
     baitSelect: -1,
     journalToggle: false,
     missionToggle: false,
+    shopToggle: false,
   };
 }
 

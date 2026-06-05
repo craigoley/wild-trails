@@ -1447,6 +1447,26 @@ export const CREDITS = {
   glyph: '✦',
 } as const;
 
+/**
+ * The Field Supply (§12 slice 1b) — spend credits on EXTRA baseline-bait quantity.
+ * Pure top-up: buying routes through addBait (caps at BAIT.maxCount) — never a
+ * catch-rate or lure-param change (that's 1c). Free baseline (the catch-replenish
+ * loop) is untouched; the shop is enrichment. Price + the 1a earn-rates are the
+ * lever pair tuned by feel. One flat price for every bait type (none is "premium").
+ */
+export const SHOP = {
+  /** Credits per purchase. */
+  baitPrice: 2,
+  /** Bait added per purchase (capped at BAIT.maxCount by addBait). */
+  buyQuantity: 1,
+  title: 'Field Supply',
+  /** Naturalist framing line. */
+  blurb: 'Top up your bait between catches — stock the pack for the trail ahead.',
+  glyph: '🎒',
+  /** Button-state copy when a bait type is already at the cap. */
+  fullLabel: 'Full',
+} as const;
+
 export interface RankDef {
   name: string;
   /** Minimum total rank points to hold this rank. */

@@ -99,6 +99,10 @@ export class Controls {
     this.makeActionButton(topRight, '🎯', 'action-missions', () => {
       this.intent.missionToggle = true;
     });
+    // Field Supply (shop) toggle — flows into the same flex cluster (§12 1b).
+    this.makeActionButton(topRight, '🎒', 'action-shop', () => {
+      this.intent.shopToggle = true;
+    });
     // Bait tray — replaces the old ↻ cycler. One tappable chip per bait type,
     // always visible, showing what you have / what's selected / how much is left.
     this.buildBaitTray(target);
