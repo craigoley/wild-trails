@@ -309,7 +309,9 @@ body {
   font-size: 20px;
 }
 
-/* --- Start screen / title splash (Plan #11) ---------------------------- */
+/* --- Start screen / title splash (Plan #11, dawn-meadow polish) -------- */
+/* A SPLASH, not a gameplay panel: the backdrop is a procedural, OPAQUE dawn-meadow
+ * scene (zero-asset CSS + inline SVG) so nothing of the world behind bleeds through. */
 .start-overlay {
   position: fixed;
   inset: 0;
@@ -317,59 +319,127 @@ body {
   display: none; /* flex when open */
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, rgba(18, 40, 24, 0.95), rgba(6, 14, 8, 0.98));
+  overflow: hidden;
+  background: var(--bg); /* opaque base under the scene */
   pointer-events: auto;
   padding: 16px;
 }
+
+/* The dawn sky: deep night-green up top easing down to a warm dawn band at the
+ * horizon, drawn from the day-phase palette. */
+.start-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    #0b1f14 0%,
+    #163320 42%,
+    #2c3e26 66%,
+    #6e5a31 83%,
+    #c98f4a 97%
+  );
+}
+/* A soft rising sun low on the horizon, with ONE gentle ~8s breathe (the only
+ * ambient motion — calm, not a screensaver). */
+.start-sun {
+  position: absolute;
+  left: 50%;
+  bottom: 16%;
+  width: 60vmin;
+  height: 60vmin;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at center, rgba(255, 224, 150, 0.55), rgba(255, 207, 107, 0) 62%);
+  animation: start-sun-breathe 8s ease-in-out infinite;
+}
+@keyframes start-sun-breathe {
+  0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(0.97); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.04); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .start-sun { animation: none; }
+}
+/* Layered hill silhouettes (inline SVG) — depth toward the horizon. */
+.start-hills {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 46%;
+}
+.start-hills .hill-far { fill: #2c4a30; }
+.start-hills .hill-mid { fill: #1e3a24; }
+.start-hills .hill-near { fill: #142a1a; }
+
+/* The field-guide card, above the scene. */
 .start-panel {
   position: relative;
-  width: min(460px, 92vw);
+  z-index: 1;
+  width: min(440px, 92vw);
   text-align: center;
-  background: rgba(16, 30, 20, 0.98);
-  border: 2px solid rgba(255, 207, 107, 0.45);
-  border-radius: 16px;
-  box-shadow: 0 0 32px rgba(255, 207, 107, 0.2);
-  padding: 30px 24px 24px;
+  background: rgba(13, 26, 17, 0.82);
+  backdrop-filter: blur(3px);
+  border: 1px solid rgba(255, 207, 107, 0.4);
+  border-radius: 18px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55), 0 0 28px rgba(255, 207, 107, 0.12);
+  padding: 34px 28px 24px;
   color: rgba(255, 255, 255, 0.92);
 }
+/* The single biggest "field guide, not a generic app" signal: a system SERIF. */
 .start-title {
-  font-size: 30px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: #ffcf6b;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+  font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #ffd98a;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
+}
+.start-title::after {
+  /* A quiet hairline flourish under the title — naturalist plate divider. */
+  content: '';
+  display: block;
+  width: 64px;
+  height: 2px;
+  margin: 12px auto 0;
+  background: linear-gradient(to right, transparent, rgba(255, 207, 107, 0.7), transparent);
 }
 .start-tagline {
-  margin: 12px 0 22px;
+  margin: 16px auto 24px;
+  max-width: 30ch;
   font-size: 14.5px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.82);
+  font-style: italic;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.8);
 }
 .start-primary {
   pointer-events: auto;
   touch-action: manipulation;
   width: 100%;
-  padding: 12px;
+  padding: 13px;
   border: none;
-  border-radius: 10px;
-  background: rgba(255, 179, 71, 0.9);
-  color: #1a1208;
+  border-radius: 11px;
+  background: linear-gradient(to bottom, #ffc366, var(--player));
+  color: #221606;
   font-size: 16px;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255, 179, 71, 0.32);
 }
 .start-primary:active {
-  background: rgba(255, 179, 71, 1);
+  transform: translateY(1px);
+  box-shadow: 0 2px 10px rgba(255, 179, 71, 0.32);
 }
 .start-skip {
   pointer-events: auto;
   touch-action: manipulation;
-  margin-top: 12px;
+  margin-top: 14px;
   border: none;
   background: none;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 12.5px;
+  letter-spacing: 0.02em;
   text-decoration: underline;
   cursor: pointer;
 }

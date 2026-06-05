@@ -20,22 +20,21 @@ describe('StartScreen — closeable into play (not an uncloseable modal)', () =>
     expect(onStart).toHaveBeenCalledOnce();
   });
 
-  it('✕ / Escape / backdrop also dismiss into play (onStart)', () => {
+  it('Escape / backdrop also begin play (onStart) — there is NO ✕ on a splash', () => {
     const onStart = vi.fn();
     const s = new StartScreen(document.body, { onStart, onSkip: vi.fn() });
 
+    // The ✕ was removed in the dawn-meadow polish — Start IS the action.
     s.show(true);
-    fireDown(document.querySelector('.start-overlay .overlay-close')!);
-    expect(s.isOpen()).toBe(false);
+    expect(document.querySelector('.start-overlay .overlay-close')).toBeNull();
 
-    s.show(true);
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(s.isOpen()).toBe(false);
 
     s.show(true);
     fireDown(document.querySelector('.start-overlay')!); // backdrop
     expect(s.isOpen()).toBe(false);
-    expect(onStart).toHaveBeenCalledTimes(3);
+    expect(onStart).toHaveBeenCalledTimes(2);
   });
 
   it('Skip dismisses AND calls onSkip (suppress onboarding)', () => {
