@@ -35,8 +35,11 @@ import {
   REED_RENDER,
   ROCK_RENDER,
   SIGN_RENDER,
+  SUPPLY_POSTS,
+  SUPPLY_RENDER,
   TRACK_SIGNS,
   type HidingSpotDef,
+  type SupplyPostDef,
   PALETTE,
 } from '../utils/constants';
 import type { Rect } from '../utils/math';
@@ -133,6 +136,44 @@ export class WorldRenderer {
 
     // Boundary walls: one per unlocked -> LOCKED adjacency (the shared edge set).
     for (const w of walledEdges(world)) this.addWall(w.edge);
+
+    // Field Supply posts — one per UNLOCKED biome. Rebuilt here (the dynamic group),
+    // so a mid-session unlock makes the new biome's post appear via refresh (#24 path).
+    for (const post of SUPPLY_POSTS) {
+      if (world.biomes[post.biome].unlocked) this.addSupplyPost(post);
+    }
+  }
+
+  /** A procedural zero-asset supply hut: timber walls (a doorway gap in the front)
+   *  under a pyramid roof. A walk-in marker — it's a proximity zone, not collision. */
+  private addSupplyPost(post: SupplyPostDef): void {
+    const s = SUPPLY_RENDER;
+    const half = s.size / 2;
+    const cx = post.x;
+    const cz = post.y; // game y -> three z
+    const wallMat = new MeshStandardMaterial({ color: s.wallColor, roughness: 1 });
+    const wall = (w: number, d: number, dx: number, dz: number): void => {
+      const m = new Mesh(new BoxGeometry(w, s.wallHeight, d), wallMat);
+      m.position.set(cx + dx, s.wallHeight / 2, cz + dz);
+      this.dynamic.add(m);
+    };
+    // Back + the two side walls (full).
+    wall(s.size, s.wallThickness, 0, half);
+    wall(s.wallThickness, s.size, -half, 0);
+    wall(s.wallThickness, s.size, half, 0);
+    // Front wall (-z, facing the approach) with a centred doorway gap: two segments.
+    const seg = (s.size - s.doorWidth) / 2;
+    const off = s.doorWidth / 2 + seg / 2;
+    wall(seg, s.wallThickness, -off, -half);
+    wall(seg, s.wallThickness, off, -half);
+    // Pyramid roof (a 4-sided cone, rotated 45° so its faces align with the walls).
+    const roof = new Mesh(
+      new ConeGeometry(s.size * s.roofRadiusFactor + s.roofOverhang, s.roofHeight, 4),
+      new MeshStandardMaterial({ color: s.roofColor, roughness: 1 }),
+    );
+    roof.position.set(cx, s.wallHeight + s.roofHeight / 2, cz);
+    roof.rotation.y = Math.PI / 4;
+    this.dynamic.add(roof);
   }
 
   /** A little cluster of flat dark dug-earth marks per track sign (zero-asset,
