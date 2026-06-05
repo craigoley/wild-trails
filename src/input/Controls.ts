@@ -28,6 +28,21 @@ import { BAIT_DISPLAY, BAIT_ORDER, TOUCH } from '../utils/constants';
 
 const includes = (keys: readonly string[], k: string): boolean => keys.includes(k);
 
+/**
+ * Roam-drag begins ONLY on the game world — the WebGL canvas. A touch on the HUD,
+ * a button, or an open panel has a NON-canvas target; the roam handler must skip it
+ * so its preventDefault() doesn't cancel the panel's native iOS scroll (scroll fix
+ * v4 — the measured cause). Touch events keep their initial target, so roam
+ * OWNERSHIP is decided here at touchstart and stays stable for the whole touch:
+ * a drag that starts on the canvas keeps roaming even if it slides over a panel,
+ * and a touch that starts on a panel never becomes a roam. Panel-agnostic (no
+ * panel/overlay class list to keep in sync), and it correctly forbids world-roam
+ * while any modal is open.
+ */
+export function isRoamTouchTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLCanvasElement;
+}
+
 export class Controls {
   readonly intent: InputIntent = createIntent();
 
@@ -228,6 +243,11 @@ export class Controls {
   // --- Touch joystick -------------------------------------------------------
   private onTouchStart = (e: TouchEvent): void => {
     if (this.moveTouchId !== null) return;
+    // Only the game world (canvas) starts a roam. A panel / HUD / button touch
+    // passes through untouched — so its native iOS scroll isn't cancelled by our
+    // preventDefault (scroll fix v4). onTouchMove gates on moveTouchId, so a skipped
+    // touch never enters roam state.
+    if (!isRoamTouchTarget(e.target)) return;
     const t = e.changedTouches[0];
     if (!t) return;
     e.preventDefault();
