@@ -678,6 +678,115 @@ body.modal-open .touch-stick-thumb {
   white-space: pre-wrap;
 }
 
+/* --- Field Supply (shop, §12 1b) — mirrors the mission panel's scroll
+ * architecture exactly (overlay/panel/header/scroll); a NEW panel. ---------- */
+.shop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 41;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 14, 8, 0.78);
+  pointer-events: auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+.shop-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(460px, 94vw);
+  max-height: 88dvh;
+  min-height: 0;
+  overflow: hidden;
+  background: rgba(16, 26, 18, 0.98);
+  border: 2px solid rgba(255, 209, 102, 0.4);
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.92);
+}
+.shop-header {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 8px 56px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.shop-header-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-align: center;
+  color: #ffd166;
+}
+.shop-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 14px 18px 18px;
+}
+.shop-balance {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffd166;
+  text-align: center;
+}
+.shop-blurb {
+  margin: 6px 0 14px;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.72);
+}
+.shop-list {
+  display: grid;
+  gap: 10px;
+}
+.shop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.shop-info {
+  font-size: 14px;
+  font-weight: 600;
+}
+.shop-buy {
+  pointer-events: auto;
+  touch-action: manipulation;
+  min-width: 64px;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 209, 102, 0.92);
+  color: #221606;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.shop-buy:active {
+  background: rgba(255, 209, 102, 1);
+}
+/* Can't buy — greyed (can't-afford: the price reads as "needed"; .full at the cap). */
+.shop-buy:disabled {
+  opacity: 0.4;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: default;
+}
+
 /* --- Field Journal overlay --------------------------------------------- */
 .journal-overlay {
   position: fixed;

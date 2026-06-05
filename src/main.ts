@@ -34,6 +34,7 @@ import { missionBannerMessages } from './rendering/missionBanners';
 import { AudioEngine } from './audio/AudioEngine';
 import { createAutosaver, foundCount, loadJournal, recordCatch, setBaitCounts } from './state/Journal';
 import { addCredits, creditsForCatch } from './game/Economy';
+import { ShopPanel } from './rendering/ShopPanel';
 import {
   createOnboarding,
   skipOnboarding,
@@ -116,6 +117,9 @@ const journalPanel = new JournalPanel(app);
 journalPanel.refresh(journal); // seed the roster from the loaded journal
 const missionPanel = new MissionPanel(app);
 refreshMissionPanel();
+// The Field Supply (§12 1b) — spend credits on extra bait. A purchase persists (so
+// it survives reload); the buy mutates journal.credits + the live game.bait counts.
+const shopPanel = new ShopPanel(app, persist);
 // Runtime scroll PROBE (debug instrumentation, not a fix) — ?debug=1-gated, inert
 // in normal play. Reads the live scroll-chain values when a panel is open so the
 // real cause of the iOS scroll bug is legible on-device.
@@ -278,7 +282,11 @@ function frame(nowMs: number): void {
   // POLLED so it clears on every close path (✕ / backdrop / Escape / programmatic),
   // each of which ends with the panel reporting isOpen() === false.
   const modalOpen =
-    journalPanel.isOpen() || missionPanel.isOpen() || winScreen.isOpen() || startScreen.isOpen();
+    journalPanel.isOpen() ||
+    missionPanel.isOpen() ||
+    shopPanel.isOpen() ||
+    winScreen.isOpen() ||
+    startScreen.isOpen();
   if (modalOpen !== modalOpenPrev) {
     syncModalOpenClass(modalOpen);
     modalOpenPrev = modalOpen;
@@ -305,6 +313,12 @@ function frame(nowMs: number): void {
     controls.intent.missionToggle = false;
     missionPanel.setOpen(!missionPanel.isOpen());
     if (missionPanel.isOpen()) refreshMissionPanel();
+  }
+  // Field Supply toggle (§12 1b) — refresh from the journal + live bait on open.
+  if (controls.intent.shopToggle) {
+    controls.intent.shopToggle = false;
+    shopPanel.setOpen(!shopPanel.isOpen());
+    if (shopPanel.isOpen()) shopPanel.refresh(journal, game.bait);
   }
 
   // Render the interpolated state. Renderers read prev+current; never mutate.
