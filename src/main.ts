@@ -33,6 +33,7 @@ import { Banner } from './rendering/Banner';
 import { missionBannerMessages } from './rendering/missionBanners';
 import { AudioEngine } from './audio/AudioEngine';
 import { createAutosaver, foundCount, loadJournal, recordCatch, setBaitCounts } from './state/Journal';
+import { addCredits, creditsForCatch } from './game/Economy';
 import {
   createOnboarding,
   skipOnboarding,
@@ -227,6 +228,10 @@ function frame(nowMs: number): void {
     // missions, both at the boundary. Pure recordCatch / evaluateCatch (Date.now
     // and the unlock-application happen here, never in the deterministic sim).
     if (game.lastCaughtSpecies && game.lastCaughtBiome && game.lastCaughtPhase) {
+      // Economy (§12 slice 1a): credits earned by the catch — computed from the
+      // PRE-catch journal (so the new-species / biome-complete bonuses see the
+      // gap this catch fills), then granted. Separate from rank; persisted (v5).
+      addCredits(journal, creditsForCatch(journal, game.lastCaughtSpecies).total);
       recordCatch(journal, game.lastCaughtSpecies, Date.now());
       const evalResult = evaluateCatch(journal, {
         species: game.lastCaughtSpecies,
@@ -307,6 +312,7 @@ function frame(nowMs: number): void {
   scene.updateFollow(game, alpha, dt);
   scene.render();
   hud.update(game);
+  hud.setCredits(journal.credits); // §12 1a — the persistent balance (cheap text set)
   timeIndicator.update(game.dayPhase, game.timeSec);
 
   requestAnimationFrame(frame);
