@@ -27,6 +27,7 @@ import { HUD, isDebugEnabled } from './rendering/HUD';
 import { TimeIndicator } from './rendering/TimeIndicator';
 import { JournalPanel } from './rendering/JournalPanel';
 import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
+import { ScrollProbe } from './rendering/ScrollProbe';
 import { Banner } from './rendering/Banner';
 import { missionBannerMessages } from './rendering/missionBanners';
 import { AudioEngine } from './audio/AudioEngine';
@@ -113,6 +114,10 @@ const journalPanel = new JournalPanel(app);
 journalPanel.refresh(journal); // seed the roster from the loaded journal
 const missionPanel = new MissionPanel(app);
 refreshMissionPanel();
+// Runtime scroll PROBE (debug instrumentation, not a fix) — ?debug=1-gated, inert
+// in normal play. Reads the live scroll-chain values when a panel is open so the
+// real cause of the iOS scroll bug is legible on-device.
+new ScrollProbe(app);
 // The "Field Guide Complete" win screen (Plan #10). maybeFireWin fires it ONCE —
 // when the win condition is first met (the persisted `won` flag guards re-firing)
 // — then dismissing it returns to free-roam. Checked at boot (so a save that
