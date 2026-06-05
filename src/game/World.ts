@@ -16,9 +16,11 @@ import {
   BIOME_ORDER,
   HIDING_SPOTS,
   SUPPLY_POSTS,
+  SUPPLY_EXIT_MARGIN,
   type BiomeDef,
   type BiomeId,
   type HidingSpotDef,
+  type SupplyPostDef,
 } from '../utils/constants';
 import { clamp, rectContains, type Rect, type Vec2 } from '../utils/math';
 
@@ -154,6 +156,14 @@ export function supplyPostAt(world: World, x: number, y: number): BiomeId | null
     if (Math.hypot(x - p.x, y - p.y) <= p.radius) return p.biome;
   }
   return null;
+}
+
+/** Where the player lands when they close the Field Supply: OUT the door (−y, the
+ *  way they came in), just past the zone edge — so they're no longer in the zone
+ *  (the open-on-entry check can't re-fire). The caller clamps this to the unlocked
+ *  region for final validity. Pure (§12 1b interaction). */
+export function supplyExitPosition(post: SupplyPostDef): Vec2 {
+  return { x: post.x, y: post.y - (post.radius + SUPPLY_EXIT_MARGIN) };
 }
 
 /** Is the biome enterable? */

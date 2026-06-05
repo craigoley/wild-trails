@@ -167,6 +167,10 @@ export interface GameState {
    *  and which inputs are active. Read by the AI (via the factor) and the
    *  ?debug overlay. */
   stealth: { factor: number; inCover: boolean; sneaking: boolean };
+  /** When true the player is ROOTED — movement input is ignored (they're inside the
+   *  Field Supply building). The rest of the world still advances (§12 1b). Set at the
+   *  boundary (= the shop panel being open); the sim only reads it. */
+  movementFrozen: boolean;
   /** In-memory catches this session (Journal persistence is PR #7). */
   sessionCatches: number;
   telemetry: Telemetry;
@@ -212,6 +216,7 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
     lastDeployMatched: null,
     notice: null,
     stealth: { factor: 1, inCover: false, sneaking: false },
+    movementFrozen: false,
     sessionCatches: 0,
     telemetry: {
       eligible: 0,
@@ -242,7 +247,9 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
   game.baitJustDeployed = false;
   game.baitDeployFailed = false;
   game.timeSec += dt;
-  updatePlayer(game.player, intent, dt, game.world);
+  // The world advances regardless (time/spawns/animals below); only the PLAYER is
+  // rooted while frozen — they're standing inside the Field Supply building (§12 1b).
+  if (!game.movementFrozen) updatePlayer(game.player, intent, dt, game.world);
 
   const here = currentBiome(game.world, game.player.x, game.player.y);
   if (here) game.currentBiome = here;
