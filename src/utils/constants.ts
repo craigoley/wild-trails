@@ -213,6 +213,18 @@ export const PANEL_LABELS = {
   lockedSuffix: ' · locked',
 } as const;
 
+/** Copy for the §17.1 "Reach new lands" unlock-legibility block — the naturalist
+ *  voice (a field journal, not a system toast). The set→biome relationship made
+ *  legible: complete a biome's missions → reach the next. */
+export const UNLOCK_COPY = {
+  blockHeader: 'Reach new lands',
+  /** In progress: complete the set to reach the target biome. */
+  toReach: (setName: string, targetName: string): string =>
+    `Complete the ${setName} missions to reach the ${targetName}`,
+  /** Already earned: a quiet ✓ of the path walked. */
+  opened: (targetName: string): string => `✓ The ${targetName} lies open`,
+} as const;
+
 /**
  * Day-night cycle. The cycle length is one full loop through dawn -> day ->
  * dusk -> night; each phase's START is a fraction of the cycle [0, 1). Dawn and
