@@ -540,7 +540,7 @@ body {
   padding: 8px 56px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-.mission-title {
+.mission-header-title {
   font-size: 17px;
   font-weight: 800;
   letter-spacing: 0.03em;

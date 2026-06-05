@@ -47,7 +47,7 @@ export class MissionPanel {
     panel.appendChild(headerBar);
 
     this.header = document.createElement('div');
-    this.header.className = 'mission-title';
+    this.header.className = 'mission-header-title';
     headerBar.appendChild(this.header);
 
     // Dedicated SCROLL BODY (flex:1; min-height:0) — the list + debug scroll here.
