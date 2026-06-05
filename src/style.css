@@ -54,6 +54,21 @@ body {
   z-index: 10;
 }
 
+/* While ANY overlay panel is open (body.modal-open, toggled from main), hide the
+ * gameplay HUD entirely. It otherwise bled THROUGH the translucent journal/mission
+ * backdrop AND stayed interactive behind the modal (a stray touch could hit
+ * CATCH/BAIT). A modal = no HUD; the flag is polled so it clears on every close
+ * path. Passive labels (biome/time/status) are left — they don't bleed brightly
+ * and aren't interactive. */
+body.modal-open .action-btn,
+body.modal-open .bait-tray,
+body.modal-open .bait-hint,
+body.modal-open .hud-hidden,
+body.modal-open .touch-stick-base,
+body.modal-open .touch-stick-thumb {
+  display: none;
+}
+
 /* Current-biome label — top centre, quietly authoritative. */
 .hud-biome {
   position: fixed;
@@ -330,7 +345,11 @@ body {
 /* The dawn sky: deep night-green up top easing down to a warm dawn band at the
  * horizon, drawn from the day-phase palette. */
 .start-scene {
-  position: absolute;
+  /* FIXED, not absolute: an absolute inset:0 resolves to the overlay's PADDING box,
+   * leaving a 16px frame of the overlay's --bg (a dark strip above the card near the
+   * status bar). A fixed child is viewport-relative — it covers the full dynamic
+   * viewport incl. the safe-area top, behind the card (z-0). */
+  position: fixed;
   inset: 0;
   z-index: 0;
   background: linear-gradient(
