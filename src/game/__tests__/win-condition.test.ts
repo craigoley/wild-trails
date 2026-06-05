@@ -19,8 +19,11 @@ function fullyCompletedJournal() {
   for (let i = 0; i < 5; i++) evaluateCatch(j, { species: 'fieldmouse', biome: 'meadow', phase: 'day' });
   for (let i = 0; i < 2; i++) evaluateCatch(j, { species: 'quail', biome: 'meadow', phase: 'dawn' });
   for (let i = 0; i < 2; i++) evaluateCatch(j, { species: 'hedgehog', biome: 'meadow', phase: 'dusk' });
-  // Complete the Woodland set.
+  // Complete the Woodland four-window set: survey + dawn robin + dusk roe deer +
+  // tracked night badger (Woodland gate tune).
   for (let i = 0; i < 4; i++) evaluateCatch(j, { species: 'redsquirrel', biome: 'woodland', phase: 'day' });
+  evaluateCatch(j, { species: 'robin', biome: 'woodland', phase: 'dawn' });
+  evaluateCatch(j, { species: 'roedeer', biome: 'woodland', phase: 'dusk' });
   evaluateCatch(j, { species: 'badger', biome: 'woodland', phase: 'night' });
   return j;
 }
@@ -38,16 +41,16 @@ describe('isGameComplete — the win condition (per requirement)', () => {
 
   it('is FALSE if a biome SET mission is incomplete', () => {
     const j = fullyCompletedJournal();
-    j.missions['woodland-night'].completed = false; // unfinish a set mission
+    j.missions['woodland-dawn'].completed = false; // unfinish a set mission
     expect(isGameComplete(j)).toBe(false);
   });
 
-  it('does NOT require the standalone tracking mission', () => {
+  it('REQUIRES the badger tracking mission (it now GATES — no longer standalone)', () => {
     const j = fullyCompletedJournal();
-    // Force the standalone badger track INCOMPLETE — the game is still complete,
-    // because standalone side-quests don't count toward the biome sets.
-    if (j.missions['track-badger']) j.missions['track-badger'].completed = false;
-    expect(isGameComplete(j)).toBe(true);
+    // Woodland gate tune: track-badger is now a set mission, so unfinishing it
+    // breaks woodland-set completion — the game is no longer complete.
+    j.missions['track-badger'].completed = false;
+    expect(isGameComplete(j)).toBe(false);
     expect(missionSetBiomes()).not.toContain('highlands'); // no set there to require
   });
 });
@@ -84,13 +87,16 @@ describe('achievability — the win is REACHABLE with shipped content (no grind)
 
   it('the max achievable rank points clear the top threshold by a margin', () => {
     // Every mission reward + every species bonus — the ceiling with shipped content.
+    // Gate tune points shift: -woodland-night(25), +woodland-dawn(20) +woodland-dusk(20),
+    // and track-badger(15) now counts toward a set (it always awarded on completion).
+    // Net mission points 115 -> 130; the win is REACHABLE with the harder gate.
     const missionPts = MISSION_ORDER.reduce((s, id) => s + MISSIONS[id].rewardPoints, 0);
     const speciesPts = SPECIES_ORDER.length * RANK.perSpeciesFound;
     const top = RANKS[RANKS.length - 1].minPoints;
-    expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // 195 >= 120
-    // Even WITHOUT the optional tracking mission, the sets + species clear it.
-    const required = missionPts - MISSIONS['track-badger'].rewardPoints + speciesPts;
-    expect(required).toBeGreaterThanOrEqual(top); // 180 >= 120 — no grind needed
+    expect(missionPts).toBe(130); // pin the post-tune total (the points-shift check)
+    expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // 210 >= 120 — clears with margin
+    // Every gate mission is count-1 of a window-locked species (or survey ×4) — no
+    // grind: the points are earned by playing the woodland through, not repetition.
   });
 
   it('every species in the roster actually exists (the win can be filled)', () => {

@@ -33,14 +33,17 @@ describe('Plan #8b — track-and-catch requirement kind (generic engine)', () =>
     expect(r.completed).toContain('track-badger');
   });
 
-  it('the standalone tracking mission does NOT gate the wetland unlock', () => {
-    // Complete the woodland SET (survey + night) WITHOUT the tracking mission.
+  it('the tracking mission now GATES the wetland unlock (no longer standalone)', () => {
+    // Woodland gate tune: complete survey + dawn + dusk WITHOUT the badger track —
+    // the four-window set is NOT complete, so the Wetland does NOT unlock yet.
     const j = createJournal();
-    for (let i = 0; i < 4; i++) evaluateCatch(j, { species: 'redsquirrel', biome: 'woodland', phase: 'day' });
-    const r = evaluateCatch(j, { species: 'badger', biome: 'woodland', phase: 'night' });
-    // The badger catch completes BOTH woodland-night AND track-badger; the set
-    // unlock still fires (track-badger is standalone, excluded from the set).
-    expect(r.unlocked).toContain('wetland');
+    for (let i = 0; i < 4; i++) evaluateCatch(j, { species: 'redsquirrel', biome: 'woodland', phase: 'day' }); // survey
+    evaluateCatch(j, { species: 'robin', biome: 'woodland', phase: 'dawn' }); // woodland-dawn
+    const before = evaluateCatch(j, { species: 'roedeer', biome: 'woodland', phase: 'dusk' }); // woodland-dusk
+    expect(before.unlocked).not.toContain('wetland'); // track-badger still missing -> gated
+    // The badger track completes the set -> the unlock fires.
+    const after = evaluateCatch(j, { species: 'badger', biome: 'woodland', phase: 'night' });
+    expect(after.unlocked).toContain('wetland');
   });
 
   it('completion fires the reward exactly once (double-fire guard)', () => {
