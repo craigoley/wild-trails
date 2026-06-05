@@ -45,9 +45,17 @@ import { StartScreen } from './rendering/StartScreen';
 import { restoreBaitCounts } from './game/Bait';
 import { evaluateCatch, shouldCelebrateWin } from './game/Missions';
 import { WinScreen } from './rendering/WinScreen';
-import { unlockBiome, supplyPostAt } from './game/World';
-import { createSupplyZone, shouldOpenSupply } from './game/SupplyZone';
-import { MAX_FRAME_DT, MISSION_ORDER, ONBOARDING, SIM_DT, TRACKING, type BiomeId } from './utils/constants';
+import { unlockBiome, supplyPostAt, supplyExitPosition, clampToUnlocked } from './game/World';
+import {
+  MAX_FRAME_DT,
+  MISSION_ORDER,
+  ONBOARDING,
+  PLAYER,
+  SIM_DT,
+  SUPPLY_POSTS,
+  TRACKING,
+  type BiomeId,
+} from './utils/constants';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('#app container not found');
@@ -122,7 +130,9 @@ refreshMissionPanel();
 // it survives reload); the buy mutates journal.credits + the live game.bait counts.
 const shopPanel = new ShopPanel(app, persist);
 // Walk-in state for the supply post — fires the panel open on the entry edge only.
-const supplyZone = createSupplyZone();
+// Walk-in tracking: detect the close EDGE (open→closed) to step the player out.
+let shopWasOpen = false;
+const exitOut = { x: 0, y: 0 }; // reused — no per-frame alloc in the loop
 // Runtime scroll PROBE (debug instrumentation, not a fix) — ?debug=1-gated, inert
 // in normal play. Reads the live scroll-chain values when a panel is open so the
 // real cause of the iOS scroll bug is legible on-device.
@@ -196,6 +206,10 @@ function frame(nowMs: number): void {
   // mission is in progress (the sim doesn't read the journal). Active until the
   // target is caught (the mission completes); drives the seeded sett spawn + hints.
   game.activeTrackTarget = journal.missions['track-badger']?.completed ? null : TRACKING.target;
+
+  // The player is ROOTED while the Field Supply is open (they're inside the
+  // building) — the sim ignores movement input; the world otherwise lives on (§12 1b).
+  game.movementFrozen = shopPanel.isOpen();
 
   // Step the sim in fixed slices; the remainder interpolates the render.
   accumulator += dt;
@@ -317,14 +331,27 @@ function frame(nowMs: number): void {
     missionPanel.setOpen(!missionPanel.isOpen());
     if (missionPanel.isOpen()) refreshMissionPanel();
   }
-  // Field Supply is a WALK-IN building (§12 1b-revise): walk into an unlocked
-  // biome's supply-post zone -> the panel opens ONCE on the entry edge (the pure
-  // armed/no-trap machine); ✕ closes it; it won't reopen until you leave + re-enter.
-  const inSupplyZone = supplyPostAt(game.world, game.player.x, game.player.y) !== null;
-  if (shouldOpenSupply(supplyZone, inSupplyZone, shopPanel.isOpen())) {
+  // Field Supply walk-in (§12 1b): a building you physically enter. The player is
+  // frozen while it's open (above); CLOSING it steps them OUT the door, which also
+  // guarantees no reopen-trap by POSITION (you're no longer in the zone).
+  const shopOpen = shopPanel.isOpen();
+  if (shopWasOpen && !shopOpen) {
+    // Just closed (✕/backdrop/Escape). The player was frozen IN the zone — step them
+    // out the door (−y), clamped into the unlocked region so the spot is valid.
+    const biome = supplyPostAt(game.world, game.player.x, game.player.y);
+    const post = biome ? SUPPLY_POSTS.find((p) => p.biome === biome) : undefined;
+    if (post) {
+      const exit = supplyExitPosition(post);
+      clampToUnlocked(game.world, exit.x, exit.y, PLAYER.radius, exitOut);
+      game.player.x = exitOut.x;
+      game.player.y = exitOut.y;
+    }
+  } else if (!shopOpen && supplyPostAt(game.world, game.player.x, game.player.y) !== null) {
+    // Walked into a zone with the panel closed → open it.
     shopPanel.refresh(journal, game.bait);
     shopPanel.setOpen(true);
   }
+  shopWasOpen = shopPanel.isOpen();
 
   // Render the interpolated state. Renderers read prev+current; never mutate.
   entities.sync(game, alpha);

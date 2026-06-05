@@ -750,6 +750,11 @@ export const SUPPLY_POSTS: readonly SupplyPostDef[] = [
   { biome: 'highlands', x: 55, y: 55, radius: 2.5 },
 ];
 
+/** Closing the Field Supply steps the player OUT the door (−y), this far PAST the
+ *  zone edge — so they land clear of the zone (no reopen-trap by position) and not
+ *  flush against the hut. (§12 1b interaction.) */
+export const SUPPLY_EXIT_MARGIN = 0.8;
+
 /** Procedural zero-asset hut: a square of timber walls with a doorway gap in the
  *  front, under a pyramid roof. Built once per unlocked biome in rebuildDynamic. */
 export const SUPPLY_RENDER = {
