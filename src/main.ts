@@ -132,6 +132,7 @@ maybeFireWin(); // boot check (a pre-#10 completed save earns its celebration no
 const firstRun = foundCount(journal) === 0;
 const onboarding = createOnboarding(firstRun);
 let hasMoved = false;
+const onboardSit = { moved: false, animalNearby: false, catchArmed: false, caughtAny: false };
 const showOnboardPrompt = (step: PromptStep): void => {
   game.notice = { text: ONBOARDING.prompts[step], timer: ONBOARDING.beatSec, ttl: ONBOARDING.beatSec };
 };
@@ -249,19 +250,14 @@ function frame(nowMs: number): void {
   // Onboarding (Plan #11): advance the contextual prompt machine from the player's
   // situation. It GUIDES, never gates — the sim above already ran regardless.
   if (onboarding.active) {
-    if (Math.abs(controls.intent.moveX) > 0.01 || Math.abs(controls.intent.moveY) > 0.01) {
+    if (Math.abs(controls.intent.moveX) > ONBOARDING.moveThreshold || Math.abs(controls.intent.moveY) > ONBOARDING.moveThreshold) {
       hasMoved = true;
     }
-    const step = tickOnboarding(
-      onboarding,
-      {
-        moved: hasMoved,
-        animalNearby: game.animals.some((a) => a.active),
-        catchArmed: game.catchArmed,
-        caughtAny: game.sessionCatches > 0,
-      },
-      dt,
-    );
+    onboardSit.moved = hasMoved;
+    onboardSit.animalNearby = game.animals.some((a) => a.active);
+    onboardSit.catchArmed = game.catchArmed;
+    onboardSit.caughtAny = game.sessionCatches > 0;
+    const step = tickOnboarding(onboarding, onboardSit, dt);
     if (step) showOnboardPrompt(step);
   }
 

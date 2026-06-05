@@ -1257,6 +1257,8 @@ export const START_SCREEN = {
  * baitHint (not duplicated here). Reward (journal) fires before direction (missions).
  */
 export const ONBOARDING = {
+  /** Intent-magnitude threshold for "the player has moved" (dead-zone filter). */
+  moveThreshold: 0.01,
   /** How long each prompt shows, seconds (a touch longer than a bait blip — it's
    *  teaching). Also the linger before the journal -> missions beat advances. */
   beatSec: 4,
