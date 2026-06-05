@@ -1417,6 +1417,24 @@ export const RANK = {
   perSpeciesFound: 8,
 } as const;
 
+/**
+ * Economy currency (§12 slice 1a) — credits earned from skill + knowledge, SEPARATE
+ * from rank. Knowledge/research milestones deliberately out-earn repeat catches (the
+ * §14.3 anti-grind ratio): a discovery is worth more than re-catching what you know.
+ * Starting values — real tuning lands in 1b against shop prices. NOT spendable on
+ * anything until the shop (1b); credits buy lateral enrichment, never catch power.
+ */
+export const CREDITS = {
+  /** Per catch — skill reward; modest so repeat-catching isn't a farm. */
+  perCatch: 3,
+  /** Per NEW species (first catch / first dex entry) — the discovery bonus. */
+  perNewSpecies: 10,
+  /** Per biome whose journal is COMPLETED by the catch — a research milestone. */
+  perBiomeComplete: 25,
+  /** HUD readout glyph (zero-asset). */
+  glyph: '✦',
+} as const;
+
 export interface RankDef {
   name: string;
   /** Minimum total rank points to hold this rank. */

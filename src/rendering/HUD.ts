@@ -15,7 +15,7 @@ import { getSpecies } from '../game/Species';
 import { effectiveDetectionRadius } from '../game/Detection';
 import { catchSuccessRate, type CatchBreakdown } from '../game/catchDiagnostics';
 import { clamp } from '../utils/math';
-import { BAIT_ORDER, BIOMES, CATCH_FX, CSS_PALETTE, PLAYER, TRACK_SIGNS } from '../utils/constants';
+import { BAIT_ORDER, BIOMES, CATCH_FX, CREDITS, CSS_PALETTE, PLAYER, TRACK_SIGNS } from '../utils/constants';
 
 /** `?debug=1` in the URL turns on funnel telemetry + (later) the tuning panel. */
 export function isDebugEnabled(): boolean {
@@ -48,6 +48,7 @@ function stealthTargetLine(state: GameState): string {
 export class HUD {
   private readonly biomeLabel: HTMLDivElement;
   private readonly statusLine: HTMLDivElement;
+  private readonly creditsLabel: HTMLDivElement;
   private readonly hiddenBadge: HTMLDivElement;
   private readonly resultFlash: HTMLDivElement;
   private readonly baitNotice: HTMLDivElement;
@@ -65,6 +66,12 @@ export class HUD {
     this.statusLine = document.createElement('div');
     this.statusLine.className = 'hud-status';
     root.appendChild(this.statusLine);
+
+    // Credits balance (§12 1a) — a small zero-asset readout under the status line.
+    // Fed from the journal (not GameState) via setCredits, since credits persist.
+    this.creditsLabel = document.createElement('div');
+    this.creditsLabel.className = 'hud-credits';
+    root.appendChild(this.creditsLabel);
 
     // "Hidden" badge — shown while the player is in cover (the stealth affordance).
     this.hiddenBadge = document.createElement('div');
@@ -90,6 +97,12 @@ export class HUD {
       this.debugPanel.className = 'hud-debug';
       root.appendChild(this.debugPanel);
     }
+  }
+
+  /** Set the credits balance readout (§12 1a). Fed from the persistent journal at
+   *  the boundary — credits live there, not in the per-run GameState. */
+  setCredits(credits: number): void {
+    this.creditsLabel.textContent = `${CREDITS.glyph} ${credits}`;
   }
 
   /** Refresh the overlay from the (read-only) game state. */

@@ -96,6 +96,22 @@ body.modal-open .touch-stick-thumb {
   white-space: nowrap;
 }
 
+/* Credits balance (§12 1a) — a quiet seed-amber readout under the top-left time
+ * indicator. Passive/non-interactive, so it stays visible behind a modal (like the
+ * biome/time/status labels). Zero-asset (a unicode glyph + the number). */
+.hud-credits {
+  position: fixed;
+  top: 84px;
+  left: 12px;
+  z-index: 20;
+  color: #ffd166;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+}
+
 /* --- Time-of-day indicator (top-left) ----------------------------------- */
 /* Always-visible: a phase pill (icon + label, the instant read) over a small
  * sky arc whose sun/moon dot sweeps with the cycle (the "time passes + loops"
