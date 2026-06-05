@@ -21,6 +21,7 @@ import {
   MISSION_ORDER,
   RANK,
   RANKS,
+  SPECIES,
   SPECIES_ORDER,
   type BiomeId,
   type DayPhase,
@@ -47,6 +48,12 @@ export interface MissionEval {
   unlocked: BiomeId[];
   /** Rank points awarded this event. */
   pointsAwarded: number;
+  /** One-time CREDIT bonus from research challenges completed this event (§4.1b) —
+   *  applied at the boundary, like creditsForCatch. */
+  creditsAwarded: number;
+  /** Teaching HINTS from "warm misses" on active research challenges (§4.1b) — a
+   *  catch in a challenge's biome that didn't satisfy it. Banner'd; never resets. */
+  hints: string[];
 }
 
 /** Does a catch event satisfy a requirement? The ONLY place the kinds differ. */
@@ -60,6 +67,9 @@ function meets(req: MissionRequirement, ev: CatchEvent): boolean {
       return ev.species === req.species; // a specific species (no tracking implied)
     case 'track-and-catch':
       return ev.species === req.species; // the target only appears via tracking
+    case 'research':
+      // BOTH dimensions required (§4.1b) — the right species UNDER its condition.
+      return ev.species === req.species && ev.phase === req.phase;
   }
 }
 
@@ -80,7 +90,14 @@ export function isBiomeSetComplete(journal: Journal, biome: BiomeId): boolean {
  * missions (the double-fire guard).
  */
 export function evaluateCatch(journal: Journal, ev: CatchEvent): MissionEval {
-  const result: MissionEval = { progressed: [], completed: [], unlocked: [], pointsAwarded: 0 };
+  const result: MissionEval = {
+    progressed: [],
+    completed: [],
+    unlocked: [],
+    pointsAwarded: 0,
+    creditsAwarded: 0,
+    hints: [],
+  };
   const completedSets = new Set<BiomeId>();
 
   for (const id of MISSION_ORDER) {
@@ -88,7 +105,15 @@ export function evaluateCatch(journal: Journal, ev: CatchEvent): MissionEval {
     const prog = journal.missions[id] ?? { progress: 0, completed: false };
     journal.missions[id] = prog;
     if (prog.completed) continue; // already done — never re-progress / re-award
-    if (!meets(def.requirement, ev)) continue;
+    if (!meets(def.requirement, ev)) {
+      // §4.1b teaching-moment: a "warm miss" on an active research challenge — a
+      // catch in the challenge's biome that didn't satisfy it. Re-frame the clue;
+      // progress is untouched (count-1 — nothing to reset).
+      if (def.requirement.kind === 'research' && def.hint && ev.biome === SPECIES[def.requirement.species].biome) {
+        result.hints.push(def.hint);
+      }
+      continue;
+    }
 
     prog.progress += 1;
     result.progressed.push(id);
@@ -97,7 +122,10 @@ export function evaluateCatch(journal: Journal, ev: CatchEvent): MissionEval {
       result.completed.push(id);
       journal.rankPoints += def.rewardPoints;
       result.pointsAwarded += def.rewardPoints;
-      completedSets.add(def.biome);
+      // One-time research-challenge credit bonus (§4.1b) — applied at the boundary.
+      if (def.creditReward) result.creditsAwarded += def.creditReward;
+      // Standalone missions (research challenges) never trigger a set-unlock check.
+      if (!def.standalone) completedSets.add(def.biome);
     }
   }
 

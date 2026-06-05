@@ -8,6 +8,8 @@ const evalResult = (over: Partial<MissionEval>): MissionEval => ({
   completed: [],
   unlocked: [],
   pointsAwarded: 0,
+  creditsAwarded: 0,
+  hints: [],
   ...over,
 });
 

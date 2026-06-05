@@ -259,6 +259,9 @@ function frame(nowMs: number): void {
         biome: game.lastCaughtBiome,
         phase: game.lastCaughtPhase,
       });
+      // §4.1b: the one-time research-challenge credit bonus (separate from the
+      // catch's own credits, granted above). Applied at the boundary like all credits.
+      if (evalResult.creditsAwarded > 0) addCredits(journal, evalResult.creditsAwarded);
       // Apply any unlock reward to the live world (reuse World's unlock path).
       for (const id of evalResult.unlocked) unlockBiome(game.world, id);
       // Refresh the locked-region visuals so the now-open seam's stale wall / fog /
