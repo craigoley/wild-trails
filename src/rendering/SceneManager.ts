@@ -62,6 +62,21 @@ export class SceneManager {
 
     this.resize();
     window.addEventListener('resize', this.resize);
+    window.addEventListener('orientationchange', this.resize);
+    // iOS Safari fragility: `window 'resize'` does NOT reliably fire as the layout
+    // viewport settles after boot (or on URL-bar show/hide), so a first measurement
+    // that caught a transient/short viewport can STICK — leaving the canvas filling
+    // only the top of the screen while the position:fixed HUD/controls span the full
+    // page (the "world squashed into the top, dark band below the controls" symptom).
+    // visualViewport DOES fire through those transitions; use it (plus a deferred
+    // post-load pass) purely as a TRIGGER to re-measure — the size we apply is still
+    // the LAYOUT viewport (below), so the world and the fixed controls stay in sync.
+    window.visualViewport?.addEventListener('resize', this.resize);
+    window.addEventListener('load', this.resize);
+    // Deferred re-measures catch the post-boot viewport settle without any per-frame
+    // work (one next-frame, one after the URL-bar animation typically completes).
+    requestAnimationFrame(this.resize);
+    setTimeout(this.resize, 300);
   }
 
   /** Jump the focus to a world position with no easing (use at init so the
