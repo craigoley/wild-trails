@@ -20,12 +20,8 @@ html,
 body {
   width: 100%;
   height: 100%;
-  /* Page can't scroll (overflow) or rubber-band (overscroll). Pinch-zoom is off
-   * via the viewport meta's user-scalable=no. So `touch-action: none` is NOT set
-   * here — it lives on the game CANVAS instead (scroll fix v3 — measured). A
-   * `touch-action:none` ANCESTOR suppresses native scroll inside descendants on
-   * iOS even when they set pan-y; the canvas is a SIBLING of the panels (both
-   * under #app), so confining it there frees the panels' scroll bodies. */
+  /* touch-action:none lives on the canvas, not here — an ancestor's none
+   * suppresses descendant scroll on iOS even when they set pan-y. */
   overflow: hidden;
   overscroll-behavior: none;
   background: var(--bg);
@@ -42,11 +38,7 @@ body {
   inset: 0;
 }
 
-/* The WebGL canvas fills the viewport. touch-action:none HERE (the roam-drag
- * element) — not on body/#app — so dragging to roam doesn't pan/zoom the page,
- * while the panels (SIBLINGS of the canvas under #app, not descendants) keep their
- * own pan-y scroll. The roam-drag is also preventDefault'd in JS ({passive:false}
- * on #app), so no-page-scroll never depended on this alone. */
+/* The WebGL canvas fills the viewport. */
 #app canvas {
   display: block;
   width: 100%;
