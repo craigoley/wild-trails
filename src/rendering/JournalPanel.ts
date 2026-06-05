@@ -14,10 +14,12 @@
 import type { Journal } from '../state/Journal';
 import { foundCount, isFound } from '../state/Journal';
 import { addOverlayDismiss } from './overlayDismiss';
+import { groupSpeciesByBiome } from './journalGroups';
 import {
   ACTIVITY_LABEL,
   BAIT_DISPLAY,
   BIOMES,
+  PANEL_LABELS,
   SPECIES,
   SPECIES_ORDER,
 } from '../utils/constants';
@@ -80,20 +82,30 @@ export class JournalPanel {
    *  cheap signature of found-state + counts), so an open panel costs nothing
    *  per frame. */
   refresh(journal: Journal): void {
-    const sig = SPECIES_ORDER.map((id) => {
-      const rec = journal.species[id];
-      return rec ? `${id}:${rec.catchCount}` : `${id}:-`;
-    }).join('|');
+    const sig =
+      SPECIES_ORDER.map((id) => {
+        const rec = journal.species[id];
+        return rec ? `${id}:${rec.catchCount}` : `${id}:-`;
+      }).join('|') + `|u${journal.unlockedBiomes.join(',')}`; // re-render when a biome unlocks (locked header)
     if (sig === this.signature) return;
     this.signature = sig;
 
     this.header.textContent = `Field Journal — ${foundCount(journal)} of ${SPECIES_ORDER.length} found`;
 
+    // Grouped by biome (presentation only — groupSpeciesByBiome is pure). Each
+    // biome gets a header with its found/total; undiscovered species still render
+    // as silhouettes (names never leaked), and locked biomes are marked.
     this.grid.replaceChildren();
-    for (const id of SPECIES_ORDER) {
-      this.grid.appendChild(
-        isFound(journal, id) ? JournalPanel.card(id, journal) : JournalPanel.silhouette(),
-      );
+    for (const g of groupSpeciesByBiome(journal)) {
+      const head = document.createElement('div');
+      head.className = `journal-biome${g.unlocked ? '' : ' locked'}`;
+      head.textContent = `${g.displayName} — ${g.found} of ${g.total}${g.unlocked ? '' : PANEL_LABELS.lockedSuffix}`;
+      this.grid.appendChild(head);
+      for (const id of g.ids) {
+        this.grid.appendChild(
+          isFound(journal, id) ? JournalPanel.card(id, journal) : JournalPanel.silhouette(),
+        );
+      }
     }
   }
 

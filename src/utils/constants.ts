@@ -203,6 +203,16 @@ export const DAY_PHASE_DISPLAY: Record<DayPhase, { label: string; icon: string }
   night: { label: 'Night', icon: '🌙' },
 };
 
+/** Labels for the organised panels (Mission Active/Completed sections, Journal
+ *  per-biome headers). No magic strings out in the renderers. */
+export const PANEL_LABELS = {
+  /** Mission section headers. */
+  missionsActive: 'Active',
+  missionsCompleted: 'Completed',
+  /** Appended to a still-locked biome's Journal header ("Highlands — 0 of 3 · locked"). */
+  lockedSuffix: ' · locked',
+} as const;
+
 /**
  * Day-night cycle. The cycle length is one full loop through dawn -> day ->
  * dusk -> night; each phase's START is a fraction of the cycle [0, 1). Dawn and
