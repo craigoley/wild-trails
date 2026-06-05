@@ -581,6 +581,21 @@ body.modal-open .touch-stick-thumb {
   display: grid;
   gap: 10px;
 }
+/* Active / Completed section headers (inside the scroll body — the scroll
+ * architecture is untouched; these are just content). */
+.mission-section {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(191, 227, 255, 0.7);
+  margin-top: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.mission-section:first-child {
+  margin-top: 0;
+}
 .mission-row {
   padding: 11px 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -707,6 +722,25 @@ body.modal-open .touch-stick-thumb {
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
+}
+/* Per-biome section header inside the journal grid (spans the column). A locked
+ * biome reads dimmed ("· locked") — there, but not yours yet. */
+.journal-biome {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #ffe2a6;
+  margin-top: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 207, 107, 0.25);
+}
+.journal-biome:first-child {
+  margin-top: 0;
+}
+.journal-biome.locked {
+  color: rgba(255, 255, 255, 0.42);
+  border-bottom-color: rgba(255, 255, 255, 0.12);
 }
 .journal-card {
   display: flex;
