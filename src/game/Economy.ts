@@ -20,8 +20,9 @@ export function addCredits(journal: Journal, n: number): void {
 /** Spend credits. Returns false and leaves the balance UNCHANGED when there isn't
  *  enough (or n <= 0) — the overspend guard. The balance is never negative. */
 export function spendCredits(journal: Journal, n: number): boolean {
-  if (n <= 0 || journal.credits < n) return false;
-  journal.credits -= n;
+  const cost = Math.floor(n);
+  if (cost <= 0 || journal.credits < cost) return false;
+  journal.credits -= cost;
   return true;
 }
 
