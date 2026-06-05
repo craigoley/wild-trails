@@ -28,6 +28,7 @@ import { TimeIndicator } from './rendering/TimeIndicator';
 import { JournalPanel } from './rendering/JournalPanel';
 import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
 import { ScrollProbe } from './rendering/ScrollProbe';
+import { syncModalOpenClass } from './rendering/modalClass';
 import { Banner } from './rendering/Banner';
 import { missionBannerMessages } from './rendering/missionBanners';
 import { AudioEngine } from './audio/AudioEngine';
@@ -150,6 +151,8 @@ const startScreen = new StartScreen(app, {
   onSkip: () => skipOnboarding(onboarding),
 });
 startScreen.show(firstRun);
+// Tracks the body.modal-open flag so the per-frame sync only writes on transitions.
+let modalOpenPrev = false;
 // Transient banners for mission completions + biome unlocks (the missing
 // player-facing feedback — the unlock previously fired silently).
 const banner = new Banner(app);
@@ -264,6 +267,16 @@ function frame(nowMs: number): void {
     onboardSit.caughtAny = game.sessionCatches > 0;
     const step = tickOnboarding(onboarding, onboardSit, dt);
     if (step) showOnboardPrompt(step);
+  }
+
+  // Hide the gameplay HUD while ANY overlay panel is open (mobile layering fix) —
+  // POLLED so it clears on every close path (✕ / backdrop / Escape / programmatic),
+  // each of which ends with the panel reporting isOpen() === false.
+  const modalOpen =
+    journalPanel.isOpen() || missionPanel.isOpen() || winScreen.isOpen() || startScreen.isOpen();
+  if (modalOpen !== modalOpenPrev) {
+    syncModalOpenClass(modalOpen);
+    modalOpenPrev = modalOpen;
   }
 
   // Fade the mission/unlock banner on real frame time (it's render-side feedback).
