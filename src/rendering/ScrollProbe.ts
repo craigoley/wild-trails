@@ -99,7 +99,7 @@ export class ScrollProbe {
         `  offset=${panel.offsetHeight}  disp=${ps.display}/${ps.flexDirection}  minH=${ps.minHeight}  ov=${ps.overflow}`,
       `body:  client=${scroll.clientHeight}  scroll=${scroll.scrollHeight}  ovY=${bs.overflowY}` +
         `  minH=${bs.minHeight}  flex=${bs.flexGrow}/${bs.flexShrink}/${bs.flexBasis}  h=${bs.height}  maxH=${bs.maxHeight}` +
-        `  ta=${bs.touchAction}  wos=${(bs as unknown as Record<string, string>).webkitOverflowScrolling ?? '-'}`,
+        `  ta=${bs.touchAction}  wos=${bs.getPropertyValue('-webkit-overflow-scrolling') || '-'}`,
       `VERDICT: ${scrollVerdict(scroll.clientHeight, scroll.scrollHeight)}`,
       `ancestors (scroll-body → body):`,
     ];
