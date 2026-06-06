@@ -1418,10 +1418,10 @@ export const MISSION_ORDER: readonly string[] = [
   'wetland-survey',
   'wetland-dawn',
   'wetland-day',
-  // §4.1b research challenges (standalone — don't gate unlocks / the win).
-  'research-dawn-songbird',
-  'research-night-digger',
-  'research-dusk-browser',
+  // §4.1b research challenges (standalone — don't gate unlocks / the win). NON-FORCED
+  // conditions (§4.1b-fix): the meadow round-the-clock foragers at NIGHT.
+  'research-mouse-night',
+  'research-rabbit-night',
 ];
 
 /**
@@ -1525,41 +1525,38 @@ export const MISSIONS: Record<string, MissionDef> = {
   // §4.1b RESEARCH challenges — standalone applied-knowledge side-quests. The clue
   // describes TRAITS (the player identifies the species from the #45 cards); the
   // condition (species + activity phase) is anti-accident; a warm miss teaches.
-  'research-dawn-songbird': {
-    id: 'research-dawn-songbird',
-    biome: 'woodland',
-    title: 'Research: First Light',
+  //
+  // §4.1b-fix: these target NON-FORCED conditions. The original three (robin@dawn,
+  // badger@night, roedeer@dusk) were AUTO-SATISFIED — the woodland catch-set forces
+  // exactly those window-locked species in exactly those windows, so they completed
+  // invisibly and there was no "figure it out" moment. The ONLY genuinely non-forced
+  // space (without the deferred bait dimension) is the 'any'-window MEADOW foragers
+  // (fieldmouse, rabbit) at NIGHT — no set or the dex forces a night meadow catch, so
+  // the player must CHOOSE to go look after dark. (Bait would open more — flagged as
+  // the §4.1b expansion: "catch species X using its diet bait" for any species.)
+  'research-mouse-night': {
+    id: 'research-mouse-night',
+    biome: 'meadow',
+    title: 'Research: The Night Shift',
     description:
-      'A dawn insect-hunter of the woodland floor — it drops from a low perch at first light to snatch grubs and worms. Identify it from your field guide, then catch it at dawn.',
-    requirement: { kind: 'research', species: 'robin', phase: 'dawn', count: 1 },
+      'A round-the-clock forager of the meadow grass — out among the stems by day AND by night. Most field-watchers only meet it in daylight. Identify it from your field guide, then seek it after dark.',
+    requirement: { kind: 'research', species: 'fieldmouse', phase: 'night', count: 1 },
     rewardPoints: RESEARCH.rewardPoints,
     creditReward: RESEARCH.creditReward,
     standalone: true,
-    hint: 'Not the one — you are after a DAWN insect-hunter of the woodland floor. Come back at first light.',
+    hint: 'Not the one — you are after a round-the-clock forager of the meadow grass. Come back to the meadow after dark.',
   },
-  'research-night-digger': {
-    id: 'research-night-digger',
-    biome: 'woodland',
-    title: 'Research: After Dark',
+  'research-rabbit-night': {
+    id: 'research-rabbit-night',
+    biome: 'meadow',
+    title: 'Research: Under the Moon',
     description:
-      'A night-digging insectivore of the deep woodland — it leaves its sett after dark to root out earthworms. Identify it from your field guide, then catch it at night.',
-    requirement: { kind: 'research', species: 'badger', phase: 'night', count: 1 },
+      'A grazer that never strays far from its burrow — busiest at dawn and dusk, yet it still crops the meadow turf under the moon. Identify it from your field guide, then find it grazing at night.',
+    requirement: { kind: 'research', species: 'rabbit', phase: 'night', count: 1 },
     rewardPoints: RESEARCH.rewardPoints,
     creditReward: RESEARCH.creditReward,
     standalone: true,
-    hint: 'Not the one — you are after a NIGHT-digger of the deep woodland. It only emerges after dark.',
-  },
-  'research-dusk-browser': {
-    id: 'research-dusk-browser',
-    biome: 'woodland',
-    title: 'Research: The Evening Edge',
-    description:
-      'A crepuscular browser of the woodland clearings — it steps out to feed on leaves and shoots as the light fades. Identify it from your field guide, then catch it at dusk.',
-    requirement: { kind: 'research', species: 'roedeer', phase: 'dusk', count: 1 },
-    rewardPoints: RESEARCH.rewardPoints,
-    creditReward: RESEARCH.creditReward,
-    standalone: true,
-    hint: 'Not the one — you are after a DUSK browser of the clearings. Watch the clearing edges as the light fades.',
+    hint: 'Not the one — you are after a burrow-grazer that crops the turf under the moon. Look in the meadow at night.',
   },
 };
 
