@@ -90,13 +90,14 @@ describe('achievability — the win is REACHABLE with shipped content (no grind)
 
   it('the max achievable rank points clear the top threshold by a margin', () => {
     // Every mission reward + every species bonus — the ceiling with shipped content.
-    // §4.1b added 3 standalone research challenges (+12 each = +36 to the ceiling):
-    // mission points 195 -> 231. They're OPTIONAL (standalone), so the win doesn't
-    // require them — they only RAISE the achievable ceiling.
+    // §4.1b added standalone research challenges (+12 each). §4.1b-fix reworked them
+    // from 3 auto-satisfied ghosts to 2 genuinely NON-FORCED ones: +24 (not +36) to
+    // the ceiling, so mission points 195 -> 219. They're OPTIONAL (standalone) — the
+    // win never requires them; they only RAISE the achievable ceiling.
     const missionPts = MISSION_ORDER.reduce((s, id) => s + MISSIONS[id].rewardPoints, 0);
     const speciesPts = SPECIES_ORDER.length * RANK.perSpeciesFound;
     const top = RANKS[RANKS.length - 1].minPoints;
-    expect(missionPts).toBe(231); // post-research-challenge ceiling (the points-shift check)
+    expect(missionPts).toBe(219); // post-§4.1b-fix ceiling (2 non-forced challenges)
     expect(SPECIES_ORDER.length).toBe(13); // bigger roster, bigger win bar
     expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // clears with margin
   });
