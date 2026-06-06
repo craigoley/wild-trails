@@ -221,6 +221,9 @@ export const UNLOCK_COPY = {
   /** In progress: complete the set to reach the target biome. */
   toReach: (setName: string, targetName: string): string =>
     `Complete the ${setName} missions to reach the ${targetName}`,
+  /** §4.1c: an ADDITIONAL research-challenge requirement on an escalated gate — shown
+   *  so a knowledge-gate is never silent. ✓ when done, + when still required. */
+  andResearch: (title: string, done: boolean): string => `${done ? '✓' : '+'} the “${title}” research`,
   /** Already earned: a quiet ✓ of the path walked. */
   opened: (targetName: string): string => `✓ The ${targetName} lies open`,
 } as const;
@@ -1566,6 +1569,18 @@ export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, BiomeId>> = {
   meadow: 'woodland',
   woodland: 'wetland',
   wetland: 'highlands',
+};
+
+/** §4.1c ESCALATING knowledge gates: in ADDITION to the catch-set, a biome's unlock
+ *  may require completing research challenge(s) — demonstrated MASTERY, not just
+ *  catch-counts. The ramp is gradual: earlier gates have NO entry (gentle, unchanged);
+ *  only the LAST gate (Wetland→Highlands) adds a required challenge. ANTI-WALL: the
+ *  required challenge is research-mouse-night (fieldmouse@night) — the EASIEST species,
+ *  in the always-open starting Meadow, learnable from the very start, and the world is
+ *  open so the player can always return there at night. Passable by UNDERSTANDING, never
+ *  a wall (#37 shows the requirement). A biome with no entry gates on its catch-set alone. */
+export const BIOME_GATE_CHALLENGES: Partial<Record<BiomeId, readonly string[]>> = {
+  wetland: ['research-mouse-night'],
 };
 
 // ===========================================================================

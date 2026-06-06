@@ -16,6 +16,7 @@
  */
 
 import {
+  BIOME_GATE_CHALLENGES,
   BIOME_SET_UNLOCK,
   MISSIONS,
   MISSION_ORDER,
@@ -85,6 +86,20 @@ export function isBiomeSetComplete(journal: Journal, biome: BiomeId): boolean {
 }
 
 /**
+ * §4.1c — the full UNLOCK gate for a biome: its catch-set AND every required research
+ * challenge (BIOME_GATE_CHALLENGES). A biome with no challenge entry reduces EXACTLY to
+ * isBiomeSetComplete (the gentle gates are byte-for-byte unchanged). The escalation:
+ * the Wetland gate also requires research-mouse-night (demonstrated mastery).
+ */
+export function isBiomeGateMet(journal: Journal, biome: BiomeId): boolean {
+  if (!isBiomeSetComplete(journal, biome)) return false;
+  for (const challengeId of BIOME_GATE_CHALLENGES[biome] ?? []) {
+    if (!journal.missions[challengeId]?.completed) return false;
+  }
+  return true;
+}
+
+/**
  * Evaluate a catch against every active mission, mutating the journal's mission /
  * rank / unlock state and returning the deltas. Idempotent w.r.t. already-done
  * missions (the double-fire guard).
@@ -98,7 +113,6 @@ export function evaluateCatch(journal: Journal, ev: CatchEvent): MissionEval {
     creditsAwarded: 0,
     hints: [],
   };
-  const completedSets = new Set<BiomeId>();
 
   for (const id of MISSION_ORDER) {
     const def = MISSIONS[id];
@@ -124,18 +138,22 @@ export function evaluateCatch(journal: Journal, ev: CatchEvent): MissionEval {
       result.pointsAwarded += def.rewardPoints;
       // One-time research-challenge credit bonus (§4.1b) — applied at the boundary.
       if (def.creditReward) result.creditsAwarded += def.creditReward;
-      // Standalone missions (research challenges) never trigger a set-unlock check.
-      if (!def.standalone) completedSets.add(def.biome);
     }
   }
 
-  // A finished set unlocks its mapped biome (once).
-  for (const biome of completedSets) {
-    if (!isBiomeSetComplete(journal, biome)) continue;
-    const target = BIOME_SET_UNLOCK[biome];
-    if (target && !journal.unlockedBiomes.includes(target)) {
-      journal.unlockedBiomes.push(target);
-      result.unlocked.push(target);
+  // §4.1c: on ANY mission completion, re-check EVERY gated biome's full gate (catch-set
+  // AND its required challenges). Order-independent — this is what lets a STANDALONE
+  // gating challenge (research-mouse-night, a Meadow mission gating the Wetland→Highlands
+  // unlock) trigger the unlock no matter whether the wetland set or the challenge
+  // finished last. Cheap (a handful of gates); gentle gates behave exactly as before.
+  if (result.completed.length > 0) {
+    for (const biome of Object.keys(BIOME_SET_UNLOCK) as BiomeId[]) {
+      if (!isBiomeGateMet(journal, biome)) continue;
+      const target = BIOME_SET_UNLOCK[biome];
+      if (target && !journal.unlockedBiomes.includes(target)) {
+        journal.unlockedBiomes.push(target);
+        result.unlocked.push(target);
+      }
     }
   }
   return result;
