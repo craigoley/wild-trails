@@ -40,15 +40,19 @@ describe('Highlands content — the diagonal 4th cell is now reachable (geometry
 });
 
 describe('Highlands content — the unlock chain (pure data)', () => {
-  it('completing the new Wetland set unlocks the Highlands (the final chain link)', () => {
+  it('the Wetland set AND the §4.1c research gate unlock the Highlands (escalated)', () => {
     const j = createJournal();
     // wetland-survey ×3 (+ the day mallard) ...
     for (let i = 0; i < 3; i++) evaluateCatch(j, { species: 'mallard', biome: 'wetland', phase: 'day' });
-    // ... + the dawn frog completes the set -> unlock fires.
-    const last = evaluateCatch(j, { species: 'frog', biome: 'wetland', phase: 'dawn' });
+    // ... + the dawn frog completes the SET — but §4.1c: the set ALONE no longer suffices.
+    const setDone = evaluateCatch(j, { species: 'frog', biome: 'wetland', phase: 'dawn' });
     expect(isBiomeSetComplete(j, 'wetland')).toBe(true);
+    expect(j.unlockedBiomes).not.toContain('highlands'); // the escalated gate also needs the research
+    expect(setDone.unlocked).not.toContain('highlands');
+    // research-mouse-night (fieldmouse@night) — the demonstrated-mastery gate — opens it.
+    const gate = evaluateCatch(j, { species: 'fieldmouse', biome: 'meadow', phase: 'night' });
     expect(j.unlockedBiomes).toContain('highlands');
-    expect(last.unlocked).toContain('highlands');
+    expect(gate.unlocked).toContain('highlands');
   });
 
   it('the OLD condition alone (wetland survey only) does NOT unlock the Highlands', () => {
@@ -73,9 +77,10 @@ describe('Highlands content — the unlock chain (pure data)', () => {
     evaluateCatch(j, { species: 'roedeer', biome: 'woodland', phase: 'dusk' });
     evaluateCatch(j, { species: 'badger', biome: 'woodland', phase: 'night' });
     expect(j.unlockedBiomes).toContain('wetland');
-    // Wetland set -> Highlands.
+    // Wetland set + the §4.1c research gate (fieldmouse@night) -> Highlands.
     for (let i = 0; i < 3; i++) evaluateCatch(j, { species: 'mallard', biome: 'wetland', phase: 'day' });
     evaluateCatch(j, { species: 'frog', biome: 'wetland', phase: 'dawn' });
+    evaluateCatch(j, { species: 'fieldmouse', biome: 'meadow', phase: 'night' }); // demonstrated mastery
     expect(j.unlockedBiomes).toContain('highlands');
   });
 });

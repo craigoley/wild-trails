@@ -637,6 +637,18 @@ body.modal-open .touch-stick-thumb {
 .unlock-goal {
   font-weight: 700;
 }
+/* §4.1c: the escalated gate's required research challenge — a quiet sub-line under the
+ * goal. Amber while still required, soft green once done. */
+.unlock-research {
+  width: 100%;
+  margin-top: 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255, 209, 102, 0.92);
+}
+.unlock-research.done {
+  color: rgba(159, 240, 168, 0.92);
+}
 .unlock-prog {
   font-weight: 800;
   color: #bfe3ff;

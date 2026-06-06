@@ -8,14 +8,23 @@
  */
 
 import {
+  BIOME_GATE_CHALLENGES,
   BIOME_SET_UNLOCK,
   BIOMES,
   MISSIONS,
   MISSION_ORDER,
   type BiomeId,
 } from '../utils/constants';
-import { isBiomeSetComplete } from '../game/Missions';
+import { isBiomeGateMet } from '../game/Missions';
 import type { Journal } from '../state/Journal';
+
+/** §4.1c — a research challenge a biome's unlock ALSO requires (shown so the gate is
+ *  never silent). */
+export interface RequiredChallenge {
+  id: string;
+  title: string;
+  done: boolean;
+}
 
 export interface UnlockLine {
   /** The gating set's biome (whose missions you complete). */
@@ -27,6 +36,8 @@ export interface UnlockLine {
   /** Gating missions completed / total — STANDALONE excluded (the unlock rule). */
   done: number;
   total: number;
+  /** §4.1c — research challenges this unlock ALSO requires (empty for gentle gates). */
+  requiredChallenges: RequiredChallenge[];
   /** Is the unlocked biome already reached? (a quiet ✓ rather than the carrot.) */
   alreadyUnlocked: boolean;
 }
@@ -66,6 +77,13 @@ export function unlockLines(journal: Journal): UnlockLine[] {
   return gatingSetBiomes().map((setBiome) => {
     const unlocks = BIOME_SET_UNLOCK[setBiome] ?? null;
     const { done, total } = gatingProgress(journal, setBiome);
+    // §4.1c — the escalated gate's required research challenge(s), each with its done
+    // state, so the player is TOLD what's required (never a silent knowledge-wall).
+    const requiredChallenges = (BIOME_GATE_CHALLENGES[setBiome] ?? []).map((id) => ({
+      id,
+      title: MISSIONS[id].title,
+      done: journal.missions[id]?.completed ?? false,
+    }));
     return {
       setBiome,
       setName: BIOMES[setBiome].displayName,
@@ -73,10 +91,13 @@ export function unlockLines(journal: Journal): UnlockLine[] {
       unlocksName: unlocks ? BIOMES[unlocks].displayName : null,
       done,
       total,
-      // Consistency: isBiomeSetComplete is the authority on "set done"; the target
-      // is unlocked once earned (tracked in the journal).
+      requiredChallenges,
+      // §4.1c: the FULL gate (set AND any required challenge) is the authority on "done"
+      // — using isBiomeGateMet, not isBiomeSetComplete, so an escalated gate isn't shown
+      // as satisfied while its challenge is still pending. The target is unlocked once
+      // earned (tracked in the journal).
       alreadyUnlocked: unlocks
-        ? journal.unlockedBiomes.includes(unlocks) || isBiomeSetComplete(journal, setBiome)
+        ? journal.unlockedBiomes.includes(unlocks) || isBiomeGateMet(journal, setBiome)
         : false,
     };
   });

@@ -133,9 +133,15 @@ export class MissionPanel {
       if (l.alreadyUnlocked) {
         row.textContent = UNLOCK_COPY.opened(l.unlocksName!);
       } else {
+        // §4.1c: an escalated gate ALSO lists its required research challenge(s) with
+        // their ✓/+ state, so the player is TOLD what's required (never a silent wall).
+        const research = l.requiredChallenges
+          .map((c) => `<div class="unlock-research${c.done ? ' done' : ''}">${UNLOCK_COPY.andResearch(c.title, c.done)}</div>`)
+          .join('');
         row.innerHTML =
           `<div class="unlock-goal">${UNLOCK_COPY.toReach(l.setName, l.unlocksName!)}</div>` +
-          `<div class="unlock-prog">${l.done} of ${l.total}</div>`;
+          `<div class="unlock-prog">${l.done} of ${l.total}</div>` +
+          research;
       }
       this.list.appendChild(row);
     }
