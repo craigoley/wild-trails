@@ -15,6 +15,7 @@ import type { Journal } from '../state/Journal';
 import { foundCount, isFound } from '../state/Journal';
 import { addOverlayDismiss } from './overlayDismiss';
 import { groupSpeciesByBiome } from './journalGroups';
+import { unlockedResearchLayers } from '../game/Research';
 import {
   ACTIVITY_LABEL,
   BAIT_DISPLAY,
@@ -87,7 +88,9 @@ export class JournalPanel {
       SPECIES_ORDER.map((id) => {
         const rec = journal.species[id];
         return rec ? `${id}:${rec.catchCount}` : `${id}:-`;
-      }).join('|') + `|u${journal.unlockedBiomes.join(',')}`; // re-render when a biome unlocks (locked header)
+      }).join('|') +
+      `|u${journal.unlockedBiomes.join(',')}` + // re-render when a biome unlocks (locked header)
+      `|r${[...unlockedResearchLayers(journal)].sort().join(',')}`; // ...and when a research layer unlocks (R0b)
     if (sig === this.signature) return;
     this.signature = sig;
 
@@ -140,6 +143,11 @@ export class JournalPanel {
       `<div class="card-section"><span class="card-label">Behaviour</span>${info.behaviour}</div>` +
       `<div class="card-section card-funfact"><span class="card-label">Did you know</span>${def.profile}</div>` +
       `<div class="card-section card-status"><span class="card-label">Status</span>${info.status}</div>` +
+      // §4.1.4 R0b: the research-knowledge LAYER — a deeper note revealed once this
+      // species' research project is complete (purely additive; gated on the unlock).
+      (info.researchNote && unlockedResearchLayers(journal).has(id)
+        ? `<div class="card-section card-research"><span class="card-label">Research notes</span>${info.researchNote}</div>`
+        : '') +
       `<div class="card-meta">Caught ×${rec.catchCount} · first ${date}</div>`;
     card.appendChild(body);
     return card;

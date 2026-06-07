@@ -1181,3 +1181,130 @@ body.modal-open .touch-stick-thumb {
   pointer-events: none;
   z-index: 20;
 }
+
+/* --- Research panel (§4.1.4 R0b) — clones the mission/journal panel architecture
+ * EXACTLY (overlay → bounded-scroll panel) so the iOS scroll fix carries over. ------ */
+.research-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 41;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 14, 8, 0.78);
+  pointer-events: auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+.research-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 94vw);
+  max-height: 88dvh;
+  min-height: 0;
+  overflow: hidden;
+  background: rgba(16, 26, 18, 0.98);
+  border: 2px solid rgba(159, 240, 168, 0.4);
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.92);
+}
+.research-header {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 8px 56px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.research-header-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-align: center;
+  color: #9ff0a8;
+}
+.research-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 14px 18px 18px;
+}
+.research-balance {
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffd166;
+}
+.research-list {
+  display: grid;
+  gap: 12px;
+}
+.research-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.research-info {
+  min-width: 0;
+}
+.research-name {
+  font-size: 15px;
+  font-weight: 800;
+}
+.research-blurb {
+  margin-top: 3px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.7);
+}
+.research-activity {
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(159, 240, 168, 0.92);
+}
+/* Right-hand controls (Start/Complete reuse .shop-buy). */
+.research-need {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(255, 209, 102, 0.9);
+  text-align: right;
+  max-width: 40%;
+}
+.research-done {
+  flex: none;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: rgba(159, 240, 168, 0.16);
+  border: 1px solid rgba(159, 240, 168, 0.4);
+  color: #9ff0a8;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+/* The catch-time research nudge banner — a warm green, reusing the fade-notice. */
+.banner-research {
+  font-size: 15px;
+  font-weight: 700;
+  color: #c8f5cf;
+  background: rgba(20, 46, 26, 0.85);
+  border: 1px solid rgba(159, 240, 168, 0.45);
+}
+/* The dex card's unlocked Research-notes layer (R0b reward) — a quiet green accent. */
+.card-research {
+  color: rgba(200, 245, 207, 0.85);
+}
+.card-research .card-label {
+  color: rgba(109, 255, 155, 0.6);
+}

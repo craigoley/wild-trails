@@ -146,3 +146,20 @@ export function evaluateResearch(journal: Journal, ev: CatchEvent): ResearchEval
   }
   return result;
 }
+
+/**
+ * The set of journal-knowledge LAYERS the player has unlocked — the `reward.layer` of
+ * every COMPLETED `journal-layer` project (R0b's reward effect; `layer` is a species id).
+ * The dex card reads this to reveal a species' deeper `researchNote`. Pure, derived (no
+ * extra persisted state).
+ */
+export function unlockedResearchLayers(journal: Journal): Set<string> {
+  const layers = new Set<string>();
+  for (const id of RESEARCH_ORDER) {
+    const p = RESEARCH_PROJECTS[id];
+    if (p.reward.kind === 'journal-layer' && journal.research[id]?.completed) {
+      layers.add(p.reward.layer);
+    }
+  }
+  return layers;
+}
