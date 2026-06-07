@@ -19,8 +19,8 @@
  * interpolation each animal keeps its previous sim-step position.
  */
 
-import { ANIMAL, BAIT, SPAWN, WATER_FLEE_BIAS, type BaitId, type SpeciesId } from '../utils/constants';
-import { clampToBiome, isInWater, nearestWater, type World } from './World';
+import { ANIMAL, BAIT, SPAWN, TOOLS, WATER_FLEE_BIAS, type BaitId, type SpeciesId, type ToolId } from '../utils/constants';
+import { clampToBiome, isInWater, isOpenBiome, nearestWater, type World } from './World';
 import { getSpecies } from './Species';
 import { effectiveDetectionRadius } from './Detection';
 import type { PlayerState } from './Player';
@@ -103,6 +103,42 @@ export function nearestActiveAnimal(pool: Animal[], x: number, y: number, maxDis
     if (!a.active) continue;
     const d = Math.hypot(a.x - x, a.y - y);
     if (d <= bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/**
+ * The active net's GATE reach for a SPECIFIC animal (slice B1 — the lateral edge). Every
+ * net's base reach is 2.6; a biome net only EXTENDS the gate IN ITS CONDITION — the dip-net
+ * reaches an IN-WATER target (a fled frog across the pond), the throwing net ranges in an
+ * OPEN biome. Off-condition every net is 2.6, so no net is reachable-farther everywhere.
+ * This governs ONLY which animals are reachable — the proximity/odds use the base reach
+ * (2.6) for every net, so the catch CHANCE at a given distance is net-independent. Pure.
+ */
+export function gateReach(tool: ToolId, animal: Animal): number {
+  const def = TOOLS[tool];
+  if (animal.inWater && def.reachInWater !== undefined) return def.reachInWater;
+  if (def.reachOpen !== undefined && isOpenBiome(getSpecies(animal.species).biome)) return def.reachOpen;
+  return def.reach;
+}
+
+/**
+ * Pool index of the nearest ACTIVE animal within the active net's per-animal GATE reach
+ * (slice B1), or -1. Replaces the fixed-radius nearestActiveAnimal at the catch gate + arm
+ * so a biome net can reach its condition's animals (an in-water frog / an open-ground bird)
+ * that the hand net cannot — without ever boosting the odds.
+ */
+export function nearestCatchable(pool: Animal[], x: number, y: number, tool: ToolId): number {
+  let best = -1;
+  let bestDist = Infinity;
+  for (let i = 0; i < pool.length; i++) {
+    const a = pool[i];
+    if (!a.active) continue;
+    const d = Math.hypot(a.x - x, a.y - y);
+    if (d <= gateReach(tool, a) && d < bestDist) {
       bestDist = d;
       best = i;
     }

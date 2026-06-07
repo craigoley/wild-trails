@@ -937,14 +937,15 @@ export const SUPPLY_RENDER = {
 // Nets (durable catch gear — the "tool" in hand)
 // ===========================================================================
 
-/** Catch nets the player can OWN + equip (Nets & Gear arc, slice A). The hand
- *  net is the starter. Biome-specialized nets (dip-net, throwing net) arrive in a
- *  LATER slice and are LATERAL — they answer a biome's catching CONDITION (reach),
- *  never a flat catch-rate multiplier. (The flat-multiplier trap/tranq tools were
- *  RETIRED here: no net carries a catch-rate multiplier ≠ 1.0 — the system is
- *  lateral by construction.) `ToolId` is kept as the internal name (the net IS the
- *  tool in hand); the player sees the net displayName. */
-export type ToolId = 'net';
+/** Catch nets the player can OWN + equip (Nets & Gear arc). The Hand Net is the
+ *  starter; the biome-specialized dip-net + throwing net (slice B1) are LATERAL — each
+ *  answers its biome's catching CONDITION, NEVER a flat catch-rate multiplier (all stay
+ *  catchMultiplier 1.0). The laterality KEYSTONE: every net's BASE `reach` is 2.6, so the
+ *  proximity curve (the catch CHANCE at a given distance) is net-INDEPENDENT — no net has
+ *  better odds. A biome net's edge is a CONDITION-extended GATE reach (`reachInWater` /
+ *  `reachOpen`) that only widens WHICH animals are reachable in that situation, never the
+ *  odds once reached. So the starter still catches everything everywhere (anti-lockout). */
+export type ToolId = 'net' | 'dip-net' | 'throwing-net';
 
 export interface ToolDef {
   id: ToolId;
@@ -952,18 +953,24 @@ export interface ToolDef {
   displayName: string;
   /** A short "what this net is for" line (P2/P5 — match your gear to the habitat). */
   flavor: string;
-  /** Catch-chance factor — the NEUTRAL 1.0 identity for every net (advantage is
-   *  LATERAL: reach/condition, set in a later slice — never a flat >1 multiplier). */
+  /** Catch-chance factor — the NEUTRAL 1.0 identity for EVERY net (the advantage is
+   *  LATERAL: reach/condition — never a flat >1 multiplier). */
   catchMultiplier: number;
-  /** REACH, world units (slice B0) — how close an animal must be for this net to
-   *  attempt a catch (the attempt gate + the proximity-curve denominator). A per-net
-   *  property so biome nets (B1) can answer "reach over water / on open ground"
-   *  LATERALLY — without a catch-rate multiplier. The starter Hand Net's reach is the
-   *  current CATCH.attemptRadius (2.6), so catching is byte-for-byte unchanged in B0. */
+  /** BASE reach, world units (slice B0) — the attempt gate AND the proximity-curve
+   *  denominator. 2.6 for ALL nets (= CATCH.attemptRadius), so the catch CHANCE at a
+   *  given distance is net-independent. */
   reach: number;
+  /** Slice B1 — the GATE reach when the target is IN WATER (the dip-net's edge: reach
+   *  across the pond to a fled frog). Omitted = no water advantage (falls back to `reach`).
+   *  Affects ONLY the attempt gate, never the proximity/odds. */
+  reachInWater?: number;
+  /** Slice B1 — the GATE reach in an OPEN biome (the throwing net's edge: range on open
+   *  ground where cover is sparse). Omitted = no open advantage (falls back to `reach`).
+   *  Affects ONLY the attempt gate, never the proximity/odds. */
+  reachOpen?: number;
 }
 
-export const TOOL_ORDER: readonly ToolId[] = ['net'];
+export const TOOL_ORDER: readonly ToolId[] = ['net', 'dip-net', 'throwing-net'];
 
 export const TOOLS: Record<ToolId, ToolDef> = {
   net: {
@@ -971,11 +978,34 @@ export const TOOLS: Record<ToolId, ToolDef> = {
     displayName: 'Hand Net',
     flavor: 'A light sweep net — ideal up close, where grass and ferns let you sneak in.',
     catchMultiplier: 1.0,
-    // EXACTLY the current attemptRadius — the keystone that keeps B0 behavior-neutral
-    // (pinned: TOOLS.net.reach === CATCH.attemptRadius). B1 varies this per biome net.
+    // EXACTLY the current attemptRadius — the keystone (pinned: net.reach === CATCH.attemptRadius).
     reach: 2.6,
   },
+  'dip-net': {
+    id: 'dip-net',
+    displayName: 'Dip-net',
+    flavor: 'A long-handled dip-net — reaches across pond margins to creatures that have fled to the water.',
+    catchMultiplier: 1.0,
+    reach: 2.6, // same odds as the hand net everywhere...
+    reachInWater: 8, // ...but it can reach a frog fled to the pond's centre (~6.5 from shore).
+  },
+  'throwing-net': {
+    id: 'throwing-net',
+    displayName: 'Throwing Net',
+    flavor: 'A weighted casting net — flings out across open ground where there is no cover to sneak behind.',
+    catchMultiplier: 1.0,
+    reach: 2.6, // same odds as the hand net everywhere...
+    reachOpen: 7, // ...but it ranges out on the open tops, where you can't close on the birds.
+  },
 };
+
+/** A biome is "open" — the throwing net's condition — when its FIXED cover (HIDING_SPOTS)
+ *  is at/below this. The Highlands (2 spots, #53) is open; the others (3) are not. */
+export const OPEN_BIOME_COVER_MAX = 2;
+
+/** Credits to buy a biome net in the Field Supply (§12). A one-time durable purchase;
+ *  the nets are LATERAL convenience, never required (the starter catches everything). */
+export const NET_PRICE = 30;
 
 /** The net the player starts with (owned + equipped from the start). */
 export const STARTER_TOOL: ToolId = 'net';

@@ -28,6 +28,7 @@ import {
   despawnAnimal,
   hasActiveSpecies,
   nearestActiveAnimal,
+  nearestCatchable,
   updateAnimal,
   type Animal,
 } from './Animal';
@@ -60,7 +61,7 @@ import {
   type DiagnosticCounters,
 } from './catchDiagnostics';
 import { getSpecies } from './Species';
-import { STARTER_TOOL, toolReach, type ToolId } from './Tools';
+import { STARTER_TOOL, type ToolId } from './Tools';
 import { createRng, type Rng } from '../utils/rng';
 import {
   BAIT,
@@ -422,14 +423,10 @@ function updateTarget(game: GameState): void {
     game.targetBaited = isCorrectBaitFor(getSpecies(a.species), game.bait);
     return;
   }
-  // B0: arming/targeting uses the ACTIVE net's reach (per-net) — so the CATCH button
-  // arms at the same radius the attempt gate + proximity use (one consistent reach).
-  const idx = nearestActiveAnimal(
-    game.animals,
-    game.player.x,
-    game.player.y,
-    toolReach(game.tool),
-  );
+  // B0/B1: arming/targeting uses the ACTIVE net's per-animal GATE reach — so the CATCH
+  // button arms exactly when the attempt gate (startEncounter) would fire (one consistent
+  // reach), incl. a biome net reaching its condition's animals.
+  const idx = nearestCatchable(game.animals, game.player.x, game.player.y, game.tool);
   game.targetIndex = idx;
   game.catchArmed = idx >= 0;
   if (idx < 0) {
