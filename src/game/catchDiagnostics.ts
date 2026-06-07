@@ -15,7 +15,7 @@
  */
 
 import { biomeMatch, calmMultiplier, proximityMultiplier } from './Catch';
-import { toolMultiplier } from './Tools';
+import { toolMultiplier, toolReach } from './Tools';
 import { clamp } from '../utils/math';
 import type { BiomeId, SpeciesDef, ToolId } from '../utils/constants';
 
@@ -81,7 +81,7 @@ export function computeBreakdown(ctx: BreakdownContext): CatchBreakdown {
   return {
     base: ctx.species.baseCatchRate,
     tool: toolMultiplier(ctx.tool),
-    proximity: proximityMultiplier(ctx.dist),
+    proximity: proximityMultiplier(ctx.dist, toolReach(ctx.tool)),
     calm: calmMultiplier(ctx.correctBait, ctx.fleeing),
     biome: biomeMatch(ctx.species, ctx.biome),
   };
