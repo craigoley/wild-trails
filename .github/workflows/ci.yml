@@ -60,3 +60,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+
+  # L2 SMOKE — every-PR, platform-independent (NO screenshot baselines). Boots the built
+  # app in headless Chromium and checks: the page loads, the canvas mounts + renders (not
+  # blank), no console errors, and the HUD DOM is present. Catches hard render breakage +
+  # boot JS errors that tsc/vitest can't see. (The visual-regression screenshots are a
+  # SEPARATE container-only nightly job — e2e-visual.yml — see e2e/README.md.)
+  e2e-smoke:
+    name: E2E smoke (L2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

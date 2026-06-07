@@ -19,6 +19,7 @@
 
 import './style.css';
 import { createGameState, update } from './game/GameState';
+import { readTestSeed, isFrozen, applyTestScene, signalRenderReady } from './testHooks';
 import { Controls } from './input/Controls';
 import { SceneManager } from './rendering/SceneManager';
 import { WorldRenderer } from './rendering/WorldRenderer';
@@ -61,10 +62,12 @@ const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('#app container not found');
 
 // --- State (pure) ---------------------------------------------------------
-// A fresh per-load seed keeps the sim deterministic-from-seed while still
-// varying run to run. Reading the clock here (the impure entry point) keeps the
-// game layer itself pure.
-const bootSeed = (Date.now() & 0xffffffff) >>> 0;
+// A fresh per-load seed keeps the sim deterministic-from-seed while still varying
+// run to run. Reading the clock here (the impure entry point) keeps the game layer
+// itself pure. L2: a ?seed=N URL param pins the seed for a deterministic capture.
+const testSeed = readTestSeed();
+const bootSeed = testSeed !== null ? testSeed : (Date.now() & 0xffffffff) >>> 0;
+const l2Frozen = isFrozen(); // L2 visual scenes pause the sim for a deterministic capture
 const game = createGameState(bootSeed);
 // The persistent Field Journal — the fleet's first real localStorage collection.
 // Loaded once at boot (safe no-op in private mode); the journal lives HERE at the
@@ -83,6 +86,9 @@ restoreBaitCounts(game.bait, journal.bait);
 // Equip the persisted active net (Nets & Gear slice A) — the durable inventory lives
 // in the journal; the live sim reads game.tool. Defaults to the starter Hand Net.
 game.tool = journal.activeTool;
+// L2 deterministic-scene setup (no-op in normal play) — BEFORE the renderer builds, so
+// e.g. ?unlock=all opens biomes and the world renders without the locked-region fog.
+applyTestScene(game);
 
 // Autosave: silent, dedup-guarded. persist() syncs the live bait into the journal
 // then writes (only if the store actually changed). Fired on durable milestones
@@ -204,6 +210,8 @@ let accumulator = 0;
 // settle/break tone on resolution — all read from the resolved encounter DATA.
 let prevEncounterActive = false;
 let prevShakeIndex = 0;
+// L2: one-shot guard so the first-frame-ready signal fires exactly once.
+let renderReadySignalled = false;
 
 function frame(nowMs: number): void {
   let dt = (nowMs - lastMs) / 1000;
@@ -219,8 +227,10 @@ function frame(nowMs: number): void {
   // building) — the sim ignores movement input; the world otherwise lives on (§12 1b).
   game.movementFrozen = shopPanel.isOpen();
 
-  // Step the sim in fixed slices; the remainder interpolates the render.
-  accumulator += dt;
+  // Step the sim in fixed slices; the remainder interpolates the render. L2: a frozen
+  // scene (?freeze=1) never advances the accumulator, so it renders the deterministic
+  // initial state every frame — a stable visual baseline regardless of capture timing.
+  if (!l2Frozen) accumulator += dt;
   while (accumulator >= SIM_DT) {
     update(game, controls.intent, SIM_DT);
     accumulator -= SIM_DT;
@@ -371,6 +381,12 @@ function frame(nowMs: number): void {
   hud.update(game);
   hud.setCredits(journal.credits); // §12 1a — the persistent balance (cheap text set)
   timeIndicator.update(game.dayPhase, game.timeSec);
+
+  // L2: signal first-frame-ready once, so Playwright waits before capturing.
+  if (!renderReadySignalled && app) {
+    renderReadySignalled = true;
+    signalRenderReady(app);
+  }
 
   requestAnimationFrame(frame);
 }

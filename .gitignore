@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Playwright (L2) — run artifacts. The visual baselines live under e2e/ (committed from
+# the pinned container) and are NOT ignored.
+test-results
+playwright-report
+blob-report
+playwright/.cache
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
