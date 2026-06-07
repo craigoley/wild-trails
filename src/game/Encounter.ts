@@ -18,7 +18,7 @@ import {
 import { getSpecies } from './Species';
 import { isCorrectBaitFor, type BaitState } from './Bait';
 import { nearestActiveAnimal, type Animal } from './Animal';
-import type { ToolId } from './Tools';
+import { toolReach, type ToolId } from './Tools';
 import type { PlayerState } from './Player';
 import type { Rng } from '../utils/rng';
 
@@ -58,7 +58,8 @@ export interface AttemptInputs {
  * (once) so the rest is pure playback.
  */
 export function startEncounter(input: AttemptInputs): Encounter | null {
-  const idx = nearestActiveAnimal(input.animals, input.player.x, input.player.y, CATCH.attemptRadius);
+  // B0: the attempt gate uses the ACTIVE net's reach (per-net), not the global constant.
+  const idx = nearestActiveAnimal(input.animals, input.player.x, input.player.y, toolReach(input.tool));
   if (idx < 0) return null;
 
   const animal = input.animals[idx];

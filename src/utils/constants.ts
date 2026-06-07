@@ -917,6 +917,12 @@ export interface ToolDef {
   /** Catch-chance factor — the NEUTRAL 1.0 identity for every net (advantage is
    *  LATERAL: reach/condition, set in a later slice — never a flat >1 multiplier). */
   catchMultiplier: number;
+  /** REACH, world units (slice B0) — how close an animal must be for this net to
+   *  attempt a catch (the attempt gate + the proximity-curve denominator). A per-net
+   *  property so biome nets (B1) can answer "reach over water / on open ground"
+   *  LATERALLY — without a catch-rate multiplier. The starter Hand Net's reach is the
+   *  current CATCH.attemptRadius (2.6), so catching is byte-for-byte unchanged in B0. */
+  reach: number;
 }
 
 export const TOOL_ORDER: readonly ToolId[] = ['net'];
@@ -927,6 +933,9 @@ export const TOOLS: Record<ToolId, ToolDef> = {
     displayName: 'Hand Net',
     flavor: 'A light sweep net — ideal up close, where grass and ferns let you sneak in.',
     catchMultiplier: 1.0,
+    // EXACTLY the current attemptRadius — the keystone that keeps B0 behavior-neutral
+    // (pinned: TOOLS.net.reach === CATCH.attemptRadius). B1 varies this per biome net.
+    reach: 2.6,
   },
 };
 
