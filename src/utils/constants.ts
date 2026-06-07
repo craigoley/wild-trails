@@ -1011,10 +1011,6 @@ export const TOOLS: Record<ToolId, ToolDef> = {
  *  is at/below this. The Highlands (2 spots, #53) is open; the others (3) are not. */
 export const OPEN_BIOME_COVER_MAX = 2;
 
-/** Credits to buy a biome net in the Field Supply (§12). A one-time durable purchase;
- *  the nets are LATERAL convenience, never required (the starter catches everything). */
-export const NET_PRICE = 30;
-
 /** The net the player starts with (owned + equipped from the start). */
 export const STARTER_TOOL: ToolId = 'net';
 
