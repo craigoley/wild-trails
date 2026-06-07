@@ -46,10 +46,11 @@ import {
 } from './game/Onboarding';
 import { StartScreen } from './rendering/StartScreen';
 import { restoreBaitCounts } from './game/Bait';
-import { evaluateCatch, shouldCelebrateWin } from './game/Missions';
+import { evaluateCatch, reconcileResearchUnlocks, shouldCelebrateWin } from './game/Missions';
 import { WinScreen } from './rendering/WinScreen';
 import { unlockBiome, supplyPostAt, supplyExitPosition, clampToUnlocked } from './game/World';
 import {
+  BIOMES,
   MAX_FRAME_DT,
   MISSION_ORDER,
   ONBOARDING,
@@ -321,7 +322,21 @@ function frame(nowMs: number): void {
         phase: game.lastCaughtPhase,
       });
       for (const msg of researchBannerMessages(journal, researchResult)) banner.enqueue(msg.text, msg.kind);
-      persist(); // catch + replenished bait + research progress = durable; autosave it
+      // §4.1.4 R2 (the finale): the §4.1c Wetland->Highlands gate, WRAPPED in research. The
+      // Highlands unlocks when its research project is complete AND the §4.1c gate (the
+      // wetland set + the research-mouse-night mastery challenge, by play) holds —
+      // double-enforcing knowledge-by-play. Order-independent: this reconcile fires whether
+      // the project or the §4.1c gate finished last (it runs every catch).
+      const researchUnlocked = reconcileResearchUnlocks(journal);
+      for (const uid of researchUnlocked) {
+        unlockBiome(game.world, uid);
+        banner.enqueue(`New area unlocked: ${BIOMES[uid].displayName}!`, 'unlock');
+      }
+      if (researchUnlocked.length > 0) {
+        worldRenderer.refresh(game.world); // clear the now-open seam's stale wall / fog / dim
+        audio.unlockFanfare();
+      }
+      persist(); // catch + replenished bait + research progress + any unlock = durable; autosave
       journalPanel.refresh(journal);
       researchPanel.refresh(journal);
       refreshMissionPanel();

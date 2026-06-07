@@ -5,6 +5,7 @@ import {
   completeWoodlandSet,
   completeWetlandSet,
   completeNightForagerGate,
+  completeHighlandsResearch,
   catchRemainingSpecies,
 } from './harness';
 import { createJournal } from '../../../state/Journal';
@@ -87,31 +88,37 @@ describe('L1 Guard 3 — progression-to-win (the unlock chain + the win fires)',
     completeWoodlandSet(j);
     expect(j.unlockedBiomes).toContain('wetland');
     completeWetlandSet(j);
-    expect(j.unlockedBiomes).not.toContain('highlands'); // §4.1c: needs the research gate too
+    expect(j.unlockedBiomes).not.toContain('highlands'); // §4.1c: needs the mastery challenge too
     completeNightForagerGate(j);
+    expect(j.unlockedBiomes).not.toContain('highlands'); // R2: ...AND the research wrap
+    completeHighlandsResearch(j); // the §4.1.4 finale — study the wetland -> the route opens
     expect(j.unlockedBiomes).toContain('highlands');
-    // Fill the dex (rabbit + the alpine three) -> the win fires.
+    // Fill the dex (rabbit + the alpine three) -> the win fires. WIN REACHABLE through the
+    // research-wrapped gate (the cardinal anti-wall pin: no impossible state).
     catchRemainingSpecies(j);
     expect(SPECIES_ORDER.every((id) => j.species[id])).toBe(true);
     expect(isGameComplete(j)).toBe(true);
   });
 
-  it('BOTH Highlands gate orderings unlock it (the #49 order-independence guard)', () => {
-    // (a) wetland set THEN the gate challenge.
+  it('BOTH Highlands gate orderings unlock it once the research wrap completes (the order-independence guard)', () => {
+    // (a) wetland set THEN the gate challenge, then the research wrap.
     const a = createJournal();
     completeMeadowSet(a);
     completeWoodlandSet(a);
     completeWetlandSet(a);
     completeNightForagerGate(a);
+    completeHighlandsResearch(a);
     expect(a.unlockedBiomes).toContain('highlands');
 
-    // (b) the gate challenge THEN the wetland set.
+    // (b) the gate challenge THEN the wetland set, then the research wrap.
     const b = createJournal();
     completeMeadowSet(b);
     completeWoodlandSet(b);
     completeNightForagerGate(b); // challenge first (no unlock yet — set incomplete)
     expect(isBiomeGateMet(b, 'wetland')).toBe(false);
-    completeWetlandSet(b); // set last -> unlock
+    completeWetlandSet(b); // set complete — §4.1c gate met, but still research-wrapped
+    expect(b.unlockedBiomes).not.toContain('highlands');
+    completeHighlandsResearch(b); // research last -> unlock
     expect(b.unlockedBiomes).toContain('highlands');
   });
 });
