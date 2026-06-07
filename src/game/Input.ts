@@ -26,6 +26,9 @@ export interface InputIntent {
   catchPressed: boolean;
   baitDeploy: boolean;
   baitCycle: boolean;
+  /** Deploy the portable hide at the player position (slice C). Edge action,
+   *  consumed by the sim. */
+  hideDeploy: boolean;
   /** Direct bait SELECTION: the bait index to select this step (chip 0 = first
    *  bait), or -1 = none. Edge action, consumed by the sim. */
   baitSelect: number;
@@ -43,6 +46,7 @@ export function createIntent(): InputIntent {
     catchPressed: false,
     baitDeploy: false,
     baitCycle: false,
+    hideDeploy: false,
     baitSelect: -1,
     journalToggle: false,
     missionToggle: false,
@@ -63,6 +67,7 @@ export const ACTION_KEYS = {
   catch: [' ', 'f'],
   baitDeploy: ['b'],
   baitCycle: ['q'],
+  hideDeploy: ['h'],
   journal: ['j'],
   missions: ['m'],
 } as const;

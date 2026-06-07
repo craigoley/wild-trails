@@ -26,7 +26,7 @@ import {
 import type { GameState } from '../game/GameState';
 import type { Encounter } from '../game/Encounter';
 import { buildAnimalModel, buildPlayerModel } from './models/builders';
-import { CATCH, CATCH_FX, PALETTE, SPAWN, SPECIES, SPECIES_ORDER, type SpeciesId } from '../utils/constants';
+import { CATCH, CATCH_FX, HIDE, PALETTE, SPAWN, SPECIES, SPECIES_ORDER, type SpeciesId } from '../utils/constants';
 import { clamp, lerp } from '../utils/math';
 
 export class EntityRenderer {
@@ -40,6 +40,8 @@ export class EntityRenderer {
   private readonly targetRingMat: MeshBasicMaterial;
   /** Flat scent-circle under an active bait deployment. */
   private readonly baitMarker: Mesh;
+  /** Flat footprint ring marking the deployed portable hide (slice C). */
+  private readonly hideMarker: Mesh;
 
   constructor(scene: Scene) {
     this.player = buildPlayerModel();
@@ -77,6 +79,16 @@ export class EntityRenderer {
     this.baitMarker.rotation.x = -Math.PI / 2;
     this.baitMarker.visible = false;
     scene.add(this.baitMarker);
+
+    // Portable-hide footprint — a flat khaki ring on the ground marking the deployed
+    // hide's cover radius (slice C). Procedural, zero-asset.
+    this.hideMarker = new Mesh(
+      new RingGeometry(HIDE.radius * 0.86, HIDE.radius, 28),
+      new MeshBasicMaterial({ color: 0x8a9a5b, transparent: true, opacity: 0.5 }),
+    );
+    this.hideMarker.rotation.x = -Math.PI / 2;
+    this.hideMarker.visible = false;
+    scene.add(this.hideMarker);
   }
 
   /** Sync all entity models to the interpolated game state. Reads only. */
@@ -109,6 +121,18 @@ export class EntityRenderer {
 
     this.syncTargetRing(state, alpha);
     this.syncBaitMarker(state);
+    this.syncHideMarker(state);
+  }
+
+  /** Show the hide footprint at the deployed position (slice C). */
+  private syncHideMarker(state: GameState): void {
+    const h = state.hide;
+    if (!h.deployed) {
+      this.hideMarker.visible = false;
+      return;
+    }
+    this.hideMarker.position.set(h.x, CATCH_FX.baitMarkerY, h.y);
+    this.hideMarker.visible = true;
   }
 
   /** Yaw a model to face its travel direction (game facing -> three +z forward). */

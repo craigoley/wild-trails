@@ -761,37 +761,45 @@ export interface HidingSpotDef {
   kind: CoverKind;
 }
 
-/** Hiding spots, per biome — a handful spread across each cell so stealth has
- *  somewhere to happen everywhere, in the biome's own cover: Meadow tall grass,
- *  Woodland bracken ferns, Wetland water's-edge reeds, Highlands boulders/scree.
- *  Comparable density + radii (1.8–2.4) so the cover stealth lever (×0.45) is
- *  equally viable in every biome. */
+/** FIXED hiding spots — the FREE cover baseline per biome (Nets & Gear slice C). The
+ *  uniform 5/biome was REDUCED to make cover sparser + stealth more deliberate, and to
+ *  open up the HIGHLANDS (fewest spots) — the "open ground" condition the throwing net
+ *  (B1) keys off. A FREE baseline stays in EVERY biome (never zero) so the anti-lockout
+ *  valve holds: the easiest species stays bait-less catchable by sneaking from this
+ *  baseline (pinned by the L1 approach guard). Beyond the baseline, cover is
+ *  PROVISIONED — deploy a portable HIDE where you need it (see HIDE). Meadow grass,
+ *  Woodland ferns, Wetland reeds, Highlands boulders. */
 export const HIDING_SPOTS: readonly HidingSpotDef[] = [
-  // Meadow — tall grass ([-20,20]²). Visual UNCHANGED; just tagged 'grass'.
+  // Meadow — tall grass ([-20,20]²): a spread of 3 (SW / NE / centre).
   { biome: 'meadow', x: -8, y: -6, radius: 2.2, kind: 'grass' },
-  { biome: 'meadow', x: 7, y: -10, radius: 2.0, kind: 'grass' },
   { biome: 'meadow', x: 10, y: 8, radius: 2.4, kind: 'grass' },
-  { biome: 'meadow', x: -6, y: 11, radius: 2.0, kind: 'grass' },
   { biome: 'meadow', x: 1, y: 3, radius: 1.8, kind: 'grass' },
-  // Woodland — bracken ferns (x∈[-20,20], y∈[20,60]); spread clear of the badger sett.
+  // Woodland — bracken ferns (x∈[-20,20], y∈[20,60]); clear of the badger sett.
   { biome: 'woodland', x: -12, y: 28, radius: 2.2, kind: 'ferns' },
-  { biome: 'woodland', x: 9, y: 34, radius: 2.0, kind: 'ferns' },
   { biome: 'woodland', x: 12, y: 50, radius: 2.4, kind: 'ferns' },
-  { biome: 'woodland', x: -11, y: 55, radius: 2.0, kind: 'ferns' },
   { biome: 'woodland', x: 3, y: 44, radius: 1.8, kind: 'ferns' },
   // Wetland — water's-edge reeds (x∈[20,60], y∈[-20,20]).
   { biome: 'wetland', x: 28, y: -6, radius: 2.2, kind: 'reeds' },
-  { biome: 'wetland', x: 48, y: 8, radius: 2.0, kind: 'reeds' },
   { biome: 'wetland', x: 52, y: -10, radius: 2.4, kind: 'reeds' },
-  { biome: 'wetland', x: 34, y: 12, radius: 2.0, kind: 'reeds' },
   { biome: 'wetland', x: 44, y: -2, radius: 1.8, kind: 'reeds' },
-  // Highlands — boulders / scree (x∈[20,60], y∈[20,60]).
+  // Highlands — boulders / scree (x∈[20,60], y∈[20,60]): the OPENEST biome, just 2
+  // spots (open + precious, NOT barren — stealth stays a tool, the throwing net stays
+  // valuable not mandatory).
   { biome: 'highlands', x: 30, y: 32, radius: 2.2, kind: 'rocks' },
   { biome: 'highlands', x: 50, y: 46, radius: 2.0, kind: 'rocks' },
-  { biome: 'highlands', x: 52, y: 30, radius: 2.4, kind: 'rocks' },
-  { biome: 'highlands', x: 34, y: 53, radius: 2.0, kind: 'rocks' },
-  { biome: 'highlands', x: 42, y: 40, radius: 1.8, kind: 'rocks' },
 ];
+
+/** The portable HIDE (Nets & Gear slice C) — naturalist gear you DEPLOY at your
+ *  position to make cover where there is none (esp. the open Highlands). LATERAL: it
+ *  gives the SAME cover stealth as a fixed spot (STEALTH.coverFactor ×0.45) — cover
+ *  where you CHOOSE it, never a catch-rate boost. Owned as baseline gear; the
+ *  deployment is TRANSIENT (re-placed each session, like a deployed lure — no schema). */
+export const HIDE = {
+  /** Cover radius of a deployed hide, world units (matches the baseline spot radii). */
+  radius: 2.2,
+  displayName: 'Portable Hide',
+  flavor: 'A folding canvas hide — set it down and wait unseen, even on open ground.',
+} as const;
 
 /** Procedural tall-grass cluster look (render-only, zero assets). */
 export const HIDING_RENDER = {
