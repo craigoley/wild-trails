@@ -8,9 +8,12 @@
  */
 
 import type { MissionEval } from '../game/Missions';
-import { BIOMES, MISSIONS } from '../utils/constants';
+import type { ResearchEval } from '../game/Research';
+import { researchState } from '../game/Research';
+import type { Journal } from '../state/Journal';
+import { BIOMES, MISSIONS, RESEARCH_PROJECTS } from '../utils/constants';
 
-export type BannerKind = 'mission' | 'unlock' | 'hint';
+export type BannerKind = 'mission' | 'unlock' | 'hint' | 'research';
 
 export interface BannerMessage {
   text: string;
@@ -35,6 +38,27 @@ export function missionBannerMessages(result: MissionEval): BannerMessage[] {
   // a failure. Only one per event (dedup) so a catch can't spam the same hint twice.
   for (const hint of [...new Set(result.hints)]) {
     out.push({ text: hint, kind: 'hint' });
+  }
+  return out;
+}
+
+/**
+ * The catch-time research NUDGE (R0b): a brief progress line when a catch advanced a
+ * project ("Nocturnal Field Study — 2/3"), and a completion line when one finished. Reads
+ * the post-event journal for the current progress. Empty when nothing research-y happened
+ * (the common case). Reuses the Banner — no new HUD element.
+ */
+export function researchBannerMessages(journal: Journal, result: ResearchEval): BannerMessage[] {
+  const out: BannerMessage[] = [];
+  const done = new Set(result.completed);
+  for (const id of result.progressed) {
+    if (done.has(id)) continue; // a project that completed this event shows the completion line below
+    const p = RESEARCH_PROJECTS[id];
+    if (p) out.push({ text: `${p.name} — ${researchState(journal, id).progress}/${p.activityRequirement.count}`, kind: 'research' });
+  }
+  for (const id of result.completed) {
+    const p = RESEARCH_PROJECTS[id];
+    if (p) out.push({ text: `Research complete: ${p.name}`, kind: 'research' });
   }
   return out;
 }

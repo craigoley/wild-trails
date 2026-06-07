@@ -28,10 +28,12 @@ import { HUD, isDebugEnabled } from './rendering/HUD';
 import { TimeIndicator } from './rendering/TimeIndicator';
 import { JournalPanel } from './rendering/JournalPanel';
 import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
+import { ResearchPanel } from './rendering/ResearchPanel';
+import { evaluateResearch, startResearch, completeResearch } from './game/Research';
 import { ScrollProbe } from './rendering/ScrollProbe';
 import { syncModalOpenClass } from './rendering/modalClass';
 import { Banner } from './rendering/Banner';
-import { missionBannerMessages } from './rendering/missionBanners';
+import { missionBannerMessages, researchBannerMessages } from './rendering/missionBanners';
 import { AudioEngine } from './audio/AudioEngine';
 import { createAutosaver, foundCount, loadJournal, recordCatch, setBaitCounts } from './state/Journal';
 import { addCredits, creditsForCatch } from './game/Economy';
@@ -52,6 +54,7 @@ import {
   MISSION_ORDER,
   ONBOARDING,
   PLAYER,
+  RESEARCH_PROJECTS,
   SIM_DT,
   SUPPLY_POSTS,
   TRACKING,
@@ -135,6 +138,21 @@ const journalPanel = new JournalPanel(app);
 journalPanel.refresh(journal); // seed the roster from the loaded journal
 const missionPanel = new MissionPanel(app);
 refreshMissionPanel();
+// The Research panel (§4.1.4 R0b) — start a project (spend credits), and complete a ready
+// one (charge any top-up + reveal its journal-knowledge layer). Both persist.
+const researchPanel = new ResearchPanel(
+  app,
+  (id) => {
+    if (startResearch(journal, id)) persist();
+  },
+  (id) => {
+    if (completeResearch(journal, id)) {
+      banner.enqueue(`Research complete: ${RESEARCH_PROJECTS[id].name}`, 'research');
+      persist();
+      journalPanel.refresh(journal); // the new card layer shows if the dex is open
+    }
+  },
+);
 // The Field Supply (§12 1b) — spend credits on extra bait. A purchase persists (so
 // it survives reload); the buy mutates journal.credits + the live game.bait counts.
 const shopPanel = new ShopPanel(app, persist, (toolId) => {
@@ -294,8 +312,18 @@ function frame(nowMs: number): void {
       missionTelemetry.progressed += evalResult.progressed.length;
       missionTelemetry.completed += evalResult.completed.length;
       missionTelemetry.rewardsClaimed += evalResult.completed.length;
-      persist(); // catch + replenished bait = durable progress; autosave it
+      // §4.1.4 R0b: research advances on the SAME catch event — it READS the event (the
+      // catch math is untouched). Its progress/completion fire the nudge banner; the
+      // journal-layer reward is a READ the dex card does (no apply needed here).
+      const researchResult = evaluateResearch(journal, {
+        species: game.lastCaughtSpecies,
+        biome: game.lastCaughtBiome,
+        phase: game.lastCaughtPhase,
+      });
+      for (const msg of researchBannerMessages(journal, researchResult)) banner.enqueue(msg.text, msg.kind);
+      persist(); // catch + replenished bait + research progress = durable; autosave it
       journalPanel.refresh(journal);
+      researchPanel.refresh(journal);
       refreshMissionPanel();
       maybeFireWin(); // this catch/mission may have completed the field guide
     }
@@ -322,6 +350,7 @@ function frame(nowMs: number): void {
   const modalOpen =
     journalPanel.isOpen() ||
     missionPanel.isOpen() ||
+    researchPanel.isOpen() ||
     shopPanel.isOpen() ||
     winScreen.isOpen() ||
     startScreen.isOpen();
@@ -351,6 +380,12 @@ function frame(nowMs: number): void {
     controls.intent.missionToggle = false;
     missionPanel.setOpen(!missionPanel.isOpen());
     if (missionPanel.isOpen()) refreshMissionPanel();
+  }
+  // Research toggle (R) — §4.1.4 R0b.
+  if (controls.intent.researchToggle) {
+    controls.intent.researchToggle = false;
+    researchPanel.setOpen(!researchPanel.isOpen());
+    if (researchPanel.isOpen()) researchPanel.refresh(journal);
   }
   // Field Supply walk-in (§12 1b): a building you physically enter. The player is
   // frozen while it's open (above); CLOSING it steps them OUT the door, which also

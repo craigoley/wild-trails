@@ -37,6 +37,8 @@ export interface InputIntent {
   journalToggle: boolean;
   /** Toggle the Missions overlay (open/close). UI-only edge action. */
   missionToggle: boolean;
+  /** Toggle the Research overlay (open/close). UI-only edge action (§4.1.4 R0b). */
+  researchToggle: boolean;
 }
 
 export function createIntent(): InputIntent {
@@ -50,6 +52,7 @@ export function createIntent(): InputIntent {
     baitSelect: -1,
     journalToggle: false,
     missionToggle: false,
+    researchToggle: false,
   };
 }
 
@@ -70,6 +73,7 @@ export const ACTION_KEYS = {
   hideDeploy: ['h'],
   journal: ['j'],
   missions: ['m'],
+  research: ['r'],
 } as const;
 
 /** Number keys for DIRECT bait selection, positional: index 0 = '1', 1 = '2', …

@@ -348,6 +348,10 @@ export interface SpeciesInfo {
   fieldNote: string;
   behaviour: string;
   status: string;
+  /** A DEEPER field note revealed once the species' research project is complete (the
+   *  §4.1.4 journal-layer reward — "research an animal, learn more about it"). Optional;
+   *  shown on the dex card ONLY when unlocked (purely additive, no balance touch). */
+  researchNote?: string;
 }
 
 export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
@@ -357,6 +361,8 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'Darts in quick bursts between cover with its cheeks stuffed with seeds, climbing grass stalks and tunnelling runways through the thatch.',
     status: 'Common and thriving — meadows and field margins full of seeding grasses keep mice everywhere.',
+    researchNote:
+      'Field study: active in short bursts around the clock rather than by day or night, the field mouse caches seeds in scattered larders and can find its way home across surprising distances. A female may raise several litters between spring and autumn — the engine the meadow runs on.',
   },
   rabbit: {
     fieldNote:
@@ -378,6 +384,8 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'Roams at night by smell; when startled it curls into a spiny ball, trusting its roughly 5,000 spines over running.',
     status: 'Once common, now declining — it needs messy hedges and gaps between gardens to roam and feed.',
+    researchNote:
+      'Field study: a hedgehog ranges over a mile a night and hibernates from November, its heartbeat dropping from ~190 to ~20 beats a minute. The spines are modified hairs — about 7,000 on an adult, each lasting a year before it drops and regrows.',
   },
   redsquirrel: {
     fieldNote:
@@ -1750,7 +1758,9 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     activityRequirement: { kind: 'catch-in-phase', phase: 'night', count: 3 },
     creditTopUp: 10, // a top-up to write up the study (a sink)
     knowledgeRequirement: 'research-mouse-night', // by PLAY only (#48) — never bought
-    reward: { kind: 'journal-layer', layer: 'nocturnal' },
+    // R0b: the layer is a SPECIES id — completing this reveals the field mouse's research
+    // note (the round-the-clock nocturnal forager the night challenge is about).
+    reward: { kind: 'journal-layer', layer: 'fieldmouse' },
   },
 };
 

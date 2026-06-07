@@ -6,6 +6,7 @@ import {
   completeResearch,
   isResearchReady,
   researchState,
+  unlockedResearchLayers,
 } from '../Research';
 import { addCredits } from '../Economy';
 import { createJournal } from '../../state/Journal';
@@ -77,5 +78,19 @@ describe('Research engine — anti-grind / anti-wall', () => {
     }
     expect(isResearchReady(j, 'study-hedgehog')).toBe(false); // already completed (auto)
     expect(researchState(j, 'study-hedgehog').completed).toBe(true);
+  });
+});
+
+describe('Research engine — unlockedResearchLayers (the R0b reward derivation)', () => {
+  it('a completed journal-layer project exposes its layer (= a species id); none before completion', () => {
+    const j = createJournal();
+    expect(unlockedResearchLayers(j).size).toBe(0); // nothing completed
+    addCredits(j, 20);
+    startResearch(j, 'study-hedgehog'); // reward layer = 'hedgehog'
+    evaluateResearch(j, dusk('hedgehog'));
+    expect(unlockedResearchLayers(j).has('hedgehog')).toBe(false); // 1/3 — not yet
+    evaluateResearch(j, dusk('hedgehog'));
+    evaluateResearch(j, dusk('hedgehog')); // 3/3 -> auto-complete
+    expect(unlockedResearchLayers(j).has('hedgehog')).toBe(true); // the layer is now derived
   });
 });
