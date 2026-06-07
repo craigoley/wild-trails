@@ -1011,10 +1011,6 @@ export const TOOLS: Record<ToolId, ToolDef> = {
  *  is at/below this. The Highlands (2 spots, #53) is open; the others (3) are not. */
 export const OPEN_BIOME_COVER_MAX = 2;
 
-/** Credits to buy a biome net in the Field Supply (§12). A one-time durable purchase;
- *  the nets are LATERAL convenience, never required (the starter catches everything). */
-export const NET_PRICE = 30;
-
 /** The net the player starts with (owned + equipped from the start). */
 export const STARTER_TOOL: ToolId = 'net';
 
@@ -1762,10 +1758,34 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     // note (the round-the-clock nocturnal forager the night challenge is about).
     reward: { kind: 'journal-layer', layer: 'fieldmouse' },
   },
+  // R1 — the biome NETS are earned through research (study the habitat -> earn its gear,
+  // P5). Research is the SINGLE acquisition path (the shop-buy retired); the activity is
+  // done with the STARTER net (anti-lockout — you never need a net to earn a net).
+  'study-the-wetland': {
+    id: 'study-the-wetland',
+    name: 'The Water’s Edge',
+    blurb: 'Learn how the wetland’s creatures use the open water — and how to reach across it. Earns the dip-net.',
+    cost: 20,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'wetland', count: 4 },
+    reward: { kind: 'grant-tool', toolId: 'dip-net' },
+  },
+  'study-the-uplands': {
+    id: 'study-the-uplands',
+    name: 'The Open Tops',
+    blurb: 'Learn the open highland ground, where there is no cover to close the gap. Earns the throwing net.',
+    cost: 20,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'highlands', count: 4 },
+    reward: { kind: 'grant-tool', toolId: 'throwing-net' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
-export const RESEARCH_ORDER: readonly string[] = ['study-hedgehog', 'study-after-dark'];
+export const RESEARCH_ORDER: readonly string[] = [
+  'study-hedgehog',
+  'study-after-dark',
+  'study-the-wetland',
+  'study-the-uplands',
+];
 
 // ===========================================================================
 // Tracking puzzle (Plan #8b)

@@ -1308,3 +1308,15 @@ body.modal-open .touch-stick-thumb {
 .card-research .card-label {
   color: rgba(109, 255, 155, 0.6);
 }
+
+/* R1: an un-owned biome net's "Research to unlock: <project>" hint (the shop-buy retired —
+ * research is the single net-acquisition path). A muted, non-actionable pointer. */
+.net-research-hint {
+  flex: none;
+  max-width: 45%;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: rgba(159, 240, 168, 0.78);
+}

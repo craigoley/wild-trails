@@ -30,6 +30,7 @@ import { JournalPanel } from './rendering/JournalPanel';
 import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
 import { ResearchPanel } from './rendering/ResearchPanel';
 import { evaluateResearch, startResearch, completeResearch } from './game/Research';
+import { grantTool } from './game/Tools';
 import { ScrollProbe } from './rendering/ScrollProbe';
 import { syncModalOpenClass } from './rendering/modalClass';
 import { Banner } from './rendering/Banner';
@@ -57,8 +58,10 @@ import {
   RESEARCH_PROJECTS,
   SIM_DT,
   SUPPLY_POSTS,
+  TOOLS,
   TRACKING,
   type BiomeId,
+  type ResearchReward,
 } from './utils/constants';
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -146,13 +149,30 @@ const researchPanel = new ResearchPanel(
     if (startResearch(journal, id)) persist();
   },
   (id) => {
-    if (completeResearch(journal, id)) {
+    const reward = completeResearch(journal, id);
+    if (reward) {
       banner.enqueue(`Research complete: ${RESEARCH_PROJECTS[id].name}`, 'research');
+      applyResearchReward(reward); // R1: a grant-tool reward owns the net here
       persist();
       journalPanel.refresh(journal); // the new card layer shows if the dex is open
+      shopPanel.refresh(journal, game.bait); // a newly-granted net shows as equippable
     }
   },
 );
+
+/**
+ * Apply a completed research project's REWARD to the live game (R0b/R1 — the reward
+ * EFFECTS). `journal-layer` is a READ the dex card does (no action). `grant-tool` (R1) owns
+ * the net via the swappable grantTool seam B1 built — research is the single net path; the
+ * net stays lateral, the player equips it in the Field Supply. `shop-access` / `biome-access`
+ * are future (R2) — no-op here.
+ */
+function applyResearchReward(reward: ResearchReward): void {
+  if (reward.kind === 'grant-tool') {
+    grantTool(journal, reward.toolId);
+    banner.enqueue(`New net unlocked: ${TOOLS[reward.toolId].displayName} — equip it in the Field Supply`, 'research');
+  }
+}
 // The Field Supply (§12 1b) — spend credits on extra bait. A purchase persists (so
 // it survives reload); the buy mutates journal.credits + the live game.bait counts.
 const shopPanel = new ShopPanel(app, persist, (toolId) => {
@@ -313,17 +333,19 @@ function frame(nowMs: number): void {
       missionTelemetry.completed += evalResult.completed.length;
       missionTelemetry.rewardsClaimed += evalResult.completed.length;
       // §4.1.4 R0b: research advances on the SAME catch event — it READS the event (the
-      // catch math is untouched). Its progress/completion fire the nudge banner; the
-      // journal-layer reward is a READ the dex card does (no apply needed here).
+      // catch math is untouched). Its progress/completion fire the nudge banner; a project
+      // that auto-completes this catch fires its reward (R1: a grant-tool net is granted).
       const researchResult = evaluateResearch(journal, {
         species: game.lastCaughtSpecies,
         biome: game.lastCaughtBiome,
         phase: game.lastCaughtPhase,
       });
       for (const msg of researchBannerMessages(journal, researchResult)) banner.enqueue(msg.text, msg.kind);
+      for (const reward of researchResult.rewards) applyResearchReward(reward); // R1: grant a net it earned
       persist(); // catch + replenished bait + research progress = durable; autosave it
       journalPanel.refresh(journal);
       researchPanel.refresh(journal);
+      if (researchResult.rewards.length > 0) shopPanel.refresh(journal, game.bait); // new net equippable
       refreshMissionPanel();
       maybeFireWin(); // this catch/mission may have completed the field guide
     }
