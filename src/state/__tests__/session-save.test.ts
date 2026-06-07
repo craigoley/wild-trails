@@ -41,8 +41,8 @@ describe('Bait round-trip — counts -> store -> parse -> rehydrate', () => {
   });
 });
 
-describe('loadJournal — corrupt store degrades to a fresh v5 (no throw)', () => {
-  it('returns a fresh v5 journal on unparseable JSON', () => {
+describe('loadJournal — corrupt store degrades to a fresh journal (no throw)', () => {
+  it('returns a fresh current-schema journal on unparseable JSON', () => {
     vi.stubGlobal('localStorage', {
       getItem: () => 'not valid json {{{',
       setItem: () => undefined,
@@ -50,7 +50,7 @@ describe('loadJournal — corrupt store degrades to a fresh v5 (no throw)', () =
     expect(() => loadJournal()).not.toThrow();
     const loaded = loadJournal();
     expect(loaded).toEqual(createJournal());
-    expect(loaded.schemaVersion).toBe(5);
+    expect(loaded.schemaVersion).toBe(6);
   });
 });
 

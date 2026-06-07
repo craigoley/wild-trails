@@ -99,7 +99,7 @@ describe('the #41 HUD shop entry is removed; no schema change', () => {
     expect('shopToggle' in createIntent()).toBe(false);
   });
 
-  it('no schema bump — the post + freeze are runtime state, not persisted (still v5)', () => {
-    expect(JOURNAL_SCHEMA_VERSION).toBe(5);
+  it('no schema bump from THIS feature — the post + freeze are runtime state (the v6 bump is the nets PR)', () => {
+    expect(JOURNAL_SCHEMA_VERSION).toBe(6);
   });
 });

@@ -4,23 +4,25 @@ import { BAIT } from '../../utils/constants';
 
 /**
  * The load-bearing persistence proof: the fleet's real-data migrations. Old stores
- * UPGRADE step by step (v1 -> v2 -> v3 -> v4 -> v5) and lose NOTHING. v3 added
- * durable bait; v4 added the `won` flag; v5 (§12) adds the `credits` balance. This
- * pins the full chain + the v4->v5 hop + sanitize.
+ * UPGRADE step by step (v1 -> v2 -> v3 -> v4 -> v5 -> v6) and lose NOTHING. v3 added
+ * durable bait; v4 added the `won` flag; v5 (§12) added `credits`; v6 (Nets & Gear)
+ * adds the owned/active catch nets. This pins the full chain + the v5->v6 hop + sanitize.
  */
 const FULL_BAIT = { seeds: BAIT.startingCount, greens: BAIT.startingCount, insects: BAIT.startingCount };
 
 describe('Journal — schema version', () => {
-  it('is now 5, and a fresh journal starts with 0 credits', () => {
-    expect(JOURNAL_SCHEMA_VERSION).toBe(5);
-    expect(createJournal().schemaVersion).toBe(5);
+  it('is now 6, and a fresh journal owns + equips exactly the starter net', () => {
+    expect(JOURNAL_SCHEMA_VERSION).toBe(6);
+    expect(createJournal().schemaVersion).toBe(6);
     expect(createJournal().bait).toEqual(FULL_BAIT);
     expect(createJournal().won).toBe(false);
     expect(createJournal().credits).toBe(0);
+    expect(createJournal().ownedTools).toEqual(['net']);
+    expect(createJournal().activeTool).toBe('net');
   });
 });
 
-describe('Journal — v1 -> v5 chain (species only, flows through every hop)', () => {
+describe('Journal — v1 -> v6 chain (species only, flows through every hop)', () => {
   it('preserves every caught species and adds all newer fields at safe defaults', () => {
     const v1Store = {
       schemaVersion: 1,
@@ -31,7 +33,7 @@ describe('Journal — v1 -> v5 chain (species only, flows through every hop)', (
     };
     const out = migrate(v1Store);
 
-    expect(out.schemaVersion).toBe(5); // v1 -> v2 -> v3 -> v4 -> v5
+    expect(out.schemaVersion).toBe(6); // v1 -> v2 -> v3 -> v4 -> v5 -> v6
     expect(out.species.fieldmouse).toEqual({ caught: true, catchCount: 3, firstCaughtAt: 1000 });
     expect(out.species.hedgehog).toEqual({ caught: true, catchCount: 1, firstCaughtAt: 2000 });
     expect(out.missions).toEqual({});
@@ -39,11 +41,13 @@ describe('Journal — v1 -> v5 chain (species only, flows through every hop)', (
     expect(out.unlockedBiomes).toEqual([]);
     expect(out.bait).toEqual(FULL_BAIT);
     expect(out.won).toBe(false);
-    expect(out.credits).toBe(0); // the new v5 field, default
+    expect(out.credits).toBe(0);
+    expect(out.ownedTools).toEqual(['net']); // the new v6 fields, default
+    expect(out.activeTool).toBe('net');
   });
 });
 
-describe('Journal — v2 -> v5 (keeps all v2 data, adds bait + won + credits at defaults)', () => {
+describe('Journal — v2 -> v6 (keeps all v2 data, adds bait + won + credits + nets at defaults)', () => {
   it('preserves species/missions/rank/unlocks', () => {
     const v2Store = {
       schemaVersion: 2,
@@ -54,7 +58,7 @@ describe('Journal — v2 -> v5 (keeps all v2 data, adds bait + won + credits at 
     };
     const out = migrate(v2Store);
 
-    expect(out.schemaVersion).toBe(5);
+    expect(out.schemaVersion).toBe(6);
     expect(out.species.rabbit).toEqual({ caught: true, catchCount: 2, firstCaughtAt: 5 });
     expect(out.missions['meadow-survey']).toEqual({ progress: 4, completed: true });
     expect(out.rankPoints).toBe(30);
@@ -62,34 +66,13 @@ describe('Journal — v2 -> v5 (keeps all v2 data, adds bait + won + credits at 
     expect(out.bait).toEqual(FULL_BAIT);
     expect(out.won).toBe(false);
     expect(out.credits).toBe(0);
+    expect(out.ownedTools).toEqual(['net']);
+    expect(out.activeTool).toBe('net');
   });
 });
 
-describe('Journal — v4 -> v5 (the new hop: add credits, keep ALL v4 data incl. won)', () => {
-  it('preserves bait/species/progress/rank/unlocks/won and adds credits:0', () => {
-    const v4Store = {
-      schemaVersion: 4,
-      species: { rabbit: { caught: true, catchCount: 2, firstCaughtAt: 5 } },
-      missions: { 'meadow-survey': { progress: 4, completed: true } },
-      rankPoints: 30,
-      unlockedBiomes: ['woodland'],
-      bait: { seeds: 2, greens: 5, insects: 9 },
-      won: true,
-    };
-    const out = migrate(v4Store);
-
-    expect(out.schemaVersion).toBe(5);
-    expect(out.bait).toEqual({ seeds: 2, greens: 5, insects: 9 }); // v3/v4 data kept
-    expect(out.species.rabbit).toBeDefined();
-    expect(out.rankPoints).toBe(30);
-    expect(out.unlockedBiomes).toEqual(['woodland']);
-    expect(out.won).toBe(true); // win flag survives the hop (no reset post-win)
-    expect(out.credits).toBe(0); // an existing player starts the economy at 0
-  });
-});
-
-describe('Journal — a current v5 store round-trips exactly (credits preserved)', () => {
-  it('keeps credits + won through a round-trip', () => {
+describe('Journal — v5 -> v6 (the new hop: add the starter net, keep ALL v5 data)', () => {
+  it('preserves bait/species/progress/rank/unlocks/won/credits and grants the starter net', () => {
     const v5Store = {
       schemaVersion: 5,
       species: { rabbit: { caught: true, catchCount: 2, firstCaughtAt: 5 } },
@@ -100,12 +83,40 @@ describe('Journal — a current v5 store round-trips exactly (credits preserved)
       won: true,
       credits: 42,
     };
-    expect(migrate(v5Store)).toEqual(v5Store);
+    const out = migrate(v5Store);
+
+    expect(out.schemaVersion).toBe(6);
+    expect(out.bait).toEqual({ seeds: 2, greens: 5, insects: 9 }); // v3/v4 data kept
+    expect(out.species.rabbit).toBeDefined();
+    expect(out.rankPoints).toBe(30);
+    expect(out.unlockedBiomes).toEqual(['woodland']);
+    expect(out.won).toBe(true); // win flag survives (no reset post-win)
+    expect(out.credits).toBe(42); // §12 economy survives the hop
+    expect(out.ownedTools).toEqual(['net']); // a returning player gets exactly today's net
+    expect(out.activeTool).toBe('net');
   });
 });
 
-describe('Journal — sanitize (bad bait/won/credits -> safe defaults)', () => {
-  const base = { schemaVersion: 5, species: {}, missions: {}, rankPoints: 0, unlockedBiomes: [] };
+describe('Journal — a current v6 store round-trips exactly', () => {
+  it('keeps credits + won + nets through a round-trip', () => {
+    const v6Store = {
+      schemaVersion: 6,
+      species: { rabbit: { caught: true, catchCount: 2, firstCaughtAt: 5 } },
+      missions: { 'meadow-survey': { progress: 4, completed: true } },
+      rankPoints: 30,
+      unlockedBiomes: ['woodland'],
+      bait: { seeds: 2, greens: 5, insects: 9 },
+      won: true,
+      credits: 42,
+      ownedTools: ['net'],
+      activeTool: 'net',
+    };
+    expect(migrate(v6Store)).toEqual(v6Store);
+  });
+});
+
+describe('Journal — sanitize (bad bait/won/credits/nets -> safe defaults)', () => {
+  const base = { schemaVersion: 6, species: {}, missions: {}, rankPoints: 0, unlockedBiomes: [] };
 
   it('falls back bad bait values to startingCount and clamps over-cap to maxCount', () => {
     const out = migrate({ ...base, bait: { seeds: -3, greens: 'x', insects: 999 }, won: false, credits: 0 });
@@ -126,9 +137,22 @@ describe('Journal — sanitize (bad bait/won/credits -> safe defaults)', () => {
     expect(migrate({ ...base, bait: FULL_BAIT, credits: 17 }).credits).toBe(17);
     expect(migrate({ ...base, bait: FULL_BAIT, credits: 4.8 }).credits).toBe(4); // floored
   });
+
+  it('the net inventory sanitizes: unknown ids dropped, starter always owned, active clamped', () => {
+    // Unknown owned ids dropped, starter force-included.
+    const a = migrate({ ...base, bait: FULL_BAIT, ownedTools: ['ghost-net', 'net'], activeTool: 'net' });
+    expect(a.ownedTools).toEqual(['net']);
+    // A non-owned / unknown active net clamps back to the starter.
+    const b = migrate({ ...base, bait: FULL_BAIT, ownedTools: ['net'], activeTool: 'ghost-net' });
+    expect(b.activeTool).toBe('net');
+    // Missing fields default to the starter owned + equipped.
+    const c = migrate({ ...base, bait: FULL_BAIT });
+    expect(c.ownedTools).toEqual(['net']);
+    expect(c.activeTool).toBe('net');
+  });
 });
 
-describe('Journal — corrupt / off-version resets to a fresh v5 store (no throw)', () => {
+describe('Journal — corrupt / off-version resets to a fresh store (no throw)', () => {
   it('handles garbage', () => {
     expect(migrate({ schemaVersion: 0, species: {} })).toEqual(createJournal());
     expect(migrate({ schemaVersion: 99 })).toEqual(createJournal());
@@ -138,7 +162,7 @@ describe('Journal — corrupt / off-version resets to a fresh v5 store (no throw
 
   it('drops malformed species/mission/unlock entries during migration', () => {
     const out = migrate({
-      schemaVersion: 5,
+      schemaVersion: 6,
       species: { good: { caught: true, catchCount: 1, firstCaughtAt: 1 }, bad: { x: 1 } },
       missions: { ok: { progress: 1, completed: false }, broken: { progress: 'no' } },
       rankPoints: -5,
@@ -146,6 +170,8 @@ describe('Journal — corrupt / off-version resets to a fresh v5 store (no throw
       bait: FULL_BAIT,
       won: false,
       credits: 0,
+      ownedTools: ['net'],
+      activeTool: 'net',
     });
     expect(out.species.good).toBeDefined();
     expect(out.species.bad).toBeUndefined();

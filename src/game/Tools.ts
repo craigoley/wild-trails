@@ -1,27 +1,50 @@
 /**
- * Catch tools — PURE accessor over the TOOLS table in constants. NET is the
- * tier-1 baseline (1.0x); TRAP and TRANQ are stronger flat multipliers that
- * UNLOCK with missions (PR #8). For now the player starts with NET; the others
- * are gated by their `unlocked` flag but remain selectable from the table so the
- * catch math can be tested across tiers.
+ * Catch nets — the durable "tool in hand" (Nets & Gear arc, slice A). PURE over the
+ * TOOLS table + the journal's owned/active net state. The Hand Net is the starter;
+ * future biome nets are LATERAL (reach/condition, never a flat multiplier — the
+ * trap/tranq flat multipliers were retired). `toolMultiplier` stays the neutral 1.0
+ * identity so the catch FORMULA is unchanged; ownership/equip live in the journal so
+ * they persist (v6).
  */
 
 import { STARTER_TOOL, TOOL_ORDER, TOOLS, type ToolId } from '../utils/constants';
+import type { Journal } from '../state/Journal';
 
 export { STARTER_TOOL };
 export type { ToolId } from '../utils/constants';
 
-/** The flat catch-chance multiplier for a tool. */
+/** The catch-chance factor for a net — the neutral 1.0 identity (lateral by design;
+ *  no net carries a flat catch-rate multiplier). Kept so finalCatchChance is unchanged. */
 export function toolMultiplier(tool: ToolId): number {
   return TOOLS[tool].catchMultiplier;
 }
 
-/** Is the tool currently unlocked (selectable in-game)? */
-export function isToolUnlocked(tool: ToolId): boolean {
-  return TOOLS[tool].unlocked;
+/** Is `id` a real net id (guards migration / persisted input). */
+export function isToolId(id: unknown): id is ToolId {
+  return typeof id === 'string' && id in TOOLS;
 }
 
-/** Tools the player can currently select, in order (NET only until PR #8). */
-export function availableTools(): ToolId[] {
-  return TOOL_ORDER.filter((id) => TOOLS[id].unlocked);
+/** Does the player own this net? */
+export function ownsTool(journal: Journal, id: ToolId): boolean {
+  return journal.ownedTools.includes(id);
+}
+
+/** Grant a net to the player (idempotent). Returns false if already owned. The
+ *  PRICE/credits are the caller's concern (the shop) — this is the inventory write. */
+export function grantTool(journal: Journal, id: ToolId): boolean {
+  if (journal.ownedTools.includes(id)) return false;
+  journal.ownedTools.push(id);
+  return true;
+}
+
+/** Equip an OWNED net as the active one. Returns false (no-op) if not owned. */
+export function equipTool(journal: Journal, id: ToolId): boolean {
+  if (!journal.ownedTools.includes(id)) return false;
+  journal.activeTool = id;
+  return true;
+}
+
+/** The owned nets in canonical (TOOL_ORDER) order — for the gear UI. */
+export function ownedToolsInOrder(journal: Journal): ToolId[] {
+  return TOOL_ORDER.filter((id) => journal.ownedTools.includes(id));
 }

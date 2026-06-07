@@ -886,31 +886,41 @@ export const SUPPLY_RENDER = {
 } as const;
 
 // ===========================================================================
-// Tools
+// Nets (durable catch gear — the "tool" in hand)
 // ===========================================================================
 
-/** Catch tools, in unlock order. NET is the tier-1 baseline. */
-export type ToolId = 'net' | 'trap' | 'tranq';
+/** Catch nets the player can OWN + equip (Nets & Gear arc, slice A). The hand
+ *  net is the starter. Biome-specialized nets (dip-net, throwing net) arrive in a
+ *  LATER slice and are LATERAL — they answer a biome's catching CONDITION (reach),
+ *  never a flat catch-rate multiplier. (The flat-multiplier trap/tranq tools were
+ *  RETIRED here: no net carries a catch-rate multiplier ≠ 1.0 — the system is
+ *  lateral by construction.) `ToolId` is kept as the internal name (the net IS the
+ *  tool in hand); the player sees the net displayName. */
+export type ToolId = 'net';
 
 export interface ToolDef {
   id: ToolId;
+  /** Player-facing net name (naturalist framing). */
   displayName: string;
-  /** Flat multiplier applied to the catch chance. */
+  /** A short "what this net is for" line (P2/P5 — match your gear to the habitat). */
+  flavor: string;
+  /** Catch-chance factor — the NEUTRAL 1.0 identity for every net (advantage is
+   *  LATERAL: reach/condition, set in a later slice — never a flat >1 multiplier). */
   catchMultiplier: number;
-  /** Whether the tool is available from the start. TRAP/TRANQ unlock with
-   *  missions (PR #8); selectable in tests via the table regardless. */
-  unlocked: boolean;
 }
 
-export const TOOL_ORDER: readonly ToolId[] = ['net', 'trap', 'tranq'];
+export const TOOL_ORDER: readonly ToolId[] = ['net'];
 
 export const TOOLS: Record<ToolId, ToolDef> = {
-  net: { id: 'net', displayName: 'Net', catchMultiplier: 1.0, unlocked: true },
-  trap: { id: 'trap', displayName: 'Trap', catchMultiplier: 1.4, unlocked: false },
-  tranq: { id: 'tranq', displayName: 'Tranq', catchMultiplier: 1.9, unlocked: false },
+  net: {
+    id: 'net',
+    displayName: 'Hand Net',
+    flavor: 'A light sweep net — ideal up close, where grass and ferns let you sneak in.',
+    catchMultiplier: 1.0,
+  },
 };
 
-/** The tool the player starts with. */
+/** The net the player starts with (owned + equipped from the start). */
 export const STARTER_TOOL: ToolId = 'net';
 
 // ===========================================================================
@@ -1689,6 +1699,12 @@ export const SHOP = {
   glyph: '🎒',
   /** Button-state copy when a bait type is already at the cap. */
   fullLabel: 'Full',
+  /** Nets & Gear slice A — the durable-net section. */
+  netsHeader: 'Your Nets',
+  /** Badge on the currently-equipped net. */
+  equippedLabel: 'Equipped',
+  /** Button on an owned-but-not-active net. */
+  equipLabel: 'Equip',
 } as const;
 
 export interface RankDef {

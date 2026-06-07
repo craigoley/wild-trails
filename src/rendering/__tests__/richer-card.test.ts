@@ -42,7 +42,7 @@ describe('Richer species card (§4.1a) — field-guide page for a DISCOVERED spe
     expect(document.querySelector('.journal-scroll .journal-grid .card-fieldnote')).not.toBeNull();
   });
 
-  it('no schema change — discovery alone reveals the card (all-on-catch, v5 intact)', () => {
-    expect(JOURNAL_SCHEMA_VERSION).toBe(5);
+  it('discovery alone reveals the card (all-on-catch; current schema v6)', () => {
+    expect(JOURNAL_SCHEMA_VERSION).toBe(6);
   });
 });

@@ -20,8 +20,8 @@ function ctx(over: Partial<CatchContext> = {}): CatchContext {
 
 describe('Catch — finalCatchChance composition', () => {
   it('always clamps to [0, 1]', () => {
-    // Everything stacked beyond 1.
-    const hi = finalCatchChance(mouse, ctx({ tool: 'tranq', correctBait: true }));
+    // Everything stacked beyond 1 (point-blank + correct bait).
+    const hi = finalCatchChance(mouse, ctx({ correctBait: true, dist: 0 }));
     expect(hi).toBe(1);
     // A deliberately tiny base can't go negative.
     const lo = finalCatchChance({ ...mouse, baseCatchRate: 0 }, ctx());
@@ -30,11 +30,9 @@ describe('Catch — finalCatchChance composition', () => {
 
   it('each factor moves the chance in the right direction', () => {
     const base = finalCatchChance(mouse, ctx());
-    // Stronger tool -> higher (compare a low-base species so neither clamps).
+    // (The flat tool-tier multiplier was retired — every net is the 1.0 lateral
+    // baseline, so there is no "stronger tool" factor to assert anymore.)
     const weak = { ...mouse, baseCatchRate: 0.3 };
-    expect(finalCatchChance(weak, ctx({ tool: 'tranq' }))).toBeGreaterThan(
-      finalCatchChance(weak, ctx({ tool: 'net' })),
-    );
     // Farther -> lower.
     expect(finalCatchChance(weak, ctx({ dist: CATCH.attemptRadius }))).toBeLessThan(
       finalCatchChance(weak, ctx({ dist: 0 })),
@@ -54,8 +52,8 @@ describe('Catch — finalCatchChance composition', () => {
     expect(base).toBeGreaterThan(0);
   });
 
-  it('correct bait + close + tranq stacks toward 1', () => {
-    const v = finalCatchChance(mouse, ctx({ tool: 'tranq', correctBait: true, dist: 0 }));
+  it('correct bait + point-blank stacks toward 1', () => {
+    const v = finalCatchChance(mouse, ctx({ correctBait: true, dist: 0 }));
     expect(v).toBeGreaterThan(0.95);
   });
 

@@ -80,13 +80,13 @@ describe('Field Supply — guardrails (separate from rank, free baseline, no sch
     expect(bait.counts.seeds).toBe(3 + SHOP.buyQuantity); // the shop added it
   });
 
-  it('buying mutates existing v5 fields only — NO schema bump / migration', () => {
+  it('buying bait mutates existing fields only — no schema bump from the shop', () => {
     const j = createJournal();
     addCredits(j, 10);
     const bait = createBaitState();
     bait.counts.seeds = 5;
     buyBait(j, bait, 'seeds');
-    expect(j.schemaVersion).toBe(JOURNAL_SCHEMA_VERSION); // still 5
-    expect(JOURNAL_SCHEMA_VERSION).toBe(5);
+    expect(j.schemaVersion).toBe(JOURNAL_SCHEMA_VERSION); // unchanged by buying
+    expect(JOURNAL_SCHEMA_VERSION).toBe(6); // current schema (nets slice A)
   });
 });

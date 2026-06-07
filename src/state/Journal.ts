@@ -13,18 +13,19 @@
  *    stores step by step (v1 -> v2 -> v3 -> v4 -> v5) rather than resetting them.
  *    An old player keeps every caught species and gains new fields at safe defaults.
  *
- * SCHEMA v5: species dex + missions progress + rank points + mission-granted
- * biome unlocks + durable bait counts + `won` flag + `credits` balance (§12).
- * Only CAUGHT species get a species entry (absence === not found).
+ * SCHEMA v6: species dex + missions progress + rank points + mission-granted
+ * biome unlocks + durable bait counts + `won` flag + `credits` balance (§12) +
+ * owned/active catch nets (Nets & Gear slice A). Only CAUGHT species get a species
+ * entry (absence === not found).
  */
 
-import { BAIT, BAIT_ORDER, type BaitId, type BiomeId } from '../utils/constants';
+import { BAIT, BAIT_ORDER, STARTER_TOOL, TOOL_ORDER, TOOLS, type BaitId, type BiomeId, type ToolId } from '../utils/constants';
 
 const STORAGE_KEY = 'wild-trails:journal';
 
 /** Current persisted schema version. Bump + add a `migrate` step when the shape
  *  changes incompatibly, so old stores upgrade rather than reset. */
-export const JOURNAL_SCHEMA_VERSION = 5;
+export const JOURNAL_SCHEMA_VERSION = 6;
 
 /** Per-species dex record. An entry exists IFF the species has been caught. */
 export interface SpeciesRecord {
@@ -66,6 +67,11 @@ export interface Journal {
    *  milestones. SEPARATE from rankPoints (rank = knowledge/progression; credits =
    *  the spendable economy). Never negative. Nothing to spend on until §12 slice 1b. */
   credits: number;
+  /** Durable catch nets the player OWNS (v6, Nets & Gear slice A). The starter Hand
+   *  Net is always owned; biome nets are bought in the shop (a later slice). */
+  ownedTools: ToolId[];
+  /** The equipped net — must always be one of `ownedTools` (sanitized on load). */
+  activeTool: ToolId;
 }
 
 /** Full-bait counts (the fresh-game / safe-default value), startingCount per type. */
@@ -86,6 +92,8 @@ export function createJournal(): Journal {
     bait: defaultBait(),
     won: false,
     credits: 0,
+    ownedTools: [STARTER_TOOL],
+    activeTool: STARTER_TOOL,
   };
 }
 
@@ -237,6 +245,31 @@ function up_4to5(v4: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
+/** Upgrade a v5 store to v6 (Nets & Gear slice A): keep everything, grant exactly the
+ *  starter Hand Net (owned + equipped) — a returning player loses nothing and starts
+ *  with precisely today's single net. */
+function up_5to6(v5: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...v5,
+    schemaVersion: 6,
+    ownedTools: [STARTER_TOOL],
+    activeTool: STARTER_TOOL,
+  };
+}
+
+/** Sanitize the persisted net inventory: drop unknown ids, ALWAYS own the starter,
+ *  return owned in canonical order, and clamp the active net to an owned one. */
+function sanitizeTools(ownedRaw: unknown, activeRaw: unknown): { ownedTools: ToolId[]; activeTool: ToolId } {
+  const owned = new Set<ToolId>([STARTER_TOOL]); // the starter is always owned
+  if (Array.isArray(ownedRaw)) {
+    for (const id of ownedRaw) if (typeof id === 'string' && id in TOOLS) owned.add(id as ToolId);
+  }
+  const ownedTools = TOOL_ORDER.filter((id) => owned.has(id));
+  const activeTool: ToolId =
+    typeof activeRaw === 'string' && owned.has(activeRaw as ToolId) ? (activeRaw as ToolId) : STARTER_TOOL;
+  return { ownedTools, activeTool };
+}
+
 /**
  * The migration HOOK: turn an arbitrary parsed payload into a valid current-
  * schema Journal. Old versions upgrade STEP BY STEP (v1 -> v2) BEFORE the version
@@ -253,12 +286,14 @@ export function migrate(parsed: unknown): Journal {
   if (obj.schemaVersion === 2) obj = up_2to3(obj);
   if (obj.schemaVersion === 3) obj = up_3to4(obj);
   if (obj.schemaVersion === 4) obj = up_4to5(obj);
+  if (obj.schemaVersion === 5) obj = up_5to6(obj);
 
   if (obj.schemaVersion !== JOURNAL_SCHEMA_VERSION) return createJournal();
 
   const rankPoints =
     typeof obj.rankPoints === 'number' && obj.rankPoints >= 0 ? obj.rankPoints : 0;
   const credits = typeof obj.credits === 'number' && obj.credits >= 0 ? Math.floor(obj.credits) : 0;
+  const { ownedTools, activeTool } = sanitizeTools(obj.ownedTools, obj.activeTool);
   return {
     schemaVersion: JOURNAL_SCHEMA_VERSION,
     species: sanitizeSpecies(obj.species),
@@ -268,6 +303,8 @@ export function migrate(parsed: unknown): Journal {
     bait: sanitizeBait(obj.bait),
     won: obj.won === true,
     credits,
+    ownedTools,
+    activeTool,
   };
 }
 
