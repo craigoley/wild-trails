@@ -106,8 +106,8 @@ describe('Encounter — GameState wiring', () => {
 
   it('a guaranteed catch despawns the animal and increments the session count', () => {
     const g = gameWithAnimalAt(0.5, 0);
-    // Force chance to clamp to 1: tranq + correct bait + point-blank.
-    g.tool = 'tranq';
+    // Force chance to clamp to 1: correct bait (×3.5) + point-blank with the starter
+    // net — the fieldmouse's base × proximity × calm already exceeds 1.
     g.bait.selected = 'seeds'; // fieldmouse diet
     deployBait(g.bait, 0, 0);
 

@@ -80,6 +80,9 @@ for (const id of journal.unlockedBiomes) {
 // Everything else (player position, clock, animals) is recomputed fresh by
 // createGameState; only the bait stockpile carries across a reload.
 restoreBaitCounts(game.bait, journal.bait);
+// Equip the persisted active net (Nets & Gear slice A) — the durable inventory lives
+// in the journal; the live sim reads game.tool. Defaults to the starter Hand Net.
+game.tool = journal.activeTool;
 
 // Autosave: silent, dedup-guarded. persist() syncs the live bait into the journal
 // then writes (only if the store actually changed). Fired on durable milestones
@@ -128,7 +131,12 @@ const missionPanel = new MissionPanel(app);
 refreshMissionPanel();
 // The Field Supply (§12 1b) — spend credits on extra bait. A purchase persists (so
 // it survives reload); the buy mutates journal.credits + the live game.bait counts.
-const shopPanel = new ShopPanel(app, persist);
+const shopPanel = new ShopPanel(app, persist, (toolId) => {
+  // Equip a net: the journal already holds the active selection (set by equipTool);
+  // sync the live sim's tool + persist (Nets & Gear slice A).
+  game.tool = toolId;
+  persist();
+});
 // Walk-in state for the supply post — fires the panel open on the entry edge only.
 // Walk-in tracking: detect the close EDGE (open→closed) to step the player out.
 let shopWasOpen = false;

@@ -12,9 +12,10 @@
 
 import { addOverlayDismiss } from './overlayDismiss';
 import { baitBuyState, buyBait } from '../game/Economy';
+import { equipTool, ownedToolsInOrder } from '../game/Tools';
 import type { BaitState } from '../game/Bait';
 import type { Journal } from '../state/Journal';
-import { BAIT, BAIT_DISPLAY, BAIT_ORDER, CREDITS, SHOP, type BaitId } from '../utils/constants';
+import { BAIT, BAIT_DISPLAY, BAIT_ORDER, CREDITS, SHOP, TOOLS, type BaitId, type ToolId } from '../utils/constants';
 
 export class ShopPanel {
   private readonly root: HTMLDivElement;
@@ -25,9 +26,12 @@ export class ShopPanel {
   private baitState: BaitState | null = null;
   /** Persist the purchase (credits spent + bait gained) at the boundary. */
   private readonly onBuy: () => void;
+  /** Equip a net: sync the live sim's active tool + persist (boundary callback). */
+  private readonly onEquip: (toolId: ToolId) => void;
 
-  constructor(container: HTMLElement, onBuy: () => void) {
+  constructor(container: HTMLElement, onBuy: () => void, onEquip: (toolId: ToolId) => void) {
     this.onBuy = onBuy;
+    this.onEquip = onEquip;
     this.root = document.createElement('div');
     this.root.className = 'shop-overlay';
     this.root.style.display = 'none';
@@ -83,6 +87,45 @@ export class ShopPanel {
     this.balance.textContent = `${CREDITS.glyph} ${journal.credits}`;
     this.list.replaceChildren();
     for (const id of BAIT_ORDER) this.list.appendChild(this.row(id));
+    // Nets & Gear slice A — the durable-net section (own/equip). Only the starter
+    // Hand Net for now; biome nets (buyable) arrive in a later slice.
+    const gearHeader = document.createElement('div');
+    gearHeader.className = 'shop-section';
+    gearHeader.textContent = SHOP.netsHeader;
+    this.list.appendChild(gearHeader);
+    for (const id of ownedToolsInOrder(journal)) this.list.appendChild(this.netRow(id));
+  }
+
+  /** One owned-net row: name + flavor + Equipped badge / Equip button. */
+  private netRow(id: ToolId): HTMLDivElement {
+    const journal = this.journal!;
+    const def = TOOLS[id];
+    const row = document.createElement('div');
+    row.className = 'shop-row shop-net-row';
+
+    const info = document.createElement('div');
+    info.className = 'shop-info';
+    info.innerHTML = `<div class="net-name">${def.displayName}</div><div class="net-flavor">${def.flavor}</div>`;
+
+    const active = journal.activeTool === id;
+    const ctl = document.createElement(active ? 'div' : 'button');
+    if (active) {
+      ctl.className = 'net-equipped';
+      ctl.textContent = SHOP.equippedLabel;
+    } else {
+      ctl.className = 'shop-buy';
+      ctl.textContent = SHOP.equipLabel;
+      ctl.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (equipTool(journal, id)) {
+          this.onEquip(id); // sync game.tool + persist
+          this.refresh(journal, this.baitState!);
+        }
+      });
+    }
+
+    row.append(info, ctl);
+    return row;
   }
 
   private row(id: BaitId): HTMLDivElement {

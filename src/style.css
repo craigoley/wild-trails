@@ -782,6 +782,39 @@ body.modal-open .touch-stick-thumb {
   font-size: 14px;
   font-weight: 600;
 }
+/* Nets & Gear slice A — the durable-net section header + rows. */
+.shop-section {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(180, 230, 190, 0.75);
+}
+.shop-net-row .net-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+.shop-net-row .net-flavor {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.66);
+}
+/* The equipped net's badge (a quiet green confirmation, not a button). */
+.net-equipped {
+  flex: none;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: rgba(159, 240, 168, 0.16);
+  border: 1px solid rgba(159, 240, 168, 0.4);
+  color: #9ff0a8;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
 .shop-buy {
   pointer-events: auto;
   touch-action: manipulation;
