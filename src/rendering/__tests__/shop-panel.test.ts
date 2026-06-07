@@ -4,7 +4,8 @@ import { ShopPanel } from '../ShopPanel';
 import { createBaitState } from '../../game/Bait';
 import { createJournal } from '../../state/Journal';
 import { addCredits } from '../../game/Economy';
-import { BAIT, BAIT_ORDER, NET_PRICE, SHOP, TOOL_ORDER } from '../../utils/constants';
+import { grantTool } from '../../game/Tools';
+import { BAIT, BAIT_ORDER, SHOP, TOOL_ORDER } from '../../utils/constants';
 
 const fireDown = (el: Element) => el.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -43,7 +44,7 @@ describe('ShopPanel — rows, balance, and button states', () => {
     expect(document.querySelectorAll('.shop-row:not(.shop-net-row)')).toHaveLength(BAIT_ORDER.length);
   });
 
-  it('lists ALL nets — the starter Equipped, the biome nets Buyable (slice B1)', () => {
+  it('lists ALL nets — the starter Equipped, the un-owned biome nets show the research hint (R1)', () => {
     const j = createJournal();
     const p = new ShopPanel(document.body, vi.fn(), vi.fn());
     p.refresh(j, createBaitState());
@@ -53,27 +54,23 @@ describe('ShopPanel — rows, balance, and button states', () => {
     // The starter Hand Net (owned + active) shows the Equipped badge.
     expect(netRows[0].querySelector('.net-name')!.textContent).toBe('Hand Net');
     expect(netRows[0].querySelector('.net-equipped')!.textContent).toBe(SHOP.equippedLabel);
-    // The unowned biome nets show a Buy button at ¢NET_PRICE.
-    const buys = document.querySelectorAll('.shop-net-row .shop-buy');
-    expect(buys).toHaveLength(2); // dip + throwing
-    expect(buys[0].textContent).toContain(String(NET_PRICE));
+    // ⚠️ R1: the shop-buy is GONE — un-owned biome nets point at their research project,
+    // never a Buy button (research is the single acquisition path; no dual-path).
+    expect(document.querySelectorAll('.shop-net-row .shop-buy')).toHaveLength(0);
+    const hints = document.querySelectorAll('.shop-net-row .net-research-hint');
+    expect(hints).toHaveLength(2); // dip + throwing
+    expect([...hints].map((h) => h.textContent).join(' ')).toContain('Research to unlock');
   });
 
-  it('buying a biome net owns it (¢NET_PRICE), then it can be equipped (slice B1)', () => {
+  it('a research-GRANTED biome net shows Equip (acquired via research, not the shop) (R1)', () => {
     const j = createJournal();
-    addCredits(j, NET_PRICE + 5);
-    const onBuy = vi.fn();
+    grantTool(j, 'dip-net'); // as a completed research project would (the swappable seam)
     const onEquip = vi.fn();
-    const p = new ShopPanel(document.body, onBuy, onEquip);
+    const p = new ShopPanel(document.body, vi.fn(), onEquip);
     p.refresh(j, createBaitState());
-    const dipRow = () => [...document.querySelectorAll('.shop-net-row')].find((r) => r.textContent!.includes('Dip-net'))!;
-
-    fireDown(dipRow().querySelector('.shop-buy')!); // Buy
-    expect(j.ownedTools).toContain('dip-net'); // owned now
-    expect(j.credits).toBe(5); // spent NET_PRICE
-    expect(onBuy).toHaveBeenCalled();
-
-    fireDown(dipRow().querySelector('.shop-buy')!); // now the Equip button
+    const dipRow = [...document.querySelectorAll('.shop-net-row')].find((r) => r.textContent!.includes('Dip-net'))!;
+    expect(dipRow.querySelector('.net-research-hint')).toBeNull(); // owned -> no hint
+    fireDown(dipRow.querySelector('.shop-buy')!); // the Equip button
     expect(j.activeTool).toBe('dip-net');
     expect(onEquip).toHaveBeenCalledWith('dip-net');
   });
