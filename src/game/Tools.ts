@@ -19,6 +19,13 @@ export function toolMultiplier(tool: ToolId): number {
   return TOOLS[tool].catchMultiplier;
 }
 
+/** The REACH of a net, world units (slice B0) — the attempt gate + proximity denominator.
+ *  Per-net so biome nets (B1) answer reach LATERALLY; the starter equals the current
+ *  CATCH.attemptRadius (so B0 is behavior-neutral). */
+export function toolReach(tool: ToolId): number {
+  return TOOLS[tool].reach;
+}
+
 /** Is `id` a real net id (guards migration / persisted input). */
 export function isToolId(id: unknown): id is ToolId {
   return typeof id === 'string' && id in TOOLS;

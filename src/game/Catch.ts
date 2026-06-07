@@ -19,7 +19,7 @@
 
 import { BAIT, CATCH, type BiomeId, type SpeciesDef } from '../utils/constants';
 import { clamp, lerp } from '../utils/math';
-import { toolMultiplier, type ToolId } from './Tools';
+import { toolMultiplier, toolReach, type ToolId } from './Tools';
 import type { Rng } from '../utils/rng';
 
 /** Everything finalCatchChance needs about the moment of the attempt. */
@@ -36,10 +36,11 @@ export interface CatchContext {
   fleeing: boolean;
 }
 
-/** Closer = better odds: lerp from proximityMax (point-blank) to proximityMin
- *  (at attemptRadius). */
-export function proximityMultiplier(dist: number): number {
-  const t = clamp(dist / CATCH.attemptRadius, 0, 1);
+/** Closer = better odds: lerp from proximityMax (point-blank) to proximityMin (at the
+ *  net's REACH). `reach` defaults to CATCH.attemptRadius (slice B0) so isolated callers
+ *  are unchanged; finalCatchChance passes the active net's reach. */
+export function proximityMultiplier(dist: number, reach: number = CATCH.attemptRadius): number {
+  const t = clamp(dist / reach, 0, 1);
   return lerp(CATCH.proximityMax, CATCH.proximityMin, t);
 }
 
@@ -61,7 +62,9 @@ export function finalCatchChance(species: SpeciesDef, ctx: CatchContext): number
   const chance =
     species.baseCatchRate *
     toolMultiplier(ctx.tool) *
-    proximityMultiplier(ctx.dist) *
+    // B0: proximity normalizes by the ACTIVE net's REACH (per-net), not the global
+    // constant. Starter reach = CATCH.attemptRadius, so this is byte-for-byte unchanged.
+    proximityMultiplier(ctx.dist, toolReach(ctx.tool)) *
     calmMultiplier(ctx.correctBait, ctx.fleeing) *
     biomeMatch(species, ctx.biome);
   return clamp(chance, 0, 1);
