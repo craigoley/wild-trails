@@ -17,8 +17,8 @@ import {
 } from './Catch';
 import { getSpecies } from './Species';
 import { isCorrectBaitFor, type BaitState } from './Bait';
-import { nearestActiveAnimal, type Animal } from './Animal';
-import { toolReach, type ToolId } from './Tools';
+import { nearestCatchable, type Animal } from './Animal';
+import type { ToolId } from './Tools';
 import type { PlayerState } from './Player';
 import type { Rng } from '../utils/rng';
 
@@ -58,8 +58,10 @@ export interface AttemptInputs {
  * (once) so the rest is pure playback.
  */
 export function startEncounter(input: AttemptInputs): Encounter | null {
-  // B0: the attempt gate uses the ACTIVE net's reach (per-net), not the global constant.
-  const idx = nearestActiveAnimal(input.animals, input.player.x, input.player.y, toolReach(input.tool));
+  // B0/B1: the attempt gate uses the ACTIVE net's per-animal GATE reach (a biome net can
+  // reach its condition's animals — an in-water frog / an open-ground bird — that the hand
+  // net can't; the odds, set in finalCatchChance below, are never net-boosted).
+  const idx = nearestCatchable(input.animals, input.player.x, input.player.y, input.tool);
   if (idx < 0) return null;
 
   const animal = input.animals[idx];

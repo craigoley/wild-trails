@@ -11,11 +11,11 @@
  */
 
 import { addOverlayDismiss } from './overlayDismiss';
-import { baitBuyState, buyBait } from '../game/Economy';
-import { equipTool, ownedToolsInOrder } from '../game/Tools';
+import { baitBuyState, buyBait, buyNet, netBuyState } from '../game/Economy';
+import { equipTool, ownsTool } from '../game/Tools';
 import type { BaitState } from '../game/Bait';
 import type { Journal } from '../state/Journal';
-import { BAIT, BAIT_DISPLAY, BAIT_ORDER, CREDITS, SHOP, TOOLS, type BaitId, type ToolId } from '../utils/constants';
+import { BAIT, BAIT_DISPLAY, BAIT_ORDER, CREDITS, NET_PRICE, SHOP, TOOLS, TOOL_ORDER, type BaitId, type ToolId } from '../utils/constants';
 
 export class ShopPanel {
   private readonly root: HTMLDivElement;
@@ -87,13 +87,13 @@ export class ShopPanel {
     this.balance.textContent = `${CREDITS.glyph} ${journal.credits}`;
     this.list.replaceChildren();
     for (const id of BAIT_ORDER) this.list.appendChild(this.row(id));
-    // Nets & Gear slice A — the durable-net section (own/equip). Only the starter
-    // Hand Net for now; biome nets (buyable) arrive in a later slice.
+    // Nets & Gear — the durable-net section (buy / equip). B1: ALL nets listed; owned ones
+    // Equip/Equipped, unowned ones Buy. The flavor lines teach which net suits which biome.
     const gearHeader = document.createElement('div');
     gearHeader.className = 'shop-section';
     gearHeader.textContent = SHOP.netsHeader;
     this.list.appendChild(gearHeader);
-    for (const id of ownedToolsInOrder(journal)) this.list.appendChild(this.netRow(id));
+    for (const id of TOOL_ORDER) this.list.appendChild(this.netRow(id));
   }
 
   /** One owned-net row: name + flavor + Equipped badge / Equip button. */
@@ -108,20 +108,40 @@ export class ShopPanel {
     info.innerHTML = `<div class="net-name">${def.displayName}</div><div class="net-flavor">${def.flavor}</div>`;
 
     const active = journal.activeTool === id;
-    const ctl = document.createElement(active ? 'div' : 'button');
+    const owned = ownsTool(journal, id);
+    let ctl: HTMLElement;
     if (active) {
+      // The equipped net — a quiet badge.
+      ctl = document.createElement('div');
       ctl.className = 'net-equipped';
       ctl.textContent = SHOP.equippedLabel;
-    } else {
-      ctl.className = 'shop-buy';
-      ctl.textContent = SHOP.equipLabel;
-      ctl.addEventListener('pointerdown', (e) => {
+    } else if (owned) {
+      // Owned but not active — Equip it (the #51 wiring).
+      const btn = document.createElement('button');
+      btn.className = 'shop-buy';
+      btn.textContent = SHOP.equipLabel;
+      btn.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         if (equipTool(journal, id)) {
           this.onEquip(id); // sync game.tool + persist
           this.refresh(journal, this.baitState!);
         }
       });
+      ctl = btn;
+    } else {
+      // Unowned — Buy it (¢NET_PRICE); greyed when unaffordable (the price reads as "needed").
+      const btn = document.createElement('button');
+      btn.className = 'shop-buy';
+      btn.textContent = `${CREDITS.glyph} ${NET_PRICE}`;
+      btn.disabled = netBuyState(journal, id) === 'cant-afford';
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (buyNet(journal, id)) {
+          this.onBuy(); // persist (credits spent + net owned)
+          this.refresh(journal, this.baitState!); // now shows Equip
+        }
+      });
+      ctl = btn;
     }
 
     row.append(info, ctl);

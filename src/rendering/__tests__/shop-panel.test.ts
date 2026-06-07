@@ -4,7 +4,7 @@ import { ShopPanel } from '../ShopPanel';
 import { createBaitState } from '../../game/Bait';
 import { createJournal } from '../../state/Journal';
 import { addCredits } from '../../game/Economy';
-import { BAIT, BAIT_ORDER, SHOP } from '../../utils/constants';
+import { BAIT, BAIT_ORDER, NET_PRICE, SHOP, TOOL_ORDER } from '../../utils/constants';
 
 const fireDown = (el: Element) => el.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -43,19 +43,39 @@ describe('ShopPanel — rows, balance, and button states', () => {
     expect(document.querySelectorAll('.shop-row:not(.shop-net-row)')).toHaveLength(BAIT_ORDER.length);
   });
 
-  it('shows the Nets gear section with the starter Hand Net marked Equipped (slice A)', () => {
+  it('lists ALL nets — the starter Equipped, the biome nets Buyable (slice B1)', () => {
     const j = createJournal();
-    const onEquip = vi.fn();
-    const p = new ShopPanel(document.body, vi.fn(), onEquip);
+    const p = new ShopPanel(document.body, vi.fn(), vi.fn());
     p.refresh(j, createBaitState());
     const netRows = document.querySelectorAll('.shop-net-row');
-    expect(netRows).toHaveLength(j.ownedTools.length); // one row per owned net (the Hand Net)
+    expect(netRows).toHaveLength(TOOL_ORDER.length); // 3: hand + dip + throwing
     expect(document.querySelector('.shop-section')!.textContent).toBe(SHOP.netsHeader);
-    expect(document.querySelector('.shop-net-row .net-name')!.textContent).toBe('Hand Net');
-    // The owned + active net shows the Equipped badge (no Equip button to fire).
-    expect(document.querySelector('.shop-net-row .net-equipped')!.textContent).toBe(SHOP.equippedLabel);
-    expect(document.querySelector('.shop-net-row .shop-buy')).toBeNull();
-    expect(onEquip).not.toHaveBeenCalled();
+    // The starter Hand Net (owned + active) shows the Equipped badge.
+    expect(netRows[0].querySelector('.net-name')!.textContent).toBe('Hand Net');
+    expect(netRows[0].querySelector('.net-equipped')!.textContent).toBe(SHOP.equippedLabel);
+    // The unowned biome nets show a Buy button at ¢NET_PRICE.
+    const buys = document.querySelectorAll('.shop-net-row .shop-buy');
+    expect(buys).toHaveLength(2); // dip + throwing
+    expect(buys[0].textContent).toContain(String(NET_PRICE));
+  });
+
+  it('buying a biome net owns it (¢NET_PRICE), then it can be equipped (slice B1)', () => {
+    const j = createJournal();
+    addCredits(j, NET_PRICE + 5);
+    const onBuy = vi.fn();
+    const onEquip = vi.fn();
+    const p = new ShopPanel(document.body, onBuy, onEquip);
+    p.refresh(j, createBaitState());
+    const dipRow = () => [...document.querySelectorAll('.shop-net-row')].find((r) => r.textContent!.includes('Dip-net'))!;
+
+    fireDown(dipRow().querySelector('.shop-buy')!); // Buy
+    expect(j.ownedTools).toContain('dip-net'); // owned now
+    expect(j.credits).toBe(5); // spent NET_PRICE
+    expect(onBuy).toHaveBeenCalled();
+
+    fireDown(dipRow().querySelector('.shop-buy')!); // now the Equip button
+    expect(j.activeTool).toBe('dip-net');
+    expect(onEquip).toHaveBeenCalledWith('dip-net');
   });
 
   it("a full bait reads 'Full' and is disabled; an unaffordable one is disabled", () => {

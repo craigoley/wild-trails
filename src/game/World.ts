@@ -15,6 +15,7 @@ import {
   BIOMES,
   BIOME_ORDER,
   HIDING_SPOTS,
+  OPEN_BIOME_COVER_MAX,
   SUPPLY_POSTS,
   SUPPLY_EXIT_MARGIN,
   WATER,
@@ -223,6 +224,18 @@ export function biomeCoverDensity(world: World, biome: BiomeId): number {
   let n = 0;
   for (const s of world.hidingSpots) if (s.biome === biome) n++;
   return n;
+}
+
+/**
+ * Is a biome "OPEN" (slice B1) — the throwing net's condition? Derived from the STATIC
+ * HIDING_SPOTS density (no live world needed, so the catch gate stays cheap): a biome at
+ * or below OPEN_BIOME_COVER_MAX fixed spots is open. The Highlands (2 spots, #53) is open;
+ * the others (3) are not. Pure.
+ */
+export function isOpenBiome(biome: BiomeId): boolean {
+  let n = 0;
+  for (const s of HIDING_SPOTS) if (s.biome === biome) n++;
+  return n <= OPEN_BIOME_COVER_MAX;
 }
 
 /** Which biome's Field Supply post the player is standing in (within its zone), or
