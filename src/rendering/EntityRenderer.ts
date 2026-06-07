@@ -84,7 +84,7 @@ export class EntityRenderer {
     // hide's cover radius (slice C). Procedural, zero-asset.
     this.hideMarker = new Mesh(
       new RingGeometry(HIDE.radius * 0.86, HIDE.radius, 28),
-      new MeshBasicMaterial({ color: 0x8a9a5b, transparent: true, opacity: 0.5 }),
+      new MeshBasicMaterial({ color: PALETTE.hideMarker, transparent: true, opacity: 0.5 }),
     );
     this.hideMarker.rotation.x = -Math.PI / 2;
     this.hideMarker.visible = false;

@@ -55,10 +55,9 @@ describe('L1 Guard — cover→approach→catch (the real valve #52 cannot see)'
     // redsquirrel/mallard detection (4.2) exceeds attemptRadius (2.6) at full alert — so
     // WITHOUT cover you can't reach catch range calm. This is exactly what reducing cover
     // threatens and the free baseline protects; #52's fixed-dist band can't see it.
-    const coverStealth2 = computeStealthFactor(true, true);
     for (const id of ['redsquirrel', 'mallard'] as SpeciesId[]) {
       expect(effectiveDetectionRadius(SPECIES[id], 1.0)).toBeGreaterThan(CATCH.attemptRadius);
-      expect(effectiveDetectionRadius(SPECIES[id], coverStealth2)).toBeLessThanOrEqual(CATCH.attemptRadius);
+      expect(effectiveDetectionRadius(SPECIES[id], coverStealth)).toBeLessThanOrEqual(CATCH.attemptRadius);
     }
   });
 });

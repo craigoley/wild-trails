@@ -32,6 +32,8 @@ export const PALETTE = {
   targetBaited: 0x6dff9b,
   /** Active-bait ground marker (warm seed-amber). */
   baitMarker: 0xffd166,
+  /** Deployed hide footprint (muted khaki-green — blends with cover, reads as gear). */
+  hideMarker: 0x8a9a5b,
 } as const;
 
 /** Same palette as CSS hex strings for the HTML HUD overlay. */
