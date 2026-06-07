@@ -311,6 +311,11 @@ export interface SpeciesDef {
   /** Short, accurate "did you know" line for the Field Journal card. Written as
    *  CONFIRMATION of what play taught (§5), not a front-loaded lecture. */
   profile: string;
+  /** Nets & Gear slice W — this species FLEES TOWARD WATER (a leap into the pond),
+   *  not straight away (frog only). Real behaviour (P5); it puts the animal out of the
+   *  hand net's reach over water — the lateral condition the dip-net (B1) answers.
+   *  Omitted/false = flees straight away from the player (unchanged). */
+  fleesToWater?: boolean;
 }
 
 /** Deterministic iteration order over the species table. */
@@ -633,6 +638,9 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     size: 0.32,
     profile:
       'Common frogs catch insects, slugs and worms with a flick of their sticky tongue. They breathe through damp skin and escape danger with one powerful leap back into the water.',
+    // Slice W: the frog leaps to the water when startled (P5) — out of the hand net's
+    // reach; the dip-net (B1) is the answer. (The mallard bursts into flight instead.)
+    fleesToWater: true,
   },
   // --- Highlands (tier 4 — alpine high-tops, below the Wetland floor 0.20) ------
   ptarmigan: {
@@ -801,6 +809,36 @@ export const HIDE = {
   radius: 2.2,
   displayName: 'Portable Hide',
   flavor: 'A folding canvas hide — set it down and wait unseen, even on open ground.',
+} as const;
+
+/** A water region (a pond), world units. */
+export interface WaterDef {
+  biome: BiomeId;
+  x: number;
+  y: number;
+  radius: number;
+}
+
+/** WATER terrain (Nets & Gear slice W). The wetland's pond — the FIRST modelled water:
+ *  the PLAYER can't enter it (a movement barrier), but animals can, and the FROG flees
+ *  INTO it (fleesToWater) out of the hand net's reach. The dip-net (B1) — a longer-reach
+ *  net — is what reaches across. Sited in the wetland's open north-centre (cell
+ *  x∈[20,60], y∈[-20,20]), clear of spawn, the supply post (55,-14), the reeds, and the
+ *  x=20 entry; radius 6 leaves a real gap (a centre-fled frog sits ~6 > the hand net's
+ *  reach 2.6 from any shore). Zero-asset (a flat teal disc). */
+export const WATER: readonly WaterDef[] = [{ biome: 'wetland', x: 40, y: 8, radius: 6 }];
+
+/** Frog flee-to-water steering (slice W): how strongly a fleeing frog's heading is
+ *  blended TOWARD the nearest water centre vs straight away from the player (0 = away,
+ *  1 = at the water). Enough to make for the pond, not so much it ignores the player. */
+export const WATER_FLEE_BIAS = 0.6;
+
+/** Render of the water disc — a flat translucent teal plane (zero-asset). */
+export const WATER_RENDER = {
+  color: 0x2f6f78,
+  /** Ground offset so it sits just above the grid, below the props. */
+  y: 0.02,
+  opacity: 0.78,
 } as const;
 
 /** Procedural tall-grass cluster look (render-only, zero assets). */

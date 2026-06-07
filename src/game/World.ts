@@ -17,10 +17,12 @@ import {
   HIDING_SPOTS,
   SUPPLY_POSTS,
   SUPPLY_EXIT_MARGIN,
+  WATER,
   type BiomeDef,
   type BiomeId,
   type HidingSpotDef,
   type SupplyPostDef,
+  type WaterDef,
 } from '../utils/constants';
 import { clamp, rectContains, type Rect, type Vec2 } from '../utils/math';
 
@@ -49,6 +51,9 @@ export interface World {
   /** Cover props (tall grass). A player within a spot's radius is "in cover"
    *  (PR #6 stealth). Static DATA from constants. */
   hidingSpots: readonly HidingSpotDef[];
+  /** WATER regions (slice W). The player can't enter them; animals can; the frog
+   *  flees into them out of the hand net's reach. Static DATA from constants. */
+  water: readonly WaterDef[];
 }
 
 /**
@@ -131,6 +136,7 @@ export function createWorld(): World {
     order: BIOME_ORDER,
     unlockedRects: [],
     hidingSpots: HIDING_SPOTS,
+    water: WATER,
   };
   recomputeUnlockedBounds(world);
   return world;
@@ -145,6 +151,65 @@ export function isInCover(world: World, x: number, y: number): boolean {
     if (Math.hypot(x - s.x, y - s.y) <= s.radius) return true;
   }
   return false;
+}
+
+/**
+ * Is (x, y) within a WATER region, inflated by `margin` (slice W)? With margin =
+ * PLAYER.radius this is the player-barrier test (the body can't overlap water); with
+ * margin = 0 it's the point test (an animal's `inWater` flag). Pure.
+ */
+export function isInWater(world: World, x: number, y: number, margin = 0): boolean {
+  for (const w of world.water) {
+    if (Math.hypot(x - w.x, y - w.y) < w.radius + margin) return true;
+  }
+  return false;
+}
+
+/** The water region nearest (x, y), or null if there is none (slice W) — the frog
+ *  steers toward its centre when fleeing. Pure. */
+export function nearestWater(world: World, x: number, y: number): WaterDef | null {
+  let best: WaterDef | null = null;
+  let bestD = Infinity;
+  for (const w of world.water) {
+    const d = (x - w.x) * (x - w.x) + (y - w.y) * (y - w.y);
+    if (d < bestD) {
+      bestD = d;
+      best = w;
+    }
+  }
+  return best;
+}
+
+/**
+ * The player WATER barrier (slice W) — resolve a move from (fromX,fromY) to a desired,
+ * already-biome-clamped (toX,toY) so the player never enters water, SLIDING along the
+ * shore instead of sticking: take the full move if it's clear, else move on the X axis
+ * only, else the Y axis only, else stay put. Axis-separated → glides along the edge.
+ * (Applied AFTER clampToUnlocked; animals are NOT subject to it — only the player.)
+ */
+export function resolveWaterSlide(
+  world: World,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  margin: number,
+  out: Vec2,
+): Vec2 {
+  if (!isInWater(world, toX, toY, margin)) {
+    out.x = toX;
+    out.y = toY;
+  } else if (!isInWater(world, toX, fromY, margin)) {
+    out.x = toX; // slide along the X-edge
+    out.y = fromY;
+  } else if (!isInWater(world, fromX, toY, margin)) {
+    out.x = fromX; // slide along the Y-edge
+    out.y = toY;
+  } else {
+    out.x = fromX; // fully blocked — stay (no stick)
+    out.y = fromY;
+  }
+  return out;
 }
 
 /**

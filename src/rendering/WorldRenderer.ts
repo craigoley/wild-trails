@@ -16,6 +16,7 @@
 
 import {
   BoxGeometry,
+  CircleGeometry,
   ConeGeometry,
   CylinderGeometry,
   GridHelper,
@@ -38,8 +39,10 @@ import {
   SUPPLY_POSTS,
   SUPPLY_RENDER,
   TRACK_SIGNS,
+  WATER_RENDER,
   type HidingSpotDef,
   type SupplyPostDef,
+  type WaterDef,
   PALETTE,
 } from '../utils/constants';
 import type { Rect } from '../utils/math';
@@ -67,7 +70,8 @@ export class WorldRenderer {
   constructor(scene: Scene, world: World) {
     this.group.add(this.dynamic);
 
-    // Static props — built ONCE (unlock-independent): cover, tracking signs, grid.
+    // Static props — built ONCE (unlock-independent): water, cover, signs, grid.
+    for (const w of world.water) this.addWater(w);
     for (const spot of world.hidingSpots) this.addCover(spot);
     this.addTrackSigns();
     this.addGrid(world);
@@ -192,6 +196,18 @@ export class WorldRenderer {
         this.group.add(mark);
       }
     }
+  }
+
+  /** A WATER region (slice W) — a flat translucent teal disc on the ground (zero-asset).
+   *  Static, built once like cover; the locked-region fog veils it until the wetland opens. */
+  private addWater(w: WaterDef): void {
+    const disc = new Mesh(
+      new CircleGeometry(w.radius, 40),
+      new MeshBasicMaterial({ color: WATER_RENDER.color, transparent: true, opacity: WATER_RENDER.opacity }),
+    );
+    disc.rotation.x = -Math.PI / 2; // lay it flat on the ground plane
+    disc.position.set(w.x, WATER_RENDER.y, w.y);
+    this.group.add(disc);
   }
 
   /** Build a cover prop in the shape that fits its biome (the kind dispatch). The

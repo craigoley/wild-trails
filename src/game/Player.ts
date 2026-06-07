@@ -14,7 +14,7 @@
 
 import { ISO_YAW, PLAYER, TUNING } from '../utils/constants';
 import type { Vec2 } from '../utils/math';
-import { clampToUnlocked, createWorld, type World } from './World';
+import { clampToUnlocked, resolveWaterSlide, createWorld, type World } from './World';
 import type { InputIntent } from './Input';
 
 // Rotation that maps raw SCREEN input (+x right, +y down) onto the world plane
@@ -113,6 +113,10 @@ export function updatePlayer(
   const nx = player.x + player.vx * dt;
   const ny = player.y + player.vy * dt;
   clampToUnlocked(world, nx, ny, PLAYER.radius, _clamped);
+  // Slice W: then resolve the WATER barrier — slide along the shore from the OLD
+  // position, never entering water (composes with the biome clamp above). Zero the
+  // velocity on any axis the water (or the clamp) blocked, so the player rests calmly.
+  resolveWaterSlide(world, player.x, player.y, _clamped.x, _clamped.y, PLAYER.radius, _clamped);
   if (_clamped.x !== nx) player.vx = 0;
   if (_clamped.y !== ny) player.vy = 0;
   player.x = _clamped.x;
