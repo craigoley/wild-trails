@@ -87,6 +87,6 @@ describe('Field Supply — guardrails (separate from rank, free baseline, no sch
     bait.counts.seeds = 5;
     buyBait(j, bait, 'seeds');
     expect(j.schemaVersion).toBe(JOURNAL_SCHEMA_VERSION); // unchanged by buying
-    expect(JOURNAL_SCHEMA_VERSION).toBe(6); // current schema (nets slice A)
+    expect(JOURNAL_SCHEMA_VERSION).toBe(7); // current schema (nets slice A)
   });
 });

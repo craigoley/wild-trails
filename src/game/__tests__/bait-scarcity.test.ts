@@ -36,7 +36,7 @@ describe('Bait scarcity — bait depletes through play, nothing refills it but t
     expect(bait.activeType).toBeNull(); // the lure is consumed/cleared
   });
 
-  it('no new persisted state from bait scarcity — the loop is redirected (current schema v6)', () => {
-    expect(JOURNAL_SCHEMA_VERSION).toBe(6);
+  it('no new persisted state from bait scarcity — the loop is redirected (current schema v7)', () => {
+    expect(JOURNAL_SCHEMA_VERSION).toBe(7);
   });
 });

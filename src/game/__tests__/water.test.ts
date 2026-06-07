@@ -155,7 +155,7 @@ describe('W #5/#6 — anti-lockout + no schema bump', () => {
     expect(SPECIES.mallard.fleesToWater).toBeUndefined();
   });
 
-  it('no schema bump — water is static, inWater/flee are transient (v6)', () => {
-    expect(JOURNAL_SCHEMA_VERSION).toBe(6);
+  it('no schema bump — water is static, inWater/flee are transient (v7)', () => {
+    expect(JOURNAL_SCHEMA_VERSION).toBe(7);
   });
 });

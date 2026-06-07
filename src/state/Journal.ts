@@ -13,10 +13,10 @@
  *    stores step by step (v1 -> v2 -> v3 -> v4 -> v5 -> v6) rather than resetting them.
  *    An old player keeps every caught species and gains new fields at safe defaults.
  *
- * SCHEMA v6: species dex + missions progress + rank points + mission-granted
+ * SCHEMA v7: species dex + missions progress + rank points + mission-granted
  * biome unlocks + durable bait counts + `won` flag + `credits` balance (§12) +
- * owned/active catch nets (Nets & Gear slice A). Only CAUGHT species get a species
- * entry (absence === not found).
+ * owned/active catch nets (Nets & Gear slice A) + research-project state (§4.1.4 — the
+ * Research Spine). Only CAUGHT species get a species entry (absence === not found).
  */
 
 import { BAIT, BAIT_ORDER, STARTER_TOOL, TOOL_ORDER, TOOLS, type BaitId, type BiomeId, type ToolId } from '../utils/constants';
@@ -25,7 +25,7 @@ const STORAGE_KEY = 'wild-trails:journal';
 
 /** Current persisted schema version. Bump + add a `migrate` step when the shape
  *  changes incompatibly, so old stores upgrade rather than reset. */
-export const JOURNAL_SCHEMA_VERSION = 6;
+export const JOURNAL_SCHEMA_VERSION = 7;
 
 /** Per-species dex record. An entry exists IFF the species has been caught. */
 export interface SpeciesRecord {
@@ -72,6 +72,20 @@ export interface Journal {
   ownedTools: ToolId[];
   /** The equipped net — must always be one of `ownedTools` (sanitized on load). */
   activeTool: ToolId;
+  /** Research-project state (v7, §4.1.4 — the Research Spine), keyed by project id. A
+   *  project appears the first time it's STARTED. Research is opt-in (a returning player
+   *  has none); advancement is by in-game ACTIVITY, never wall-clock. */
+  research: Record<string, ResearchState>;
+}
+
+/** Per-project research progress. An entry appears when the project is STARTED. */
+export interface ResearchState {
+  /** Started (the start cost was paid). */
+  started: boolean;
+  /** Catch-activity counted toward the requirement so far. */
+  progress: number;
+  /** Completed — the reward fired (so it never fires twice). */
+  completed: boolean;
 }
 
 /** Full-bait counts (the fresh-game / safe-default value), startingCount per type. */
@@ -94,6 +108,7 @@ export function createJournal(): Journal {
     credits: 0,
     ownedTools: [STARTER_TOOL],
     activeTool: STARTER_TOOL,
+    research: {},
   };
 }
 
@@ -257,6 +272,33 @@ function up_5to6(v5: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
+/** Upgrade a v6 store to v7 (§4.1.4 Research Spine): keep everything, add an EMPTY
+ *  research map (research is opt-in — a returning player has started nothing). */
+function up_6to7(v6: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...v6,
+    schemaVersion: 7,
+    research: {},
+  };
+}
+
+function isResearchState(v: unknown): v is ResearchState {
+  if (typeof v !== 'object' || v === null) return false;
+  const r = v as Record<string, unknown>;
+  return typeof r.started === 'boolean' && typeof r.progress === 'number' && typeof r.completed === 'boolean';
+}
+
+/** Sanitize the persisted research map: keep only well-formed entries, clamp progress ≥ 0. */
+function sanitizeResearch(raw: unknown): Record<string, ResearchState> {
+  const out: Record<string, ResearchState> = {};
+  if (typeof raw === 'object' && raw !== null) {
+    for (const [id, rec] of Object.entries(raw as Record<string, unknown>)) {
+      if (isResearchState(rec)) out[id] = { started: rec.started, progress: Math.max(0, Math.floor(rec.progress)), completed: rec.completed };
+    }
+  }
+  return out;
+}
+
 /** Sanitize the persisted net inventory: drop unknown ids, ALWAYS own the starter,
  *  return owned in canonical order, and clamp the active net to an owned one. */
 function sanitizeTools(ownedRaw: unknown, activeRaw: unknown): { ownedTools: ToolId[]; activeTool: ToolId } {
@@ -287,6 +329,7 @@ export function migrate(parsed: unknown): Journal {
   if (obj.schemaVersion === 3) obj = up_3to4(obj);
   if (obj.schemaVersion === 4) obj = up_4to5(obj);
   if (obj.schemaVersion === 5) obj = up_5to6(obj);
+  if (obj.schemaVersion === 6) obj = up_6to7(obj);
 
   if (obj.schemaVersion !== JOURNAL_SCHEMA_VERSION) return createJournal();
 
@@ -305,6 +348,7 @@ export function migrate(parsed: unknown): Journal {
     credits,
     ownedTools,
     activeTool,
+    research: sanitizeResearch(obj.research),
   };
 }
 

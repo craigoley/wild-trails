@@ -108,7 +108,7 @@ describe('standalone — optional (no unlock / no win impact); no schema change'
     expect(evaluateCatch(j, ev('fieldmouse', 'meadow', 'night')).unlocked).toEqual([]);
   });
 
-  it('no schema bump from research challenges — they ride journal.missions (current schema v6)', () => {
-    expect(JOURNAL_SCHEMA_VERSION).toBe(6);
+  it('no schema bump from research challenges — they ride journal.missions (current schema v7)', () => {
+    expect(JOURNAL_SCHEMA_VERSION).toBe(7);
   });
 });
