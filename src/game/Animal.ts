@@ -19,8 +19,8 @@
  * interpolation each animal keeps its previous sim-step position.
  */
 
-import { ANIMAL, BAIT, SPAWN, type BaitId, type SpeciesId } from '../utils/constants';
-import { clampToBiome, type World } from './World';
+import { ANIMAL, BAIT, SPAWN, WATER_FLEE_BIAS, type BaitId, type SpeciesId } from '../utils/constants';
+import { clampToBiome, isInWater, nearestWater, type World } from './World';
 import { getSpecies } from './Species';
 import { effectiveDetectionRadius } from './Detection';
 import type { PlayerState } from './Player';
@@ -52,6 +52,9 @@ export interface Animal {
   headingX: number;
   headingY: number;
   retargetTimer: number;
+  /** Is the animal currently in a WATER region (slice W)? Set each step. The dip-net
+   *  (B1) hook: an in-water animal is out of the hand net's reach over the water. */
+  inWater: boolean;
 }
 
 function makeInactiveAnimal(): Animal {
@@ -68,6 +71,7 @@ function makeInactiveAnimal(): Animal {
     headingX: 0,
     headingY: 0,
     retargetTimer: 0,
+    inWater: false,
   };
 }
 
@@ -126,6 +130,7 @@ export function spawnAnimal(pool: Animal[], species: SpeciesId, x: number, y: nu
     a.headingY = 0;
     a.retargetTimer = 0;
     a.aiState = 'wander';
+    a.inWater = false;
     return a;
   }
   return null;
@@ -227,8 +232,28 @@ export function updateAnimal(
   } else if (animal.aiState === 'flee') {
     // Directly away from the player at the species' flee speed. (If exactly on
     // the player — dist 0 — keep the current facing to avoid a divide-by-zero.)
-    const ux = dist > 0 ? dx / dist : animal.facingX;
-    const uy = dist > 0 ? dy / dist : animal.facingY;
+    let ux = dist > 0 ? dx / dist : animal.facingX;
+    let uy = dist > 0 ? dy / dist : animal.facingY;
+    // Slice W: a water-fleer (the frog) leaps TOWARD the nearest water's centre — blend
+    // the away-from-player heading with the toward-water heading. Frog only; everything
+    // else flees straight away (unchanged). Pure positioning — no catch-math touch.
+    if (def.fleesToWater) {
+      const w = nearestWater(world, animal.x, animal.y);
+      if (w) {
+        const wdx = w.x - animal.x;
+        const wdy = w.y - animal.y;
+        const wd = Math.hypot(wdx, wdy);
+        if (wd > 0) {
+          ux = ux * (1 - WATER_FLEE_BIAS) + (wdx / wd) * WATER_FLEE_BIAS;
+          uy = uy * (1 - WATER_FLEE_BIAS) + (wdy / wd) * WATER_FLEE_BIAS;
+          const bl = Math.hypot(ux, uy);
+          if (bl > 0) {
+            ux /= bl;
+            uy /= bl;
+          }
+        }
+      }
+    }
     vx = ux * def.baseFleeSpeed;
     vy = uy * def.baseFleeSpeed;
   } else {
@@ -259,6 +284,9 @@ export function updateAnimal(
   }
   animal.x = _clamp.x;
   animal.y = _clamp.y;
+  // Slice W: track whether the animal is now in water (the B1 dip-net hook). Animals
+  // (unlike the player) enter water freely — the frog leaps in, out of hand-net reach.
+  animal.inWater = isInWater(world, animal.x, animal.y);
 
   return fledNow;
 }
