@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createWorld, isInCover } from '../World';
+import { createWorld, isInCover, biomeCoverDensity } from '../World';
 import { computeStealthFactor, effectiveDetectionRadius } from '../Detection';
 import { HIDING_SPOTS, SPECIES, STEALTH, type BiomeId, type CoverKind } from '../../utils/constants';
 
@@ -80,17 +80,31 @@ describe('biome cover — the stealth mechanic now WORKS in the new biomes', () 
   });
 });
 
-describe('biome cover — the Meadow is UNCHANGED (regression)', () => {
-  it('still exactly 5 grass spots at the original coordinates', () => {
-    const meadow = HIDING_SPOTS.filter((s) => s.biome === 'meadow');
-    expect(meadow).toHaveLength(5);
-    for (const s of meadow) expect(s.kind).toBe('grass');
-    expect(meadow.map((s) => [s.x, s.y, s.radius])).toEqual([
-      [-8, -6, 2.2],
-      [7, -10, 2.0],
-      [10, 8, 2.4],
-      [-6, 11, 2.0],
-      [1, 3, 1.8],
-    ]);
+describe('biome cover — slice C reduced FREE baseline + Highlands openness', () => {
+  const count = (b: BiomeId) => HIDING_SPOTS.filter((s) => s.biome === b).length;
+
+  it('a smaller free baseline per biome, but cover NEVER drops to zero (stealth stays possible)', () => {
+    expect(count('meadow')).toBe(3);
+    expect(count('woodland')).toBe(3);
+    expect(count('wetland')).toBe(3);
+    expect(count('highlands')).toBe(2);
+    for (const b of ['meadow', 'woodland', 'wetland', 'highlands'] as BiomeId[]) {
+      expect(count(b)).toBeGreaterThanOrEqual(2); // the anti-lockout floor — never barren
+    }
+  });
+
+  it('Highlands is the OPENEST biome — fewest spots (the throwing-net condition), not zero', () => {
+    for (const b of ['meadow', 'woodland', 'wetland'] as BiomeId[]) {
+      expect(count('highlands')).toBeLessThan(count(b));
+    }
+    expect(count('highlands')).toBeGreaterThan(0);
+  });
+
+  it('biomeCoverDensity exposes openness (Highlands lowest) — the B1 throwing-net hook', () => {
+    const w = createWorld();
+    expect(biomeCoverDensity(w, 'highlands')).toBe(2);
+    for (const b of ['meadow', 'woodland', 'wetland'] as BiomeId[]) {
+      expect(biomeCoverDensity(w, 'highlands')).toBeLessThan(biomeCoverDensity(w, b));
+    }
   });
 });

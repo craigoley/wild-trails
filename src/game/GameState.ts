@@ -21,6 +21,7 @@
 import { updatePlayer, type PlayerState, createPlayer } from './Player';
 import { createWorld, currentBiome, isInCover, type BiomeId, type World } from './World';
 import { computeStealthFactor, isSneaking } from './Detection';
+import { createHideState, deployHide, isUnderHide, type HideState } from './Hide';
 import {
   activeAnimalCount,
   createAnimalPool,
@@ -166,6 +167,8 @@ export interface GameState {
    *  and which inputs are active. Read by the AI (via the factor) and the
    *  ?debug overlay. */
   stealth: { factor: number; inCover: boolean; sneaking: boolean };
+  /** The deployed portable hide (slice C) — transient cover the player provisions. */
+  hide: HideState;
   /** When true the player is ROOTED — movement input is ignored (they're inside the
    *  Field Supply building). The rest of the world still advances (§12 1b). Set at the
    *  boundary (= the shop panel being open); the sim only reads it. */
@@ -215,6 +218,7 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
     lastDeployMatched: null,
     notice: null,
     stealth: { factor: 1, inCover: false, sneaking: false },
+    hide: createHideState(),
     movementFrozen: false,
     sessionCatches: 0,
     telemetry: {
@@ -254,9 +258,19 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
   if (here) game.currentBiome = here;
   game.dayPhase = dayPhaseAt(game.timeSec);
 
+  // --- Portable hide (slice C): deploy it at the player to MAKE cover where there is
+  // none. It counts as cover identically to a fixed spot (lateral — no catch change).
+  // Edge action — consumed so one press = one (re)placement. --
+  if (intent.hideDeploy) {
+    intent.hideDeploy = false;
+    deployHide(game.hide, game.player.x, game.player.y);
+  }
+
   // --- Stealth (one global factor; depends on the player + world, not the
   // animal, so compute it ONCE here and feed it to every animal's detection). --
-  const inCover = isInCover(game.world, game.player.x, game.player.y);
+  const inCover =
+    isInCover(game.world, game.player.x, game.player.y) ||
+    isUnderHide(game.hide, game.player.x, game.player.y);
   const sneaking = isSneaking(game.player);
   game.stealth.inCover = inCover;
   game.stealth.sneaking = sneaking;

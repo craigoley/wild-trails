@@ -86,6 +86,10 @@ export class Controls {
     this.baitBtn = this.makeActionButton(target, 'BAIT', 'action-bait', () => {
       this.intent.baitDeploy = true;
     });
+    // Portable hide deploy (slice C; also the 'H' key) — mobile PARITY with the key.
+    this.makeActionButton(target, 'HIDE', 'action-hide', () => {
+      this.intent.hideDeploy = true;
+    });
     // Top-right panel toggles share a flex container so they lay out side by
     // side (and future toggles flow in without hand-placed coords / collisions).
     const topRight = document.createElement('div');
@@ -219,6 +223,7 @@ export class Controls {
     }
     if (includes(ACTION_KEYS.baitDeploy, k)) this.intent.baitDeploy = true;
     if (includes(ACTION_KEYS.baitCycle, k)) this.intent.baitCycle = true;
+    if (includes(ACTION_KEYS.hideDeploy, k)) this.intent.hideDeploy = true;
     if (includes(ACTION_KEYS.journal, k)) this.intent.journalToggle = true;
     if (includes(ACTION_KEYS.missions, k)) this.intent.missionToggle = true;
     // 1/2/3 direct-select the corresponding bait chip.

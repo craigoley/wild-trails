@@ -147,6 +147,19 @@ export function isInCover(world: World, x: number, y: number): boolean {
   return false;
 }
 
+/**
+ * How much FIXED cover a biome has — the count of its baseline hiding spots
+ * (Nets & Gear slice C). The "openness" property: a LOWER density = a more open
+ * biome. Highlands is the openest (fewest spots) — the queryable hook the throwing
+ * net (B1) keys off ("on open ground, range beats stealth"). Pure (reads the world's
+ * hiding spots); never mutates.
+ */
+export function biomeCoverDensity(world: World, biome: BiomeId): number {
+  let n = 0;
+  for (const s of world.hidingSpots) if (s.biome === biome) n++;
+  return n;
+}
+
 /** Which biome's Field Supply post the player is standing in (within its zone), or
  *  null. A post only counts once its biome is UNLOCKED (it doesn't exist before).
  *  A proximity zone, not a wall — no collision (§12 1b-revise). Pure. */

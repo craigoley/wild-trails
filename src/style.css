@@ -325,6 +325,13 @@ body.modal-open .touch-stick-thumb {
   width: 64px;
   height: 64px;
 }
+/* Portable hide deploy (slice C) — stacked above BAIT in the action cluster. */
+.action-hide {
+  right: 132px;
+  bottom: 138px;
+  width: 64px;
+  height: 64px;
+}
 /* Field Journal toggle — top-right corner, out of the action cluster. */
 /* Top-right cluster: a flex row holding the panel toggles. The container itself
  * is click-through (pointer-events:none); the buttons re-enable pointer events.
