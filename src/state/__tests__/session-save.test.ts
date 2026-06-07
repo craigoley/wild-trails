@@ -50,7 +50,7 @@ describe('loadJournal — corrupt store degrades to a fresh journal (no throw)',
     expect(() => loadJournal()).not.toThrow();
     const loaded = loadJournal();
     expect(loaded).toEqual(createJournal());
-    expect(loaded.schemaVersion).toBe(6);
+    expect(loaded.schemaVersion).toBe(7);
   });
 });
 

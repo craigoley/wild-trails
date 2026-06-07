@@ -1681,6 +1681,83 @@ export const BIOME_GATE_CHALLENGES: Partial<Record<BiomeId, readonly string[]>> 
 };
 
 // ===========================================================================
+// Research spine (§4.1.4 — R0a: the data model)
+// ===========================================================================
+
+/**
+ * What in-game ACTIVITY advances a research project. ACTIONS ONLY — a catch of a
+ * species / in a biome / at a phase — the teaching axes the player already plays. ⚠️
+ * NEVER time-elapsed (not wall-clock, not even in-game day-cycles): research is a
+ * reward for PLAYING, never a passive timer (P8). The count is SMALL (anti-grind), and
+ * the activity is reachable with the starter gear in an unlocked biome (anti-wall).
+ */
+export type ResearchActivity =
+  | { kind: 'catch-species'; species: SpeciesId; count: number }
+  | { kind: 'catch-in-biome'; biome: BiomeId; count: number }
+  | { kind: 'catch-in-phase'; phase: DayPhase; count: number };
+
+/**
+ * What completing a project unlocks. R0a defines the TYPE; the consumers wire the
+ * EFFECT later: `journal-layer` = a deeper dex entry the JournalPanel reads (R0b);
+ * `grant-tool` = own a net via grantTool (R1); `shop-access` / `biome-access` (R1/R2).
+ */
+export type ResearchReward =
+  | { kind: 'journal-layer'; layer: string }
+  | { kind: 'grant-tool'; toolId: ToolId }
+  | { kind: 'shop-access'; key: string }
+  | { kind: 'biome-access'; biome: BiomeId };
+
+export interface ResearchProject {
+  id: string;
+  name: string;
+  /** Naturalist framing — what it studies (P2/P5). */
+  blurb: string;
+  /** Credits to START the project (a sink — play is what ADVANCES it, not credits). */
+  cost: number;
+  /** The in-game ACTION that advances it. */
+  activityRequirement: ResearchActivity;
+  /** Optional credits to COMPLETE once the activity is done (a sink, not a lock). */
+  creditTopUp?: number;
+  /** ⚠️ A §4.1c mastery-challenge id (R2). Satisfied ONLY by `journal.missions[id]`
+   *  completion — i.e. by PLAY (#48). Credits/activity CANNOT satisfy it (structural —
+   *  research wraps a knowledge gate it cannot bypass; P1/P2/P3). */
+  knowledgeRequirement?: string;
+  /** Project ids that must be complete first. */
+  prereq?: readonly string[];
+  reward: ResearchReward;
+}
+
+/**
+ * The research registry (read by the engine, like MISSIONS). R0a ships a small set of
+ * low-stakes "research an animal / a habitat, learn more about it" projects whose reward
+ * is a journal-knowledge layer — new + OPTIONAL, entangled with no critical path. R0b
+ * adds the UI + applies the journal-layer effect; R1/R2 add the migrating projects.
+ */
+export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
+  'study-hedgehog': {
+    id: 'study-hedgehog',
+    name: 'The Hedgehog at Dusk',
+    blurb: 'Spend evenings with the meadow hedgehog to fill out its field-guide page.',
+    cost: 8,
+    activityRequirement: { kind: 'catch-species', species: 'hedgehog', count: 3 },
+    reward: { kind: 'journal-layer', layer: 'hedgehog' },
+  },
+  'study-after-dark': {
+    id: 'study-after-dark',
+    name: 'Nocturnal Field Study',
+    blurb: 'Work the meadow after dark — but first prove you can find a round-the-clock forager at night.',
+    cost: 10,
+    activityRequirement: { kind: 'catch-in-phase', phase: 'night', count: 3 },
+    creditTopUp: 10, // a top-up to write up the study (a sink)
+    knowledgeRequirement: 'research-mouse-night', // by PLAY only (#48) — never bought
+    reward: { kind: 'journal-layer', layer: 'nocturnal' },
+  },
+};
+
+/** Deterministic project order (offer + display). */
+export const RESEARCH_ORDER: readonly string[] = ['study-hedgehog', 'study-after-dark'];
+
+// ===========================================================================
 // Tracking puzzle (Plan #8b)
 // ===========================================================================
 

@@ -38,8 +38,8 @@ describe('B0 keystone — reach === the old attemptRadius (the behavior-neutral 
     expect(proximityMultiplier(1.3)).toBe(proximityMultiplier(1.3, CATCH.attemptRadius));
   });
 
-  it('no schema change — reach is a STATIC net property, not player state (v6)', () => {
-    expect(JOURNAL_SCHEMA_VERSION).toBe(6);
+  it('no schema change — reach is a STATIC net property, not player state (v7)', () => {
+    expect(JOURNAL_SCHEMA_VERSION).toBe(7);
   });
 });
 
