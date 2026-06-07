@@ -1178,6 +1178,30 @@ export const AUDIO = {
   unlockNote3Ratio: 1.5,
   /** Third note sustains longer by this factor (the payoff lingers). */
   unlockNote3DurScale: 1.6,
+
+  // --- Atmosphere A1: ambient audio (§4.3) -------------------------------------------
+  /** Master-bus level when un-muted (0..1). All sound routes through it; mute -> 0. */
+  masterGain: 0.9,
+  /** Mute/unmute ramp, seconds — short so it feels instant but never clicks. */
+  muteRampSec: 0.06,
+  /** Looping noise-buffer length, seconds (a couple of seconds reads as seamless). */
+  noiseBufferSec: 2,
+  /** The gentle WIND base (everywhere): a soft, continuous filtered-noise bed. */
+  windGain: 0.06, // LOW — felt, not noticed
+  windFilterHz: 500, // lowpass cutoff — soft, no hiss
+  windFilterQ: 0.7,
+  windLfoHz: 0.1, // slow "breathing" of the wind gain (~10s period)
+  windLfoDepth: 0.45, // fraction of windGain the breathing swings
+  /** Fade the wind in on first start, seconds — no abrupt onset. */
+  ambientFadeInSec: 2.5,
+  /** ONE biome-keyed LAYER (A1): a soft airy "voice" for the meadow (a higher bandpass
+   *  shimmer over the wind), crossfaded in/out as you enter/leave the meadow. A2 adds the
+   *  other biomes' voices + the time-of-day layers. */
+  voiceGain: 0.035, // very low — a subtle place-marker
+  meadowVoiceHz: 1800, // bandpass centre — airy grass/insect shimmer
+  voiceFilterQ: 1.1,
+  /** Biome-layer crossfade, seconds (ramp the voice gain — never an abrupt cut). */
+  voiceCrossfadeSec: 1.5,
 } as const;
 
 /** On-screen banner timing for boundary events (mission complete / biome unlock).

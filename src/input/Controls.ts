@@ -59,6 +59,7 @@ export class Controls {
   // (CATCH arms + shows the chance; a first-time "try bait" hint).
   private readonly catchBtn: HTMLButtonElement;
   private readonly baitBtn: HTMLButtonElement;
+  private readonly muteBtn: HTMLButtonElement;
   private readonly baitHint: HTMLDivElement;
 
   // Bait tray — one chip per bait type; each shows icon + label + count, with a
@@ -106,6 +107,10 @@ export class Controls {
     // Research toggle (also the 'R' key) — §4.1.4 R0b.
     this.makeActionButton(topRight, '🔬', 'action-research', () => {
       this.intent.researchToggle = true;
+    });
+    // Mute toggle (also the 'K' key) — Atmosphere A1. The glyph reflects the live state.
+    this.muteBtn = this.makeActionButton(topRight, '🔊', 'action-mute', () => {
+      this.intent.muteToggle = true;
     });
     // Bait tray — replaces the old ↻ cycler. One tappable chip per bait type,
     // always visible, showing what you have / what's selected / how much is left.
@@ -200,6 +205,14 @@ export class Controls {
     this.baitHint.style.display = show ? 'block' : 'none';
   }
 
+  /** Reflect the mute state on the 🔊/🔇 button (Atmosphere A1). Called at boot (to show the
+   *  persisted state) + on each toggle. */
+  setMuted(muted: boolean): void {
+    this.muteBtn.textContent = muted ? '🔇' : '🔊';
+    this.muteBtn.classList.toggle('muted', muted);
+    this.muteBtn.setAttribute('aria-label', muted ? 'Unmute sound' : 'Mute sound');
+  }
+
   /** Brief confirmation pulse on the BAIT button when bait is deployed. */
   pulseBait(): void {
     this.baitBtn.classList.remove('pulse');
@@ -231,6 +244,7 @@ export class Controls {
     if (includes(ACTION_KEYS.journal, k)) this.intent.journalToggle = true;
     if (includes(ACTION_KEYS.missions, k)) this.intent.missionToggle = true;
     if (includes(ACTION_KEYS.research, k)) this.intent.researchToggle = true;
+    if (includes(ACTION_KEYS.mute, k)) this.intent.muteToggle = true;
     // 1/2/3 direct-select the corresponding bait chip.
     const baitIdx = baitIndexForKey(k);
     if (baitIdx >= 0) this.intent.baitSelect = baitIdx;

@@ -36,6 +36,8 @@ import { syncModalOpenClass } from './rendering/modalClass';
 import { Banner } from './rendering/Banner';
 import { missionBannerMessages, researchBannerMessages } from './rendering/missionBanners';
 import { AudioEngine } from './audio/AudioEngine';
+import { AmbientAudio } from './audio/AmbientAudio';
+import { loadSettings, saveSettings } from './state/Settings';
 import { createAutosaver, foundCount, loadJournal, recordCatch, setBaitCounts } from './state/Journal';
 import { addCredits, creditsForCatch } from './game/Economy';
 import { ShopPanel } from './rendering/ShopPanel';
@@ -233,8 +235,18 @@ scene.snapFocus(game.player.x, game.player.y);
 // Audio context is created now but only resumed after a user gesture (autoplay).
 const audio = new AudioEngine();
 audio.init();
+// Atmosphere A1: device settings (mute) live in a SEPARATE localStorage key (not the save).
+// Apply the persisted mute now (the master bus starts at the right level) + reflect the glyph.
+const settings = loadSettings();
+audio.setMuted(settings.muted);
+controls.setMuted(settings.muted);
+// The ambient soundscape SHARES audio's one AudioContext + master bus (the iOS one-context
+// rule + so mute covers it). Null only if Web Audio is unavailable (a headless/no-device boot).
+const ambient =
+  audio.context && audio.master ? new AmbientAudio(audio.context, audio.master) : null;
 const unlockAudio = (): void => {
   void audio.resume();
+  ambient?.start(); // build + start the ambient bed on the SAME gesture that resumes (iOS-safe)
   window.removeEventListener('pointerdown', unlockAudio);
   window.removeEventListener('keydown', unlockAudio);
 };
@@ -409,6 +421,15 @@ function frame(nowMs: number): void {
     researchPanel.setOpen(!researchPanel.isOpen());
     if (researchPanel.isOpen()) researchPanel.refresh(journal);
   }
+  // Mute toggle (K) — Atmosphere A1. Flips the master bus + remembers it (device setting,
+  // separate from the save). Always available; instant.
+  if (controls.intent.muteToggle) {
+    controls.intent.muteToggle = false;
+    const muted = !audio.isMuted();
+    audio.setMuted(muted);
+    controls.setMuted(muted);
+    saveSettings({ muted });
+  }
   // Field Supply walk-in (§12 1b): a building you physically enter. The player is
   // frozen while it's open (above); CLOSING it steps them OUT the door, which also
   // guarantees no reopen-trap by POSITION (you're no longer in the zone).
@@ -438,6 +459,9 @@ function frame(nowMs: number): void {
   hud.update(game);
   hud.setCredits(journal.credits); // §12 1a — the persistent balance (cheap text set)
   timeIndicator.update(game.dayPhase, game.timeSec);
+  // Atmosphere A1: feed the live biome + phase to the ambient soundscape (a no-op until the
+  // gesture starts it, and when nothing changed — zero per-frame work in the common case).
+  ambient?.setScene(game.currentBiome, game.dayPhase);
 
   // L2: signal first-frame-ready once, so Playwright waits before capturing.
   if (!renderReadySignalled && app) {

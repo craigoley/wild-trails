@@ -13,11 +13,31 @@ import { AUDIO } from '../utils/constants';
 
 export class AudioEngine {
   private ctx: AudioContext | null = null;
+  /** Master bus — ALL sound (SFX one-shots + the ambient subsystem) routes through this,
+   *  so a single mute (master gain -> 0) silences everything. Created with the context. */
+  private masterGain: GainNode | null = null;
+  private muted = false;
 
-  /** Create (or reuse) the AudioContext. Safe to call before any gesture. */
+  /**
+   * Create (or reuse) the AudioContext + master bus. Safe to call before any gesture.
+   * GUARDED: if Web Audio is unavailable / a context can't be created (a headless or
+   * no-audio-device context — e.g. the L2 screenshot run), this is a SILENT no-op (ctx
+   * stays null; every method guards on it) — never a throw or a console error.
+   */
   init(): void {
     if (this.ctx) return;
-    this.ctx = new AudioContext();
+    try {
+      const Ctor =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctor) return; // no Web Audio in this environment — stay silent
+      this.ctx = new Ctor();
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.value = this.muted ? 0 : AUDIO.masterGain;
+      this.masterGain.connect(this.ctx.destination);
+    } catch {
+      this.ctx = null; // creation failed (no audio device) — silent no-op
+    }
   }
 
   /** Resume the context after a user gesture (required by autoplay policy). */
@@ -25,6 +45,34 @@ export class AudioEngine {
     if (this.ctx && this.ctx.state === 'suspended') {
       await this.ctx.resume();
     }
+  }
+
+  /** The shared AudioContext (null before init / when unavailable) — the ambient subsystem
+   *  uses this ONE context (the iOS single-context rule), never its own. */
+  get context(): AudioContext | null {
+    return this.ctx;
+  }
+
+  /** The master bus the ambient subsystem connects to (so mute covers it too). */
+  get master(): GainNode | null {
+    return this.masterGain;
+  }
+
+  /** Mute / unmute ALL sound via the master bus (a short ramp — instant-feeling, no click).
+   *  Persisted by the caller; the flag is remembered so the glyph + next toggle stay in sync. */
+  setMuted(muted: boolean): void {
+    this.muted = muted;
+    const ctx = this.ctx;
+    const master = this.masterGain;
+    if (!ctx || !master) return;
+    const t = ctx.currentTime;
+    master.gain.cancelScheduledValues(t);
+    master.gain.setValueAtTime(master.gain.value, t);
+    master.gain.linearRampToValueAtTime(muted ? 0 : AUDIO.masterGain, t + AUDIO.muteRampSec);
+  }
+
+  isMuted(): boolean {
+    return this.muted;
   }
 
   /** A short percussive blip — one per shake beat. `index` (0-based) nudges the
@@ -89,7 +137,7 @@ export class AudioEngine {
     g.gain.setValueAtTime(0, t0);
     g.gain.linearRampToValueAtTime(gain, t0 + 0.005);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    osc.connect(g).connect(ctx.destination);
+    osc.connect(g).connect(this.masterGain ?? ctx.destination);
     osc.start(t0);
     osc.stop(t0 + dur + 0.02);
   }
@@ -107,7 +155,7 @@ export class AudioEngine {
     g.gain.setValueAtTime(0, t0);
     g.gain.linearRampToValueAtTime(gain, t0 + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    osc.connect(g).connect(ctx.destination);
+    osc.connect(g).connect(this.masterGain ?? ctx.destination);
     osc.start(t0);
     osc.stop(t0 + dur + 0.02);
   }

@@ -39,6 +39,8 @@ export interface InputIntent {
   missionToggle: boolean;
   /** Toggle the Research overlay (open/close). UI-only edge action (§4.1.4 R0b). */
   researchToggle: boolean;
+  /** Toggle audio mute (all sound on/off). UI-only edge action (Atmosphere A1). */
+  muteToggle: boolean;
 }
 
 export function createIntent(): InputIntent {
@@ -53,6 +55,7 @@ export function createIntent(): InputIntent {
     journalToggle: false,
     missionToggle: false,
     researchToggle: false,
+    muteToggle: false,
   };
 }
 
@@ -74,6 +77,7 @@ export const ACTION_KEYS = {
   journal: ['j'],
   missions: ['m'],
   research: ['r'],
+  mute: ['k'],
 } as const;
 
 /** Number keys for DIRECT bait selection, positional: index 0 = '1', 1 = '2', …
