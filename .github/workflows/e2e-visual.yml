@@ -1,0 +1,48 @@
+name: E2E visual (L2)
+
+# Visual-regression screenshots of deterministic scenes (Validation stack — L2, Layer 2).
+# CONTAINER-ONLY + gated/nightly: a WebGL screenshot is platform/GPU-locked, so it can ONLY
+# be non-flaky if the render is pinned. We run inside the official Playwright Linux image so
+# CI (and a local `docker run` of the SAME image) produce ONE matching baseline set. See
+# e2e/README.md for how to seed/update the baselines.
+#
+# It is NON-BLOCKING (continue-on-error) until the Linux baselines are seeded — a one-time
+# `--update-snapshots` run in this container, committed under e2e/. Flip continue-on-error
+# off once the baselines exist to make it a real gate. It does NOT run on PRs (nightly +
+# manual) so a missing baseline never red-flags a PR.
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # nightly
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual:
+    name: Visual regression (pinned container)
+    runs-on: ubuntu-latest
+    # MUST match the installed @playwright/test version so the bundled browser + render match.
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
+    # Non-blocking until the baselines are seeded (see the workflow header).
+    continue-on-error: true
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - run: npm ci
+      - run: npm run test:e2e:visual
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-visual-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+          if-no-files-found: ignore
