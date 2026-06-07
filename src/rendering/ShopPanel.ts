@@ -11,11 +11,12 @@
  */
 
 import { addOverlayDismiss } from './overlayDismiss';
-import { baitBuyState, buyBait, buyNet, netBuyState } from '../game/Economy';
+import { baitBuyState, buyBait } from '../game/Economy';
 import { equipTool, ownsTool } from '../game/Tools';
+import { researchProjectForTool } from '../game/Research';
 import type { BaitState } from '../game/Bait';
 import type { Journal } from '../state/Journal';
-import { BAIT, BAIT_DISPLAY, BAIT_ORDER, CREDITS, NET_PRICE, SHOP, TOOLS, TOOL_ORDER, type BaitId, type ToolId } from '../utils/constants';
+import { BAIT, BAIT_DISPLAY, BAIT_ORDER, CREDITS, SHOP, TOOLS, TOOL_ORDER, type BaitId, type ToolId } from '../utils/constants';
 
 export class ShopPanel {
   private readonly root: HTMLDivElement;
@@ -129,19 +130,12 @@ export class ShopPanel {
       });
       ctl = btn;
     } else {
-      // Unowned — Buy it (¢NET_PRICE); greyed when unaffordable (the price reads as "needed").
-      const btn = document.createElement('button');
-      btn.className = 'shop-buy';
-      btn.textContent = `${CREDITS.glyph} ${NET_PRICE}`;
-      btn.disabled = netBuyState(journal, id) === 'cant-afford';
-      btn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        if (buyNet(journal, id)) {
-          this.onBuy(); // persist (credits spent + net owned)
-          this.refresh(journal, this.baitState!); // now shows Equip
-        }
-      });
-      ctl = btn;
+      // Unowned — research is the SINGLE acquisition path now (R1; the shop-buy retired).
+      // Point the player at the project that earns it, so it's never a dead end.
+      const project = researchProjectForTool(id);
+      ctl = document.createElement('div');
+      ctl.className = 'net-research-hint';
+      ctl.textContent = project ? `Research to unlock: ${project.name}` : 'Locked';
     }
 
     row.append(info, ctl);

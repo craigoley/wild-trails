@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { finalCatchChance } from '../Catch';
 import { gateReach, nearestCatchable, createAnimalPool, spawnAnimal, type Animal } from '../Animal';
 import { equipTool, ownsTool, grantTool } from '../Tools';
-import { buyNet, addCredits } from '../Economy';
 import { createJournal } from '../../state/Journal';
-import { TOOLS, SPECIES, CATCH, NET_PRICE, type SpeciesId, type ToolId } from '../../utils/constants';
+import { TOOLS, SPECIES, CATCH, type SpeciesId, type ToolId } from '../../utils/constants';
 
 /**
  * Nets & Gear slice B1 — the lateral biome nets. The keystone: every net's odds are
@@ -62,28 +61,19 @@ describe('B1 #2 — ⚠️ LATERAL: identical ODDS, condition-extended GATE (the
   });
 });
 
-describe('B1 #4 — buy/equip (the acquisition is swappable for the research spine)', () => {
-  it('buy a net (¢NET_PRICE) -> owned -> equip; ownership is grantTool, trigger-independent', () => {
+describe('B1 #4 — acquisition via the grantTool seam (research-driven as of R1)', () => {
+  it('grantTool owns a net (idempotent) -> equip; the swappable seam research uses', () => {
     const j = createJournal();
-    addCredits(j, NET_PRICE);
-    expect(buyNet(j, 'dip-net')).toBe(true);
+    expect(grantTool(j, 'dip-net')).toBe(true);
     expect(ownsTool(j, 'dip-net')).toBe(true);
-    expect(j.credits).toBe(0); // spent
-    expect(buyNet(j, 'dip-net')).toBe(false); // already owned -> no re-spend
+    expect(grantTool(j, 'dip-net')).toBe(false); // already owned -> idempotent no-op
     equipTool(j, 'dip-net');
     expect(j.activeTool).toBe('dip-net');
 
-    // A FUTURE research-completion can own the same net WITHOUT a payment — grantTool is
-    // the swappable primitive (the shop is just one trigger).
-    const j2 = createJournal();
-    expect(grantTool(j2, 'throwing-net')).toBe(true);
-    expect(ownsTool(j2, 'throwing-net')).toBe(true);
-  });
-
-  it('buying is gated on credits (no spend when unaffordable)', () => {
-    const j = createJournal(); // 0 credits
-    expect(buyNet(j, 'dip-net')).toBe(false);
-    expect(ownsTool(j, 'dip-net')).toBe(false);
+    // Both biome nets ride the SAME seam — research-completion grants them (R1); a
+    // pre-R1 save where one was already owned just stays owned (a re-grant is a no-op).
+    expect(grantTool(j, 'throwing-net')).toBe(true);
+    expect(ownsTool(j, 'throwing-net')).toBe(true);
   });
 });
 

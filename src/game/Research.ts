@@ -163,3 +163,16 @@ export function unlockedResearchLayers(journal: Journal): Set<string> {
   }
   return layers;
 }
+
+/**
+ * The research project whose completion grants `toolId` (R1 — the net is research-gated),
+ * or null if none. The shop reads this to show "Research to unlock: <name>" for an un-owned
+ * biome net (research is the single acquisition path; the shop-buy retired). Pure.
+ */
+export function researchProjectForTool(toolId: string): ResearchProject | null {
+  for (const id of RESEARCH_ORDER) {
+    const p = RESEARCH_PROJECTS[id];
+    if (p.reward.kind === 'grant-tool' && p.reward.toolId === toolId) return p;
+  }
+  return null;
+}

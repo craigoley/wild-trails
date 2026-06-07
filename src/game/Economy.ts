@@ -8,10 +8,9 @@
  * shop, no premium bait, no catch-rate effect — credits buy lateral enrichment later.
  */
 
-import { BAIT, CREDITS, NET_PRICE, SHOP, SPECIES, SPECIES_ORDER, type BaitId, type SpeciesId } from '../utils/constants';
+import { BAIT, CREDITS, SHOP, SPECIES, SPECIES_ORDER, type BaitId, type SpeciesId } from '../utils/constants';
 import { isFound, type Journal } from '../state/Journal';
 import { addBait, type BaitState } from './Bait';
-import { grantTool, ownsTool, type ToolId } from './Tools';
 
 /** Add credits. A non-positive delta is a no-op; the balance only ever grows here. */
 export function addCredits(journal: Journal, n: number): void {
@@ -84,22 +83,7 @@ export function buyBait(journal: Journal, baitState: BaitState, baitId: BaitId):
   return true;
 }
 
-/** Can the player buy this net? `owned` | `cant-afford` | `ok` (drives the shop button). */
-export function netBuyState(journal: Journal, id: ToolId): 'owned' | 'cant-afford' | 'ok' {
-  if (ownsTool(journal, id)) return 'owned';
-  if (journal.credits < NET_PRICE) return 'cant-afford';
-  return 'ok';
-}
-
-/**
- * Buy a biome net in the Field Supply (§12, slice B1): spend NET_PRICE + OWN it. Returns
- * false (no spend) if already owned or unaffordable. The ownership itself is `grantTool` —
- * independent of WHAT triggers it — so a future research-completion (§4.1.4) can grant the
- * same net WITHOUT a payment by calling grantTool directly; the shop is just one trigger.
- */
-export function buyNet(journal: Journal, id: ToolId): boolean {
-  if (netBuyState(journal, id) !== 'ok') return false;
-  spendCredits(journal, NET_PRICE); // guaranteed (affordability just checked)
-  grantTool(journal, id); // the swappable ownership primitive
-  return true;
-}
+// R1 (§4.1.4): the biome nets are no longer SHOP-BOUGHT — they're earned through research
+// (study the habitat -> grantTool the net, via the swappable seam). buyNet/netBuyState
+// retired; the single acquisition path is research-completion (game/Research + main's reward
+// dispatch). The shop keeps bait + equipping owned nets.
