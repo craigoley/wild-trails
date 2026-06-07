@@ -13,6 +13,8 @@ import {
   BIOMES,
   MISSIONS,
   MISSION_ORDER,
+  RESEARCH_ORDER,
+  RESEARCH_PROJECTS,
   type BiomeId,
 } from '../utils/constants';
 import { isBiomeGateMet } from '../game/Missions';
@@ -24,6 +26,38 @@ export interface RequiredChallenge {
   id: string;
   title: string;
   done: boolean;
+}
+
+/** §4.1.4 R2 — a research PROJECT a biome's unlock is wrapped in (its biome-access reward),
+ *  with its live state, so the player sees the research step too (never a silent wall). */
+export interface RequiredResearch {
+  id: string;
+  name: string;
+  started: boolean;
+  progress: number;
+  count: number;
+  completed: boolean;
+}
+
+/** The biome-access research project that unlocks `target` (R2), with its state — or null
+ *  if the unlock isn't research-gated (the gentle gates). */
+function requiredResearchFor(journal: Journal, target: BiomeId | null): RequiredResearch | null {
+  if (!target) return null;
+  for (const id of RESEARCH_ORDER) {
+    const p = RESEARCH_PROJECTS[id];
+    if (p.reward.kind === 'biome-access' && p.reward.biome === target) {
+      const s = journal.research[id];
+      return {
+        id,
+        name: p.name,
+        started: s?.started ?? false,
+        progress: Math.min(s?.progress ?? 0, p.activityRequirement.count),
+        count: p.activityRequirement.count,
+        completed: s?.completed ?? false,
+      };
+    }
+  }
+  return null;
 }
 
 export interface UnlockLine {
@@ -38,6 +72,9 @@ export interface UnlockLine {
   total: number;
   /** §4.1c — research challenges this unlock ALSO requires (empty for gentle gates). */
   requiredChallenges: RequiredChallenge[];
+  /** §4.1.4 R2 — the research project this unlock is wrapped in (its biome-access reward),
+   *  or null for the gentle gates. Shown so the research step is never a silent wall. */
+  requiredResearch: RequiredResearch | null;
   /** Is the unlocked biome already reached? (a quiet ✓ rather than the carrot.) */
   alreadyUnlocked: boolean;
 }
@@ -84,6 +121,7 @@ export function unlockLines(journal: Journal): UnlockLine[] {
       title: MISSIONS[id].title,
       done: journal.missions[id]?.completed ?? false,
     }));
+    const requiredResearch = requiredResearchFor(journal, unlocks);
     return {
       setBiome,
       setName: BIOMES[setBiome].displayName,
@@ -92,12 +130,14 @@ export function unlockLines(journal: Journal): UnlockLine[] {
       done,
       total,
       requiredChallenges,
-      // §4.1c: the FULL gate (set AND any required challenge) is the authority on "done"
-      // — using isBiomeGateMet, not isBiomeSetComplete, so an escalated gate isn't shown
-      // as satisfied while its challenge is still pending. The target is unlocked once
-      // earned (tracked in the journal).
+      requiredResearch,
+      // §4.1c/R2: the target is "reached" only once it's actually in the journal's unlocks.
+      // For a GENTLE gate (no required research), isBiomeGateMet implies the imminent unlock,
+      // so it still counts. For a RESEARCH-WRAPPED gate, the research must ALSO complete — so
+      // isBiomeGateMet alone does NOT mark it reached (the carrot + the research step stay).
       alreadyUnlocked: unlocks
-        ? journal.unlockedBiomes.includes(unlocks) || isBiomeGateMet(journal, setBiome)
+        ? journal.unlockedBiomes.includes(unlocks) ||
+          (requiredResearch === null && isBiomeGateMet(journal, setBiome))
         : false,
     };
   });

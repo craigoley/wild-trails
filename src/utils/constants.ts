@@ -226,6 +226,15 @@ export const UNLOCK_COPY = {
   /** §4.1c: an ADDITIONAL research-challenge requirement on an escalated gate — shown
    *  so a knowledge-gate is never silent. ✓ when done, + when still required. */
   andResearch: (title: string, done: boolean): string => `${done ? '✓' : '+'} the “${title}” research`,
+  /** §4.1.4 R2 — the research PROJECT an escalated gate is WRAPPED in, with its state, so
+   *  the research step is never a silent wall: ✓ when complete, "start it" when not begun,
+   *  else its live progress. */
+  andResearchProject: (name: string, started: boolean, progress: number, count: number, completed: boolean): string =>
+    completed
+      ? `✓ the “${name}” research`
+      : !started
+        ? `+ start the “${name}” research`
+        : `+ the “${name}” research (${progress}/${count})`,
   /** Already earned: a quiet ✓ of the path walked. */
   opened: (targetName: string): string => `✓ The ${targetName} lies open`,
 } as const;
@@ -1777,6 +1786,23 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     activityRequirement: { kind: 'catch-in-biome', biome: 'highlands', count: 4 },
     reward: { kind: 'grant-tool', toolId: 'throwing-net' },
   },
+  // R2 (the finale) — the §4.1c Wetland->Highlands gate, WRAPPED in research. The Highlands
+  // unlock now flows through this project's biome-access reward instead of auto-firing on
+  // isBiomeGateMet. ⚠️ DOUBLE-enforced knowledge-by-play: the mastery challenge
+  // (research-mouse-night) is required BOTH as this project's knowledgeRequirement (R0a
+  // structural — un-bypassable by credits/activity) AND by the dispatch's isBiomeGateMet
+  // re-check (the wetland set + the challenge). cost 0 — ZERO wall risk on core progression;
+  // the gate's meaning is "demonstrate you understand this place" (mastery + the activity),
+  // never a paywall (the credit sink lives in the OPTIONAL R0b/R1 projects).
+  'unlock-the-highlands': {
+    id: 'unlock-the-highlands',
+    name: 'Highlands Access',
+    blurb: 'Study the wetland thoroughly, then prove your tracking mastery — and the route up to the highlands opens.',
+    cost: 0,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'wetland', count: 4 },
+    knowledgeRequirement: 'research-mouse-night', // the §4.1c mastery challenge — by PLAY only
+    reward: { kind: 'biome-access', biome: 'highlands' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
@@ -1785,6 +1811,7 @@ export const RESEARCH_ORDER: readonly string[] = [
   'study-after-dark',
   'study-the-wetland',
   'study-the-uplands',
+  'unlock-the-highlands',
 ];
 
 // ===========================================================================

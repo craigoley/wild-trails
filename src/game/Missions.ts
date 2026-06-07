@@ -22,6 +22,8 @@ import {
   MISSION_ORDER,
   RANK,
   RANKS,
+  RESEARCH_ORDER,
+  RESEARCH_PROJECTS,
   SPECIES,
   SPECIES_ORDER,
   type BiomeId,
@@ -100,6 +102,57 @@ export function isBiomeGateMet(journal: Journal, biome: BiomeId): boolean {
 }
 
 /**
+ * R2 (§4.1.4): is reaching `target` gated behind a RESEARCH project (a biome-access
+ * reward)? Such a target no longer auto-unlocks on isBiomeGateMet — its research project
+ * owns the unlock (via the reward dispatch). Reads RESEARCH_PROJECTS (no Research import —
+ * avoids a cycle). The gentle gates (no biome-access project) are unaffected.
+ */
+export function isResearchGatedUnlock(target: BiomeId): boolean {
+  for (const id of RESEARCH_ORDER) {
+    const r = RESEARCH_PROJECTS[id].reward;
+    if (r.kind === 'biome-access' && r.biome === target) return true;
+  }
+  return false;
+}
+
+/**
+ * R2: is the §4.1c GATE for reaching `target` met (its source set's missions + any mastery
+ * challenge)? The biome-access reward dispatch re-checks this so the wrap PRESERVES the gate
+ * (the wetland set + research-mouse-night) — it never replaces it. Returns false if `target`
+ * isn't a set-unlock target.
+ */
+export function isUnlockGateMet(journal: Journal, target: BiomeId): boolean {
+  for (const source of Object.keys(BIOME_SET_UNLOCK) as BiomeId[]) {
+    if (BIOME_SET_UNLOCK[source] === target) return isBiomeGateMet(journal, source);
+  }
+  return false;
+}
+
+/**
+ * R2: unlock any research-gated biome whose project is COMPLETE and whose §4.1c gate is met,
+ * recording it into `journal.unlockedBiomes`. PURE (mutates the journal, returns the newly
+ * unlocked biomes — like evaluateCatch's unlock loop); the boundary applies them to the live
+ * world. ORDER-INDEPENDENT (runs every catch) so it fires whether the project or the §4.1c
+ * gate finished last. ⚠️ DOUBLE-enforced knowledge-by-play: the project can't complete
+ * without its knowledgeRequirement (the mastery challenge), AND isUnlockGateMet re-checks the
+ * §4.1c gate (the wetland set + the same challenge) — credits/activity CANNOT substitute.
+ */
+export function reconcileResearchUnlocks(journal: Journal): BiomeId[] {
+  const unlocked: BiomeId[] = [];
+  for (const id of RESEARCH_ORDER) {
+    const reward = RESEARCH_PROJECTS[id].reward;
+    if (reward.kind !== 'biome-access') continue;
+    if (!journal.research[id]?.completed) continue; // the project must be complete (activity + mastery)
+    const target = reward.biome;
+    if (isUnlockGateMet(journal, target) && !journal.unlockedBiomes.includes(target)) {
+      journal.unlockedBiomes.push(target);
+      unlocked.push(target);
+    }
+  }
+  return unlocked;
+}
+
+/**
  * Evaluate a catch against every active mission, mutating the journal's mission /
  * rank / unlock state and returning the deltas. Idempotent w.r.t. already-done
  * missions (the double-fire guard).
@@ -150,6 +203,10 @@ export function evaluateCatch(journal: Journal, ev: CatchEvent): MissionEval {
     for (const biome of Object.keys(BIOME_SET_UNLOCK) as BiomeId[]) {
       if (!isBiomeGateMet(journal, biome)) continue;
       const target = BIOME_SET_UNLOCK[biome];
+      // R2: a research-gated target (the Highlands) no longer auto-unlocks here — its
+      // research project owns the unlock (via the biome-access reward dispatch, which
+      // re-checks this same gate). The gentle gates fall through and unlock as before.
+      if (target && isResearchGatedUnlock(target)) continue;
       if (target && !journal.unlockedBiomes.includes(target)) {
         journal.unlockedBiomes.push(target);
         result.unlocked.push(target);

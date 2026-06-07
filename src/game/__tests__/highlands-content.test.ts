@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { clampActive, createWorld, isUnlocked, unlockBiome } from '../World';
-import { evaluateCatch, isBiomeSetComplete } from '../Missions';
+import { evaluateCatch, isBiomeSetComplete, reconcileResearchUnlocks } from '../Missions';
+import { startResearch, evaluateResearch } from '../Research';
 import { finalCatchChance } from '../Catch';
 import { createBaitState, deployBait, isCorrectBaitFor } from '../Bait';
 import { createJournal } from '../../state/Journal';
@@ -8,6 +9,15 @@ import { BIOMES, PLAYER, SPECIES, SPECIES_ORDER, TUNING, type BaitId } from '../
 
 const M = PLAYER.radius;
 const ALPINE = ['ptarmigan', 'mountainhare', 'dotterel'] as const;
+
+// R2: the Highlands unlock is research-WRAPPED — after the §4.1c gate is met, the
+// unlock-the-highlands project (its wetland activity + the same mastery challenge) must
+// also complete; the reconcile then fires the unlock. Drives that final step.
+const doHighlandsResearch = (j: ReturnType<typeof createJournal>): void => {
+  startResearch(j, 'unlock-the-highlands');
+  for (let i = 0; i < 4; i++) evaluateResearch(j, { species: 'frog', biome: 'wetland', phase: 'day' } as Parameters<typeof evaluateResearch>[1]);
+  reconcileResearchUnlocks(j);
+};
 
 describe('Highlands content — the diagonal 4th cell is now reachable (geometry)', () => {
   // Derived from the data (no magic numbers): the Highlands rect + its seams.
@@ -49,10 +59,11 @@ describe('Highlands content — the unlock chain (pure data)', () => {
     expect(isBiomeSetComplete(j, 'wetland')).toBe(true);
     expect(j.unlockedBiomes).not.toContain('highlands'); // the escalated gate also needs the research
     expect(setDone.unlocked).not.toContain('highlands');
-    // research-mouse-night (fieldmouse@night) — the demonstrated-mastery gate — opens it.
-    const gate = evaluateCatch(j, { species: 'fieldmouse', biome: 'meadow', phase: 'night' });
+    // research-mouse-night (fieldmouse@night) — the demonstrated-mastery gate — is met...
+    evaluateCatch(j, { species: 'fieldmouse', biome: 'meadow', phase: 'night' });
+    expect(j.unlockedBiomes).not.toContain('highlands'); // ...but the Highlands is research-wrapped (R2)
+    doHighlandsResearch(j); // the research wrap completes -> the unlock fires
     expect(j.unlockedBiomes).toContain('highlands');
-    expect(gate.unlocked).toContain('highlands');
   });
 
   it('the OLD condition alone (wetland survey only) does NOT unlock the Highlands', () => {
@@ -81,6 +92,7 @@ describe('Highlands content — the unlock chain (pure data)', () => {
     for (let i = 0; i < 3; i++) evaluateCatch(j, { species: 'mallard', biome: 'wetland', phase: 'day' });
     evaluateCatch(j, { species: 'frog', biome: 'wetland', phase: 'dawn' });
     evaluateCatch(j, { species: 'fieldmouse', biome: 'meadow', phase: 'night' }); // demonstrated mastery
+    doHighlandsResearch(j); // R2: + the research wrap (study the wetland) opens the route up
     expect(j.unlockedBiomes).toContain('highlands');
   });
 });

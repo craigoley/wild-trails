@@ -138,10 +138,17 @@ export class MissionPanel {
         const research = l.requiredChallenges
           .map((c) => `<div class="unlock-research${c.done ? ' done' : ''}">${UNLOCK_COPY.andResearch(c.title, c.done)}</div>`)
           .join('');
+        // §4.1.4 R2 — a research-WRAPPED gate (the Highlands) ALSO lists its research
+        // project + live state, so the research step is never a silent wall.
+        const p = l.requiredResearch;
+        const projectLine = p
+          ? `<div class="unlock-research${p.completed ? ' done' : ''}">${UNLOCK_COPY.andResearchProject(p.name, p.started, p.progress, p.count, p.completed)}</div>`
+          : '';
         row.innerHTML =
           `<div class="unlock-goal">${UNLOCK_COPY.toReach(l.setName, l.unlocksName!)}</div>` +
           `<div class="unlock-prog">${l.done} of ${l.total}</div>` +
-          research;
+          research +
+          projectLine;
       }
       this.list.appendChild(row);
     }

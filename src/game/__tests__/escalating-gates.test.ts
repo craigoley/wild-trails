@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateCatch, isBiomeGateMet, isBiomeSetComplete } from '../Missions';
+import { evaluateCatch, isBiomeGateMet, isBiomeSetComplete, reconcileResearchUnlocks } from '../Missions';
+import { startResearch, evaluateResearch } from '../Research';
 import { createJournal } from '../../state/Journal';
 import { unlockLines } from '../../rendering/unlockLines';
 import { BIOME_GATE_CHALLENGES } from '../../utils/constants';
@@ -8,6 +9,16 @@ const ev = (species: string, biome: string, phase: string) =>
   ({ species, biome, phase }) as Parameters<typeof evaluateCatch>[1];
 
 type J = ReturnType<typeof createJournal>;
+
+// R2: the Highlands is research-WRAPPED — the §4.1c gate (wetland set + the mastery
+// challenge) is necessary but no longer sufficient; the unlock-the-highlands project
+// (its activity + the SAME mastery challenge as its knowledgeRequirement) must also
+// complete, then the order-independent reconcile fires the unlock. This drives that step.
+const doHighlandsResearch = (j: J): string[] => {
+  startResearch(j, 'unlock-the-highlands'); // cost 0 — no credit gate
+  for (let i = 0; i < 4; i++) evaluateResearch(j, ev('frog', 'wetland', 'day')); // catch-in-wetland ×4
+  return reconcileResearchUnlocks(j);
+};
 const completeMeadowSet = (j: J) => {
   for (let i = 0; i < 5; i++) evaluateCatch(j, ev('fieldmouse', 'meadow', 'day')); // survey (NOT night)
   for (let i = 0; i < 2; i++) evaluateCatch(j, ev('quail', 'meadow', 'dawn'));
@@ -59,36 +70,42 @@ describe('§4.1c — the ESCALATED Wetland->Highlands gate (catch-set AND resear
     expect(j.unlockedBiomes).not.toContain('highlands');
   });
 
-  it('completing BOTH the wetland set AND research-mouse-night unlocks Highlands', () => {
+  it('the §4.1c gate (set + mastery) is necessary but NOT sufficient — the research wrap also completes (R2)', () => {
     const j = createJournal();
     completeMeadowSet(j);
     completeWoodlandSet(j);
     completeWetlandSet(j);
-    const r = doNightGate(j);
-    expect(isBiomeGateMet(j, 'wetland')).toBe(true);
+    doNightGate(j);
+    expect(isBiomeGateMet(j, 'wetland')).toBe(true); // the §4.1c gate is met...
+    expect(j.unlockedBiomes).not.toContain('highlands'); // ...but the Highlands is research-wrapped
+    const unlocked = doHighlandsResearch(j); // start + activity ×4 -> project completes -> reconcile
     expect(j.unlockedBiomes).toContain('highlands');
-    expect(r.unlocked).toContain('highlands');
+    expect(unlocked).toContain('highlands');
   });
 });
 
 describe('§4.1c — ORDER-INDEPENDENCE (the re-check-all-gates fix — THE correctness core)', () => {
-  it('(a) wetland-set THEN research-mouse-night -> Highlands unlocks', () => {
+  it('(a) wetland-set THEN research-mouse-night THEN the research wrap -> Highlands unlocks', () => {
     const j = createJournal();
     completeMeadowSet(j);
     completeWoodlandSet(j);
     completeWetlandSet(j); // set first — no unlock yet
     expect(j.unlockedBiomes).not.toContain('highlands');
-    doNightGate(j); // challenge last -> unlock
+    doNightGate(j); // §4.1c gate now met — but the Highlands is research-wrapped
+    expect(j.unlockedBiomes).not.toContain('highlands');
+    doHighlandsResearch(j); // research last -> unlock
     expect(j.unlockedBiomes).toContain('highlands');
   });
 
-  it('(b) research-mouse-night THEN wetland-set -> Highlands unlocks', () => {
+  it('(b) research-mouse-night THEN wetland-set THEN the research wrap -> Highlands unlocks', () => {
     const j = createJournal();
     completeMeadowSet(j);
     completeWoodlandSet(j);
     doNightGate(j); // challenge first — no unlock yet (wetland set incomplete)
     expect(j.unlockedBiomes).not.toContain('highlands');
-    completeWetlandSet(j); // set last -> unlock
+    completeWetlandSet(j); // set complete — §4.1c gate met, but still research-wrapped
+    expect(j.unlockedBiomes).not.toContain('highlands');
+    doHighlandsResearch(j); // research last -> unlock
     expect(j.unlockedBiomes).toContain('highlands');
   });
 });
@@ -135,6 +152,7 @@ describe('§4.1c — WIN reachable via the gated path (no impossible state)', ()
     completeWoodlandSet(j);
     completeWetlandSet(j);
     doNightGate(j);
+    doHighlandsResearch(j); // R2: the research wrap is part of the win path
     for (const b of ['woodland', 'wetland', 'highlands']) expect(j.unlockedBiomes).toContain(b);
   });
 });

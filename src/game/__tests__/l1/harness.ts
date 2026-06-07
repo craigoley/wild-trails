@@ -9,7 +9,8 @@
 
 import { createGameState, update, type GameState } from '../../GameState';
 import { createIntent, type InputIntent } from '../../Input';
-import { evaluateCatch, type CatchEvent, type MissionEval } from '../../Missions';
+import { evaluateCatch, reconcileResearchUnlocks, type CatchEvent, type MissionEval } from '../../Missions';
+import { startResearch, evaluateResearch } from '../../Research';
 import { recordCatch, type Journal } from '../../../state/Journal';
 import { SIM_DT } from '../../../utils/constants';
 
@@ -69,6 +70,19 @@ export function completeWetlandSet(j: Journal): void {
 /** The §4.1c gating research challenge: research-mouse-night (fieldmouse@night). */
 export function completeNightForagerGate(j: Journal): MissionEval {
   return applyCatch(j, ev('fieldmouse', 'meadow', 'night'));
+}
+
+/**
+ * R2 (§4.1.4): complete the Highlands-access research that WRAPS the §4.1c gate — start the
+ * project (cost 0), do its wetland activity ×4, and reconcile. The Highlands unlocks only if
+ * the §4.1c gate (the wetland set + research-mouse-night, by play) ALSO holds — so this is a
+ * no-op until the mastery challenge is done (double-enforced knowledge-by-play). Mirrors
+ * main's catch-boundary reconcile.
+ */
+export function completeHighlandsResearch(j: Journal): void {
+  startResearch(j, 'unlock-the-highlands'); // cost 0 — no credit gate on core progression
+  for (let i = 0; i < 4; i++) evaluateResearch(j, ev('frog', 'wetland', 'day')); // catch-in-wetland ×4
+  reconcileResearchUnlocks(j);
 }
 
 /** Catch the remaining roster (rabbit + the alpine three) so the dex fills for the win.
