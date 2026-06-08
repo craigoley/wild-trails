@@ -568,14 +568,14 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
   },
   kingfisher: {
     fieldNote:
-      'A fish-hunter of the open river — the kingfisher watches from a low branch by day, then plunges to spear a small fish (§4.1.5: it eats FISH).',
+      'A fish-hunter of the open river — the kingfisher watches from a low branch by day, then plunges to spear a small fish.',
     behaviour:
       'An electric-blue arrow: it sits dead still, then dives head-first into the water and is back on its perch in a flash — flying off fast when disturbed.',
     status: 'A jewel of clean rivers — kingfishers thrive wherever the water runs clear and full of small fish.',
   },
   otter: {
     fieldNote:
-      'A fish-hunter of the whole river — the otter works the water at dusk for fish (§4.1.5: it eats FISH). Watch the banks as the light fades.',
+      'A fish-hunter of the whole river — the otter works the water at dusk for fish. Watch the banks as the light fades.',
     behaviour:
       'A sleek, playful swimmer — at the first alarm it slips into the river and is gone, hunting underwater with whiskers that feel the current.',
     status: 'Back from the brink — otters now thrive again on clean, well-stocked rivers right across the country.',
@@ -604,14 +604,14 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
   },
   herringgull: {
     fieldNote:
-      'A big, bold gull of the coast — the herring gull takes fish and scavenges the shore by day (§4.1.5: it eats FISH).',
+      'A big, bold gull of the coast — the herring gull takes fish and scavenges the shore by day.',
     behaviour:
       'Loud and clever, it patrols the tideline and harbours; the pink-legged adult drops shellfish onto rocks to crack them.',
     status: 'Surprisingly red-listed and in decline — the bold “town gull” masks a real fall in our wild seabird colonies.',
   },
   greyseal: {
     fieldNote:
-      'A fish-hunter of the open sea — the grey seal hauls out on the rocks by day and hunts fish offshore (§4.1.5: it eats FISH).',
+      'A fish-hunter of the open sea — the grey seal hauls out on the rocks by day and hunts fish offshore.',
     behaviour:
       'Curious and powerful; at the first alarm it slides off the rocks into the sea and is gone, hunting underwater on a single long breath.',
     status: 'A conservation success — Britain now safeguards nearly half the world’s grey seals, back from the brink.',
