@@ -69,12 +69,14 @@ body.modal-open .touch-stick-thumb {
   display: none;
 }
 
-/* Current-biome label — top centre, quietly authoritative. */
+/* Biome title — LEFT-aligned under the time pill. WAS top-centre, where the 4-button
+ * top-right cluster ran over its right half (the overlap Craig saw). Left-stacking
+ * the title/count/credits as one "field-card" header frees the centre entirely (for
+ * the banner / result-flash that already live there) and removes the collision. */
 .hud-biome {
   position: fixed;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 98px;
+  left: 14px;
   color: rgba(255, 255, 255, 0.82);
   font-size: 15px;
   font-weight: 600;
@@ -83,12 +85,11 @@ body.modal-open .touch-stick-thumb {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
-/* Session status (catches + selected bait) — just under the biome label. */
+/* Session status (catch count) — left-aligned, just under the biome label. */
 .hud-status {
   position: fixed;
-  top: 40px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 120px;
+  left: 14px;
   color: rgba(255, 255, 255, 0.65);
   font-size: 13px;
   letter-spacing: 0.04em;
@@ -96,13 +97,13 @@ body.modal-open .touch-stick-thumb {
   white-space: nowrap;
 }
 
-/* Credits balance (§12 1a) — a quiet seed-amber readout under the top-left time
- * indicator. Passive/non-interactive, so it stays visible behind a modal (like the
- * biome/time/status labels). Zero-asset (a unicode glyph + the number). */
+/* Credits balance (§12 1a) — a quiet seed-amber readout, last line of the top-left
+ * header stack (under the catch count). Passive/non-interactive, so it stays visible
+ * behind a modal (like the biome/time/status labels). Zero-asset. */
 .hud-credits {
   position: fixed;
-  top: 84px;
-  left: 12px;
+  top: 142px;
+  left: 14px;
   z-index: 20;
   color: #ffd166;
   font-size: 14px;
@@ -1045,16 +1046,22 @@ body.modal-open .touch-stick-thumb {
 }
 
 /* --- Bait tray (replaces the old ↻ cycler) ----------------------------- */
-/* Always-visible row of chips, bottom-left so it clears the bottom-right action
- * buttons and the joystick area. pointer-events:auto so chips are tappable. */
+/* The bait SELECTOR is its own band ABOVE the action buttons — NOT bottom-left
+ * fighting the bottom-right cluster for the same band. That earlier setup
+ * collided on mobile: the wrapping tray grew UP into the BAIT/HIDE buttons (a
+ * real tap-target collision) and over the instruction strip. Lifting it above the
+ * tallest action button (HIDE tops out ~202px from the bottom) means chip count /
+ * label width can grow and STILL can't reach the buttons — they're a different
+ * band. Wrap is now safe (it grows up into empty world space, not onto a button).
+ * pointer-events:auto on the chips; the container is layout-only. */
 .bait-tray {
   position: fixed;
-  left: 12px;
-  bottom: 16px;
+  left: 14px;
+  bottom: 212px;
   z-index: 25;
   display: flex;
-  flex-wrap: wrap; /* §4.1.5 — the 4th (fish) chip wraps rather than crowd the controls on a narrow screen */
-  max-width: 64vw;
+  flex-wrap: wrap; /* now harmless — it wraps UP into the world, away from the buttons */
+  max-width: calc(100vw - 28px);
   gap: 8px;
   pointer-events: none; /* the tray container is layout-only */
 }
@@ -1062,13 +1069,13 @@ body.modal-open .touch-stick-thumb {
   pointer-events: auto;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px 6px 8px;
+  gap: 5px;
+  padding: 5px 9px 5px 7px;
   border: 2px solid rgba(255, 255, 255, 0.18);
   border-radius: 10px;
-  background: rgba(20, 30, 20, 0.55);
+  background: rgba(20, 30, 20, 0.62);
   color: rgba(255, 255, 255, 0.6);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.02em;
   user-select: none;
@@ -1158,8 +1165,9 @@ body.modal-open .touch-stick-thumb {
 /* ?debug=1 readout — top left, monospace, unobtrusive. */
 .hud-debug {
   position: fixed;
-  /* Below the time-of-day indicator (top-left) so the dev readout doesn't overlap it. */
-  top: 100px;
+  /* Below the top-left header stack (time → biome → count → credits) so the dev
+   * readout doesn't overlap it (the stack now occupies ~top 98–160). */
+  top: 170px;
   left: 12px;
   color: rgba(120, 255, 180, 0.85);
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
@@ -1194,17 +1202,33 @@ body.modal-open .touch-stick-thumb {
   background: rgba(255, 179, 71, 0.55);
 }
 
-/* Control hint — bottom-centre, fades into the corner. */
+/* Control hint — bottom-centre (now FREE: the bait tray moved up to its own band,
+ * so the hint no longer sits under the chips). Given a legible dark pill + higher
+ * contrast (was half-illegible low-opacity olive-on-green), and it AUTO-FADES after
+ * a few seconds — it's onboarding, not a permanent control. Pure CSS fade (no logic);
+ * max-width keeps it off the bottom-right action cluster. */
 .touch-hint {
   position: fixed;
   left: 50%;
-  bottom: 16px;
+  bottom: 18px;
   transform: translateX(-50%);
-  color: rgba(255, 255, 255, 0.45);
+  max-width: min(78vw, 360px);
+  text-align: center;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(8, 18, 12, 0.66);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
   font-size: 13px;
   letter-spacing: 0.04em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
   pointer-events: none;
   z-index: 20;
+  animation: touch-hint-fade 0.8s ease 9s forwards;
+}
+/* Fade out after a short on-screen lifetime — the player has the gist by then. */
+@keyframes touch-hint-fade {
+  to { opacity: 0; visibility: hidden; }
 }
 
 /* --- Research panel (§4.1.4 R0b) — clones the mission/journal panel architecture
