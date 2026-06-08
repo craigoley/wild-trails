@@ -10,7 +10,7 @@
  */
 
 import { addOverlayDismiss } from './overlayDismiss';
-import { canStartResearch, isResearchReady, knowledgeMet, researchState } from '../game/Research';
+import { canStartResearch, isResearchReady, researchState } from '../game/Research';
 import type { Journal } from '../state/Journal';
 import {
   BIOMES,
@@ -120,18 +120,39 @@ export class ResearchPanel {
     const info = document.createElement('div');
     info.className = 'research-info';
     const count = p.activityRequirement.count;
+    const done = Math.min(s.progress, count);
+    const pct = count > 0 ? Math.round((done / count) * 100) : 0; // fill DERIVES from progress/count
+    const studying = s.started && !s.completed; // the bar shows ONLY while in progress
+    // §4.1c/R2 — a knowledge-gated project ALSO shows its mastery-challenge state (the #37
+    // pattern) so a TWO-requirement project never hides one. Shown until the project completes;
+    // satisfied ONLY by play (journal.missions) — never a time/ETA.
+    const challenge = p.knowledgeRequirement && !s.completed ? p.knowledgeRequirement : null;
+    const challengeDone = challenge ? journal.missions[challenge]?.completed === true : false;
+
     info.innerHTML =
       `<div class="research-name">${p.name}</div>` +
       `<div class="research-blurb">${p.blurb}</div>` +
-      `<div class="research-activity">${describeActivity(p.activityRequirement)} — ${Math.min(s.progress, count)}/${count}</div>`;
+      // The activity NAMES what advances it; the count is the activity-remaining read (N more
+      // catches) — never a time estimate (research is activity-driven, R0a).
+      `<div class="research-activity">${describeActivity(p.activityRequirement)} · ${done} / ${count}</div>` +
+      (studying
+        ? `<div class="research-progress" role="progressbar" aria-valuenow="${done}" aria-valuemax="${count}">` +
+          `<div class="research-progress-fill" style="width: ${pct}%"></div></div>`
+        : '') +
+      (challenge
+        ? `<div class="research-knowledge${challengeDone ? ' done' : ''}">` +
+          `${challengeDone ? '✓' : '+'} ${MISSIONS[challenge]?.title ?? 'a research challenge'} — by play</div>`
+        : '');
     row.appendChild(info);
 
-    row.appendChild(this.control(id, p, s));
+    const ctl = this.control(id, p, s);
+    if (ctl) row.appendChild(ctl); // started-but-in-progress has no right-hand action (the bar is the status)
     return row;
   }
 
-  /** The right-hand control: Start / In-progress / Needs-knowledge / Complete / Done. */
-  private control(id: string, p: (typeof RESEARCH_PROJECTS)[string], s: { started: boolean; progress: number; completed: boolean }): HTMLElement {
+  /** The right-hand ACTION (Start / Complete / Done badge), or null while simply in progress —
+   *  the progress bar + the knowledge line (in the info) ARE the status now (not a dead label). */
+  private control(id: string, p: (typeof RESEARCH_PROJECTS)[string], s: { started: boolean; progress: number; completed: boolean }): HTMLElement | null {
     const journal = this.journal!;
 
     if (s.completed) {
@@ -154,7 +175,7 @@ export class ResearchPanel {
       return btn;
     }
 
-    // Started. Ready (activity + knowledge done) -> Complete (charges any top-up).
+    // Started + ready (activity + knowledge done) -> Complete (charges any top-up).
     if (isResearchReady(journal, id)) {
       const btn = document.createElement('button');
       btn.className = 'shop-buy';
@@ -168,16 +189,8 @@ export class ResearchPanel {
       return btn;
     }
 
-    // Started but not ready — the activity is short of its count, or (the §4.1c wrap) the
-    // KNOWLEDGE requirement isn't met yet. Surface which, so it's never a silent gate.
-    const note = document.createElement('div');
-    note.className = 'research-need';
-    if (!knowledgeMet(journal, p) && p.knowledgeRequirement) {
-      const m = MISSIONS[p.knowledgeRequirement];
-      note.textContent = `Needs: ${m ? m.title : 'a research challenge'}`;
-    } else {
-      note.textContent = 'In progress';
-    }
-    return note;
+    // Started but not ready (activity short, or the §4.1c knowledge gate unmet) — no action;
+    // the bar shows how far + the knowledge line shows what's left.
+    return null;
   }
 }

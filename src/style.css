@@ -1401,15 +1401,33 @@ body.modal-open .touch-stick-thumb {
   font-weight: 700;
   color: rgba(159, 240, 168, 0.92);
 }
-/* Right-hand controls (Start/Complete reuse .shop-buy). */
-.research-need {
-  flex: none;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: rgba(255, 209, 102, 0.9);
-  text-align: right;
-  max-width: 40%;
+/* The research PROGRESS BAR — fill = progress/count (set inline). Makes "In progress" VISUAL
+ * (how far along by ACTIVITY — "N more catches", never a time/ETA). Shown while in progress. */
+.research-progress {
+  margin-top: 6px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
 }
+.research-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6ad08a, #9ff0a8);
+  transition: width 0.25s ease;
+}
+/* The knowledge-gated mastery challenge state (the #37 pattern), shown ALONGSIDE the activity
+ * bar so a two-requirement project never hides one: amber while pending, green when met (by play). */
+.research-knowledge {
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 209, 102, 0.92);
+}
+.research-knowledge.done {
+  color: rgba(159, 240, 168, 0.82);
+}
+/* Right-hand controls (Start/Complete reuse .shop-buy). */
 .research-done {
   flex: none;
   padding: 7px 12px;
