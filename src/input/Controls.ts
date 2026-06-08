@@ -25,6 +25,14 @@ import {
 import type { BaitState } from '../game/Bait';
 import { isBaitSelectable } from '../game/Bait';
 import { BAIT_DISPLAY, TOUCH } from '../utils/constants';
+import {
+  ICON_BAIT,
+  ICON_JOURNAL,
+  ICON_MISSIONS,
+  ICON_RESEARCH,
+  ICON_SPEAKER,
+  ICON_SPEAKER_MUTED,
+} from '../rendering/icons';
 
 const includes = (keys: readonly string[], k: string): boolean => keys.includes(k);
 
@@ -98,28 +106,30 @@ export class Controls {
     });
     // Top-right panel toggles share a flex container so they lay out side by
     // side (and future toggles flow in without hand-placed coords / collisions).
+    // Each is a consistent inline-SVG glyph (ICON_*) — one visual language, not a
+    // mix of OS emoji that render differently per device.
     const topRight = document.createElement('div');
     topRight.className = 'hud-topright';
     target.appendChild(topRight);
     // Field Journal toggle (also the 'J' key).
-    this.makeActionButton(topRight, '📓', 'action-journal', () => {
+    this.makeIconToggle(topRight, ICON_JOURNAL, 'Field journal', 'action-journal', () => {
       this.intent.journalToggle = true;
     });
     // Missions toggle (also the 'M' key).
-    this.makeActionButton(topRight, '🎯', 'action-missions', () => {
+    this.makeIconToggle(topRight, ICON_MISSIONS, 'Missions', 'action-missions', () => {
       this.intent.missionToggle = true;
     });
     // Research toggle (also the 'R' key) — §4.1.4 R0b.
-    this.makeActionButton(topRight, '🔬', 'action-research', () => {
+    this.makeIconToggle(topRight, ICON_RESEARCH, 'Research', 'action-research', () => {
       this.intent.researchToggle = true;
     });
-    // Bait selection sub-screen toggle — type-selection moved off the main HUD into
-    // a panel (declutter); the BAIT button still deploys the selected bait one-tap.
-    this.makeActionButton(topRight, '🪱', 'action-baitpanel', () => {
+    // Bait selection sub-screen toggle (also the 'E' key) — type-selection moved off
+    // the main HUD into a panel (declutter); the BAIT button still deploys one-tap.
+    this.makeIconToggle(topRight, ICON_BAIT, 'Pick bait', 'action-baitpanel', () => {
       this.intent.baitPanelToggle = true;
     });
     // Mute toggle (also the 'K' key) — Atmosphere A1. The glyph reflects the live state.
-    this.muteBtn = this.makeActionButton(topRight, '🔊', 'action-mute', () => {
+    this.muteBtn = this.makeIconToggle(topRight, ICON_SPEAKER, 'Mute sound', 'action-mute', () => {
       this.intent.muteToggle = true;
     });
     // First-time affordance: a small "try bait" pointer near the BAIT button,
@@ -134,7 +144,7 @@ export class Controls {
     const hint = document.createElement('div');
     hint.className = 'touch-hint';
     hint.textContent = isTouch
-      ? 'Drag to roam · CATCH · BAIT · 🪱 to pick bait'
+      ? 'Drag to roam · CATCH · BAIT'
       : 'WASD roam · Space catch · B bait · E/1/2/3 pick bait';
     target.appendChild(hint);
   }
@@ -155,6 +165,21 @@ export class Controls {
       `<span class="chip-icon icon-${disp.icon}"></span>` +
       `<span class="bait-current-count">×${count}</span>`;
     this.baitCurrent.classList.toggle('empty', !isBaitSelectable(bait, id));
+  }
+
+  /** A top-right toggle: an .action-btn whose face is an inline-SVG glyph (not text),
+   *  with an aria-label for the icon-only control. Reuses makeActionButton's wiring. */
+  private makeIconToggle(
+    target: HTMLElement,
+    svg: string,
+    ariaLabel: string,
+    className: string,
+    fire: () => void,
+  ): HTMLButtonElement {
+    const btn = this.makeActionButton(target, '', className, fire);
+    btn.innerHTML = svg;
+    btn.setAttribute('aria-label', ariaLabel);
+    return btn;
   }
 
   /** Create an on-screen button that fires an edge action on press. */
@@ -190,10 +215,10 @@ export class Controls {
     this.baitHint.style.display = show ? 'block' : 'none';
   }
 
-  /** Reflect the mute state on the 🔊/🔇 button (Atmosphere A1). Called at boot (to show the
-   *  persisted state) + on each toggle. */
+  /** Reflect the mute state on the speaker button (Atmosphere A1) — swaps the glyph
+   *  (speaker ⇄ speaker-with-✕). Called at boot (persisted state) + on each toggle. */
   setMuted(muted: boolean): void {
-    this.muteBtn.textContent = muted ? '🔇' : '🔊';
+    this.muteBtn.innerHTML = muted ? ICON_SPEAKER_MUTED : ICON_SPEAKER;
     this.muteBtn.classList.toggle('muted', muted);
     this.muteBtn.setAttribute('aria-label', muted ? 'Unmute sound' : 'Mute sound');
   }

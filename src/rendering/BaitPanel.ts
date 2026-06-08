@@ -42,7 +42,7 @@ export class BaitPanel {
     panel.appendChild(headerBar);
     const title = document.createElement('div');
     title.className = 'bait-header-title';
-    title.textContent = '🪱 Bait';
+    title.textContent = 'Bait';
     headerBar.appendChild(title);
 
     // Bounded scroll body — the selectable bait rows.
