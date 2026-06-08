@@ -53,16 +53,21 @@ describe('ResearchPanel — projects, Start, and state', () => {
     expect(j.credits).toBe(12);
   });
 
-  it("the knowledge gate is shown legibly (not a silent wall) once a project's activity is short of its knowledge", () => {
+  it('a knowledge-gated row shows BOTH the activity progress AND the mastery-challenge state (the #37 unify)', () => {
     const j = createJournal();
     addCredits(j, 50);
-    startResearch(j, 'study-after-dark'); // needs research-mouse-night (by play)
-    for (let i = 0; i < 3; i++) evaluateResearch(j, ev('fieldmouse', 'meadow', 'night')); // activity done
+    startResearch(j, 'study-after-dark'); // knowledgeRequirement research-mouse-night (by play)
+    for (let i = 0; i < 3; i++) evaluateResearch(j, ev('fieldmouse', 'meadow', 'night')); // activity 3/3
     const p = new ResearchPanel(document.body, vi.fn(), vi.fn());
     p.refresh(j);
-    // The knowledge requirement isn't met -> the row surfaces what's needed, not a buy.
-    const text = [...document.querySelectorAll('.research-row')].map((r) => r.textContent).join(' ');
-    expect(text).toContain('Needs:');
+    const row = [...document.querySelectorAll('.research-row')].find((r) => r.textContent!.includes('Nocturnal'))!;
+    // The activity bar is shown (started)...
+    expect(row.querySelector('.research-progress-fill')).not.toBeNull();
+    // ...AND the mastery-challenge state is shown alongside it (pending, by play — never a silent gate).
+    const knowledge = row.querySelector('.research-knowledge')!;
+    expect(knowledge.textContent).toContain('The Night Shift'); // the challenge title
+    expect(knowledge.classList.contains('done')).toBe(false); // not met yet
+    expect(knowledge.textContent).toContain('by play'); // demonstrated, never bought (no timer/ETA)
   });
 });
 
