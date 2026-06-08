@@ -495,7 +495,9 @@ function frame(nowMs: number): void {
 
   // Render the interpolated state. Renderers read prev+current; never mutate.
   entities.sync(game, alpha);
-  scene.updateFollow(game, alpha, dt);
+  // Frozen (L2) scenes snap the camera to the player so the capture is byte-stable (the normal
+  // exponential ease never settles — the screenshot would drift forever). No effect on play.
+  scene.updateFollow(game, alpha, dt, l2Frozen);
   scene.render();
   hud.update(game);
   hud.setCredits(journal.credits); // §12 1a — the persistent balance (cheap text set)
