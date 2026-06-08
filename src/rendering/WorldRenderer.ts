@@ -17,6 +17,7 @@
 import {
   BoxGeometry,
   CircleGeometry,
+  Color,
   ConeGeometry,
   CylinderGeometry,
   GridHelper,
@@ -40,6 +41,7 @@ import {
   SUPPLY_RENDER,
   TRACK_SIGNS,
   WATER_RENDER,
+  THRIVING,
   type HidingSpotDef,
   type SupplyPostDef,
   type WaterDef,
@@ -55,6 +57,23 @@ function dim(hex: number, f: number): number {
   return (r << 16) | (g << 8) | b;
 }
 
+/**
+ * The through-line warmth GRADE (§4.3 TL1) — sibling to `dim`. Lerp a biome's ground colour from
+ * a SUBTLE muted/cooler baseline at `thriving=0` (saturation + lightness scaled down) to its full,
+ * rich colour at `thriving=1`. ⚠️ The t=0 baseline is CALM (≈0.82 sat), NOT the 0.45 locked-dim —
+ * an unstudied biome still looks good, just stiller, with room to warm as you study it. Cosmetic.
+ */
+export function warmthGrade(hex: number, thriving: number): number {
+  const t = Math.max(0, Math.min(1, thriving));
+  const c = new Color(hex);
+  const hsl = { h: 0, s: 0, l: 0 };
+  c.getHSL(hsl);
+  const satScale = THRIVING.grade.minSaturation + (1 - THRIVING.grade.minSaturation) * t;
+  const lightScale = THRIVING.grade.minLightness + (1 - THRIVING.grade.minLightness) * t;
+  c.setHSL(hsl.h, hsl.s * satScale, hsl.l * lightScale);
+  return c.getHex();
+}
+
 const rectW = (r: Rect): number => r.maxX - r.minX;
 const rectH = (r: Rect): number => r.maxY - r.minY;
 const rectCX = (r: Rect): number => (r.minX + r.maxX) / 2;
@@ -66,6 +85,13 @@ export class WorldRenderer {
    *  Rebuilt by `refresh` when a biome unlocks; static props (grid, cover, signs)
    *  live in `group` and are built once. */
   private readonly dynamic = new Group();
+
+  /** §4.3 TL1 — per-biome "thriving" 0..1 (the warmth grade input). Set by `setThriving` from
+   *  the journal; defaults to 0 (the muted baseline) until the first update. Cosmetic only. */
+  private thriving: Record<string, number> = {};
+  /** Unlocked biomes' ground materials + base colours, so `setThriving` can re-grade them in
+   *  place (no rebuild) when thriving changes on a catch. */
+  private readonly groundMats = new Map<string, { mat: MeshStandardMaterial; base: number }>();
 
   constructor(scene: Scene, world: World) {
     this.group.add(this.dynamic);
@@ -94,6 +120,19 @@ export class WorldRenderer {
     this.rebuildDynamic(world);
   }
 
+  /**
+   * §4.3 TL1 — update the per-biome warmth grade (cosmetic). Called when thriving changes (a
+   * catch newly catalogues a species), it re-grades each unlocked biome's ground colour IN PLACE
+   * — no dispose/rebuild, cheap enough per catch. The full `refresh` is reserved for unlock
+   * changes (seam/fog/wall rebuilds). READS the passed values; the renderer never reads the journal.
+   */
+  setThriving(thriving: Record<string, number>): void {
+    this.thriving = thriving;
+    for (const [id, { mat, base }] of this.groundMats) {
+      mat.color.setHex(warmthGrade(base, thriving[id] ?? 0));
+    }
+  }
+
   /** Dispose the old dynamic meshes (no GPU leak on repeated unlocks) and rebuild
    *  the ground/fog/walls for the current unlock state. The shared build step. */
   private rebuildDynamic(world: World): void {
@@ -104,22 +143,23 @@ export class WorldRenderer {
       }
     }
     this.dynamic.clear();
+    this.groundMats.clear(); // the old ground materials are disposed above; rebuild the map
 
     for (const id of world.order) {
       const biome = world.biomes[id];
       const r = biome.def.bounds;
 
-      // Ground plane. Locked biomes are darkened so they read as out of reach.
+      // Ground plane. Locked biomes are darkened (out of reach); UNLOCKED biomes carry the §4.3
+      // warmth grade (muted when unstudied -> rich as it thrives) — a sibling to the locked dim.
       const color = biome.unlocked
-        ? biome.def.color
+        ? warmthGrade(biome.def.color, this.thriving[id] ?? 0)
         : dim(biome.def.color, BIOME_RENDER.lockedDim);
-      const ground = new Mesh(
-        new PlaneGeometry(rectW(r), rectH(r)),
-        new MeshStandardMaterial({ color, roughness: 1 }),
-      );
+      const groundMat = new MeshStandardMaterial({ color, roughness: 1 });
+      const ground = new Mesh(new PlaneGeometry(rectW(r), rectH(r)), groundMat);
       ground.rotation.x = -Math.PI / 2;
       ground.position.set(rectCX(r), 0, rectCY(r));
       this.dynamic.add(ground);
+      if (biome.unlocked) this.groundMats.set(id, { mat: groundMat, base: biome.def.color });
 
       // Fog veil over locked biomes — a translucent dark plane above the ground.
       if (!biome.unlocked) {

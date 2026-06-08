@@ -128,6 +128,33 @@ function cell(cx: number, cy: number): Rect {
 export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast'];
 
 /**
+ * The THROUGH-LINE (§4.3 TL1) — the soul layer's first slice. A biome's "thriving" derives from
+ * how thoroughly you've STUDIED it (species catalogued + a GUARDED research bonus). It is purely
+ * COSMETIC: a warmth GRADE on the biome ground + a soft qualitative WORD in the journal. Nothing
+ * gameplay reads it. Activity-paced (rises by PLAY — catching/studying — never wall-clock).
+ */
+export const THRIVING = {
+  /** Blend weights when a biome HAS research projects; with none, species-catalogued is used
+   *  ALONE (guarded — no division by zero). Species-catalogued is the universal primary signal. */
+  speciesWeight: 0.85,
+  researchWeight: 0.15,
+  /** The warmth GRADE (render): the unlocked-biome ground colour lerps from a SUBTLE muted
+   *  baseline (thriving 0) to full/rich (thriving 1). ⚠️ NOT the locked-dim (0.45, for LOCKED
+   *  biomes) — calm and quiet, never drab; the world looks GOOD at zero thriving, just stiller. */
+  grade: {
+    minSaturation: 0.82, // thriving 0 -> 82% of the biome's saturation (subtly muted)
+    minLightness: 0.95, // thriving 0 -> 95% lightness (a gentle calm; err toward SUBTLE, not drab)
+  },
+  /** The qualitative journal WORD bands (ascending `min`) — no number, no meter. */
+  bands: [
+    { min: 0, word: 'quiet' },
+    { min: 0.25, word: 'waking' },
+    { min: 0.6, word: 'alive' },
+    { min: 0.9, word: 'flourishing' },
+  ],
+} as const;
+
+/**
  * The biome graph. A 2x2 grid of equal cells:
  *
  *     WOODLAND (0, +PITCH) | HIGHLANDS (+PITCH, +PITCH)
