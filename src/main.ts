@@ -31,6 +31,7 @@ import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
 import { ResearchPanel } from './rendering/ResearchPanel';
 import { BaitPanel } from './rendering/BaitPanel';
 import { evaluateResearch, startResearch, completeResearch, isBaitUnlocked } from './game/Research';
+import { thrivingByBiome } from './game/Thriving';
 import { grantTool } from './game/Tools';
 import { syncModalOpenClass } from './rendering/modalClass';
 import { Banner } from './rendering/Banner';
@@ -137,6 +138,9 @@ const refreshMissionPanel = (): void => {
 const controls = new Controls(app);
 const scene = new SceneManager(app);
 const worldRenderer = new WorldRenderer(scene.scene, game.world);
+// §4.3 TL1 — seed the per-biome warmth grade from the loaded journal (a returning player's
+// studied biomes start warm; a fresh one starts in the quiet muted baseline). Cosmetic.
+worldRenderer.setThriving(thrivingByBiome(journal));
 const entities = new EntityRenderer(scene.scene);
 const hud = new HUD(app);
 // Time-of-day indicator (top-left) — makes the day-night cycle legible: the
@@ -334,6 +338,9 @@ function frame(nowMs: number): void {
       // gap this catch fills), then granted. Separate from rank; persisted (v5).
       addCredits(journal, creditsForCatch(journal, game.lastCaughtSpecies).total);
       recordCatch(journal, game.lastCaughtSpecies, Date.now());
+      // §4.3 TL1 — a newly-catalogued species may have raised this biome's "thriving"; re-grade
+      // the world's warmth (cosmetic, in place). BEFORE any unlock refresh, so a rebuild reads it.
+      worldRenderer.setThriving(thrivingByBiome(journal));
       const evalResult = evaluateCatch(journal, {
         species: game.lastCaughtSpecies,
         biome: game.lastCaughtBiome,

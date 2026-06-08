@@ -16,6 +16,7 @@ import { foundCount, isFound } from '../state/Journal';
 import { addOverlayDismiss } from './overlayDismiss';
 import { groupSpeciesByBiome } from './journalGroups';
 import { unlockedResearchLayers } from '../game/Research';
+import { thrivingForBiome, thrivingWord } from '../game/Thriving';
 import {
   ACTIVITY_LABEL,
   BAIT_DISPLAY,
@@ -90,7 +91,8 @@ export class JournalPanel {
         return rec ? `${id}:${rec.catchCount}` : `${id}:-`;
       }).join('|') +
       `|u${journal.unlockedBiomes.join(',')}` + // re-render when a biome unlocks (locked header)
-      `|r${[...unlockedResearchLayers(journal)].sort().join(',')}`; // ...and when a research layer unlocks (R0b)
+      `|r${[...unlockedResearchLayers(journal)].sort().join(',')}` + // ...and when a research layer unlocks (R0b)
+      `|rc${Object.values(journal.research).filter((r) => r.completed).length}`; // ...and on research completion (TL1 thriving word)
     if (sig === this.signature) return;
     this.signature = sig;
 
@@ -104,6 +106,14 @@ export class JournalPanel {
       const head = document.createElement('div');
       head.className = `journal-biome${g.unlocked ? '' : ' locked'}`;
       head.textContent = `${g.displayName} — ${g.found} of ${g.total}${g.unlocked ? '' : PANEL_LABELS.lockedSuffix}`;
+      // §4.3 TL1 — a soft qualitative "thriving" word (quiet/waking/alive/flourishing) for an
+      // unlocked biome: how alive your study has made it. No number, no meter — a gentle touch.
+      if (g.unlocked) {
+        const word = document.createElement('span');
+        word.className = 'journal-thriving';
+        word.textContent = thrivingWord(thrivingForBiome(journal, g.biome));
+        head.appendChild(word);
+      }
       this.grid.appendChild(head);
       for (const id of g.ids) {
         this.grid.appendChild(
