@@ -31,7 +31,7 @@ const out = { x: 0, y: 0 };
 
 describe('W #1 — the wetland pond exists, sited clear', () => {
   it('one pond in the wetland, inside the cell, clear of supply/reeds/the x=20 entry', () => {
-    expect(WATER).toHaveLength(1);
+    expect(WATER.filter((w) => w.biome === 'wetland')).toHaveLength(1); // exactly one wetland pond (Riverbank adds its own river, §4.2)
     expect(pond.biome).toBe('wetland');
     const b = BIOMES.wetland.bounds;
     expect(pond.x - pond.radius).toBeGreaterThanOrEqual(b.minX);
@@ -124,9 +124,11 @@ describe('W #3 — isInWater + the per-animal inWater flag (the B1 hook)', () =>
 });
 
 describe('W #4 — frog flees TO water; mallard (+ all others) flee straight away', () => {
-  it('only the frog has fleesToWater (the anti-lockout bound)', () => {
+  it('only the frog + the water vole have fleesToWater (the water-dive species)', () => {
     for (const id of SPECIES_ORDER) {
-      expect(!!SPECIES[id].fleesToWater).toBe(id === 'frog');
+      // §4.2: the Riverbank water vole dives into the river like the frog (the dip-net
+      // call-back). Every other species flees straight away (the anti-lockout bound).
+      expect(!!SPECIES[id].fleesToWater).toBe(id === 'frog' || id === 'watervole');
     }
   });
 

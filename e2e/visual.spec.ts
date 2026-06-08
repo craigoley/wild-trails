@@ -19,6 +19,8 @@ const scenes = [
   { name: 'meadow-day-start', query: `?seed=${SEED}&freeze=1` },
   { name: 'wetland-water-pond', query: `?seed=${SEED}&freeze=1&unlock=all&at=33,8` },
   { name: 'meadow-cover-hide', query: `?seed=${SEED}&freeze=1&hide=1` },
+  // §4.2 — the first new biome: the Riverbank river reach (the reused #55 water as a band).
+  { name: 'riverbank-river', query: `?seed=${SEED}&freeze=1&unlock=all&at=40,80` },
 ];
 
 for (const scene of scenes) {

@@ -6,6 +6,7 @@ import {
   completeWetlandSet,
   completeNightForagerGate,
   completeHighlandsResearch,
+  completeRiverbankGate,
   catchRemainingSpecies,
 } from './harness';
 import { createJournal } from '../../../state/Journal';
@@ -93,8 +94,13 @@ describe('L1 Guard 3 — progression-to-win (the unlock chain + the win fires)',
     expect(j.unlockedBiomes).not.toContain('highlands'); // R2: ...AND the research wrap
     completeHighlandsResearch(j); // the §4.1.4 finale — study the wetland -> the route opens
     expect(j.unlockedBiomes).toContain('highlands');
-    // Fill the dex (rabbit + the alpine three) -> the win fires. WIN REACHABLE through the
-    // research-wrapped gate (the cardinal anti-wall pin: no impossible state).
+    // §4.2 — the Riverbank (first NEW biome) is gated behind its OWN research (the non-forced
+    // rabbit-dawn mastery + the highlands activity); the highlands alone don't open it.
+    expect(j.unlockedBiomes).not.toContain('riverbank');
+    completeRiverbankGate(j);
+    expect(j.unlockedBiomes).toContain('riverbank');
+    // Fill the dex (rabbit + the alpine three + the Riverbank four) -> the win fires. WIN
+    // REACHABLE through every research-gated biome (the cardinal anti-wall pin: no impossible state).
     catchRemainingSpecies(j);
     expect(SPECIES_ORDER.every((id) => j.species[id])).toBe(true);
     expect(isGameComplete(j)).toBe(true);
