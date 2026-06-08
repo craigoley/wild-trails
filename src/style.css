@@ -1165,8 +1165,9 @@ body.modal-open .touch-stick-thumb {
 /* ?debug=1 readout — top left, monospace, unobtrusive. */
 .hud-debug {
   position: fixed;
-  /* Below the time-of-day indicator (top-left) so the dev readout doesn't overlap it. */
-  top: 100px;
+  /* Below the top-left header stack (time → biome → count → credits) so the dev
+   * readout doesn't overlap it (the stack now occupies ~top 98–160). */
+  top: 170px;
   left: 12px;
   color: rgba(120, 255, 180, 0.85);
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
