@@ -6,18 +6,27 @@ name: E2E visual (L2)
 # CI (and a local `docker run` of the SAME image) produce ONE matching baseline set. See
 # e2e/README.md for how to seed/update the baselines.
 #
-# It is NON-BLOCKING (continue-on-error) until the Linux baselines are seeded — a one-time
-# `--update-snapshots` run in this container, committed under e2e/. Flip continue-on-error
-# off once the baselines exist to make it a real gate. It does NOT run on PRs (nightly +
-# manual) so a missing baseline never red-flags a PR.
+# It is NON-BLOCKING (continue-on-error) until the Linux baselines are seeded + the gate is
+# activated (flip continue-on-error off). It does NOT run on PRs (nightly + manual) so a
+# missing baseline never red-flags a PR.
+#
+# SEEDING (the "one-time container run"): dispatch this workflow with `update_snapshots=true`
+# against the target branch — it regenerates the baselines IN THIS CONTAINER (the environment
+# the gate runs in, so no false host/GPU diffs), uploads them as an artifact for review, and
+# commits them back to the branch. Re-use the same path for any future *intended* visual change.
 
 on:
   schedule:
     - cron: '0 6 * * *' # nightly
   workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: 'Seed/refresh the visual baselines (--update-snapshots) and commit them back to the branch'
+        type: boolean
+        default: false
 
 permissions:
-  contents: read
+  contents: write # the seeding mode commits the regenerated baselines back to the branch
 
 concurrency:
   group: e2e-visual-${{ github.ref }}
@@ -30,13 +39,20 @@ jobs:
     # MUST match the installed @playwright/test version so the bundled browser + render match.
     container:
       image: mcr.microsoft.com/playwright:v1.60.0-noble
-    # Non-blocking until the baselines are seeded (see the workflow header).
+    # Non-blocking until the baselines are seeded AND the gate is activated (see the header).
     continue-on-error: true
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
+
       - run: npm ci
-      - run: npm run test:e2e:visual
+
+      # Normal (nightly/gate) run = diff against the committed baselines. Seeding run =
+      # regenerate them with --update-snapshots (the assertion then writes + passes).
+      - name: Visual regression
+        run: npm run test:e2e:visual ${{ inputs.update_snapshots && '-- --update-snapshots' || '' }}
+
+      # Always surface the result (the report on a diff; the freshly-seeded baselines for review).
       - if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -46,3 +62,27 @@ jobs:
             test-results
           retention-days: 7
           if-no-files-found: ignore
+
+      - name: Upload seeded baselines for review
+        if: ${{ inputs.update_snapshots }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: l2-visual-baselines
+          path: e2e/**/*.png
+          if-no-files-found: error
+
+      # Seeding mode only: commit the IN-CONTAINER baselines back to the triggering branch, so
+      # the committed set matches the gate's environment exactly. (GITHUB_TOKEN pushes do not
+      # re-trigger workflows, so this can't loop.)
+      - name: Commit baselines to the branch
+        if: ${{ inputs.update_snapshots }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A e2e
+          if git diff --cached --quiet; then
+            echo "No baseline changes to commit."
+          else
+            git commit -m "test: seed L2 visual baselines (in-container, from ${GITHUB_SHA})"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
