@@ -78,10 +78,37 @@ at 495.**
 +    continue-on-error: false
 ```
 
+## ⚠️ What the first real container run uncovered (the gate never actually worked)
+
+Seeding ran for real **in the container for the first time** — and exposed that the visual gate had
+**never captured the game**. Three latent defects, each fixed (render-side changes are guarded to
+`?freeze` ONLY — normal gameplay is byte-identical, so the approved look is unchanged):
+
+1. ⚠️ **All baselines were the START SCREEN.** The visual scenes (#56-era) predate the
+   `StartScreen` + onboarding; the splash is an HTML overlay over the canvas, so every capture was
+   the identical "Wild Trails / START" card — `?seed/?at/?unlock` staged a world nobody screenshotted
+   (the gate stayed green only because it's non-blocking + unseeded). **Fix:** a frozen capture skips
+   the splash + onboarding (`main.ts`), so the staged world renders.
+2. ⚠️ **The camera eased forever → captures hung.** `?freeze` pauses the sim but the camera follow
+   eases exponentially (`k = 1 - exp(-camLerp·dt)`, never reaching 1) → a frozen scene drifts
+   sub-pixel every frame → the screenshot never settles (3 of 5 scenes timed out). **Fix:** snap the
+   focus when frozen (`SceneManager.updateFollow(…, snap)`) → byte-stable frame.
+3. ⚠️ **Stabilisation flaked under container load.** The default 5 s settle budget was marginal for
+   the busier scenes (7–12 s under load), failing a *different* scene each run. **Fix:**
+   `expect.timeout: 30_000` (the settle budget — NOT the diff tolerance, which stays 0.02).
+
+After the fixes: all 5 scenes capture **distinct, real, staged worlds** (the meadow at the TL1 muted
+baseline, the wetland pond, the riverbank band, the coast beach+sea, the deployed-hide ring), and a
+**second no-update container run diffed all 5 clean** (the README's no-flake proof).
+
 ## Order of operations
 
-1. ✅ Confirm main clean + the live visuals approved (TL1 #82 merged; no in-progress visual change).
-2. ⏳ Seed ALL baselines **in the container** (dispatch `e2e-visual.yml` with `update_snapshots=true`
-   on this branch) → artifact + commit-back.
-3. ⏳ **Surface** the captured baselines for Craig's review.
-4. ⏸️ **Hold** the activation flip → apply only after Craig confirms the capture is the approved look.
+1. ✅ Confirmed main clean + the live visuals approved (TL1 #82 merged; no in-progress visual change).
+2. ✅ Made the gate actually capture the game (the 3 fixes above — all `?freeze`-only).
+3. ✅ Seeded ALL 5 baselines **in the container** (dispatch `e2e-visual.yml` with
+   `update_snapshots=true`) → committed under `e2e/visual.spec.ts-snapshots/` + the
+   `l2-visual-baselines` artifact.
+4. ✅ Proved **no-flake** (a 2nd no-update container run diffs all 5 clean).
+5. ✅ **Surfaced** the 5 captured baselines for Craig's review (in the PR diff / the artifact).
+6. ⏸️ **HOLD** the activation flip (`continue-on-error: true` → `false`) → apply only after Craig
+   confirms the captures are the approved look.

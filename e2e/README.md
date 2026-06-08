@@ -48,20 +48,27 @@ host-generated baselines** (e.g. `*-darwin.png`); they have no CI value.
 
 ## Seeding / updating the visual baselines
 
-The visual job is **non-blocking** (`continue-on-error`) until the Linux baselines exist.
-To seed (or to update after an *intended* visual change), run the pinned container and commit
-the snapshots it writes under `e2e/`:
+The baselines MUST be generated **in the pinned Linux container** (a host/`-darwin` shot has no CI
+value). Seeding runs **in GitHub Actions** (the exact image the gate uses) — dispatch
+`e2e-visual.yml` with `update_snapshots=true` against the branch:
 
 ```sh
-docker run --rm -it -v "$PWD":/work -w /work --ipc=host \
-  mcr.microsoft.com/playwright:v1.60.0-noble \
-  sh -c "npm ci && npm run test:e2e:visual -- --update-snapshots"
-git add e2e/**/*.png && git commit -m "test: seed/update L2 visual baselines"
+gh workflow run e2e-visual.yml --ref <your-branch> -f update_snapshots=true
 ```
 
-Then flip `continue-on-error: false` in `e2e-visual.yml` to make it a real gate. **Prove
-no-flake by running the container twice** (the diffs stay within tolerance) — never by
-committing a host screenshot.
+It runs `--update-snapshots` in the container, uploads the baselines as the `l2-visual-baselines`
+artifact for review, and commits them back under `e2e/visual.spec.ts-snapshots/`. (With local
+Docker the equivalent is `docker run … mcr.microsoft.com/playwright:v1.60.0-noble sh -c "npm ci &&
+npm run test:e2e:visual -- --update-snapshots"` + commit — same image, same bytes.)
+
+**Prove no-flake by dispatching once more *without* `update_snapshots`** — it diffs the committed
+baselines in-container and must pass. Then flip `continue-on-error: false` in `e2e-visual.yml` to
+make it a real gate. Never commit a host screenshot.
+
+⚠️ **Capture determinism** (why a frozen scene is byte-stable): `?freeze` skips the title splash +
+onboarding and **snaps the camera** to the player (the follow eases exponentially and never settles
+otherwise) — both `?freeze`-only, so gameplay is unaffected. The settle budget is `expect.timeout`
+(30 s, generous for the slow container) — NOT the diff tolerance (`maxDiffPixelRatio: 0.02`).
 
 ## What L2 does NOT do
 
