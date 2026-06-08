@@ -7,6 +7,7 @@ import {
   completeNightForagerGate,
   completeHighlandsResearch,
   completeRiverbankGate,
+  completeCoastGate,
   catchRemainingSpecies,
 } from './harness';
 import { createJournal } from '../../../state/Journal';
@@ -99,8 +100,13 @@ describe('L1 Guard 3 — progression-to-win (the unlock chain + the win fires)',
     expect(j.unlockedBiomes).not.toContain('riverbank');
     completeRiverbankGate(j);
     expect(j.unlockedBiomes).toContain('riverbank');
-    // Fill the dex (rabbit + the alpine three + the Riverbank four) -> the win fires. WIN
-    // REACHABLE through every research-gated biome (the cardinal anti-wall pin: no impossible state).
+    // §4.2 — the Coast (the 2nd new biome) is gated behind its OWN research (research-mouse-dusk
+    // + the riverbank activity); the Riverbank alone doesn't open it.
+    expect(j.unlockedBiomes).not.toContain('coast');
+    completeCoastGate(j);
+    expect(j.unlockedBiomes).toContain('coast');
+    // Fill the dex (every roster, incl. the Coast five) -> the win fires. WIN REACHABLE through
+    // every research-gated biome (the cardinal anti-wall pin: no impossible state).
     catchRemainingSpecies(j);
     expect(SPECIES_ORDER.every((id) => j.species[id])).toBe(true);
     expect(isGameComplete(j)).toBe(true);

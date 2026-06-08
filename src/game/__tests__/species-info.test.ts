@@ -27,11 +27,13 @@ describe('SPECIES_INFO — every species has a full field-guide entry', () => {
     }
   });
 
-  it('the status register is hopeful (mentions thriving / doing-well, not just decline)', () => {
-    // Across the roster, the conservation lines lean POSITIVE — what helps them thrive.
+  it('the status register leans hopeful, but names honest decline where true (soul-aware §4.2)', () => {
+    // The lines lean POSITIVE (what helps them thrive) — but written SOUL-AWARE, a genuinely
+    // declining species says so (the red-listed linnet/herring gull, etc). So: MOST hopeful
+    // (≥70%), not a blanket "≤2 may decline" — honest conservation status is the point.
     const positives = SPECIES_ORDER.filter((id) =>
       /thriv|doing well|common|at home|increasing|safe/.test(SPECIES_INFO[id].status.toLowerCase()),
     );
-    expect(positives.length).toBeGreaterThanOrEqual(SPECIES_ORDER.length - 2); // most read hopeful
+    expect(positives.length).toBeGreaterThanOrEqual(Math.ceil(SPECIES_ORDER.length * 0.7)); // most read hopeful
   });
 });

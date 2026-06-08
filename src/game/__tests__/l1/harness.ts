@@ -98,6 +98,18 @@ export function completeRiverbankGate(j: Journal): void {
   reconcileResearchUnlocks(j);
 }
 
+/**
+ * §4.2 — unlock the COAST (the 2nd new biome, R2's gate again). Gated on a NON-FORCED mastery
+ * challenge by play (research-mouse-dusk — a fieldmouse at DUSK; the mouse is any-window so dusk
+ * is a deliberate choice) + the riverbank activity. cost 0 (win-required → anti-wall).
+ */
+export function completeCoastGate(j: Journal): void {
+  applyCatch(j, ev('fieldmouse', 'meadow', 'dusk')); // research-mouse-dusk (the non-forced mastery)
+  startResearch(j, 'unlock-the-coast');
+  for (let i = 0; i < 4; i++) evaluateResearch(j, ev('reedbunting', 'riverbank', 'day')); // catch-in-riverbank ×4
+  reconcileResearchUnlocks(j);
+}
+
 /** Catch the remaining roster (rabbit + the alpine three + the Riverbank four) so the dex
  *  fills for the win. rabbit@night doubles as the second night-forager challenge. */
 export function catchRemainingSpecies(j: Journal): void {
@@ -114,4 +126,10 @@ export function catchRemainingSpecies(j: Journal): void {
   // catch; no bait deployed) — proving the win is reachable bait-less (fish bait is convenience).
   applyCatch(j, ev('kingfisher', 'riverbank', 'day'));
   applyCatch(j, ev('otter', 'riverbank', 'dusk'));
+  // §4.2 — the Coast roster (caught once it's unlocked; the gull + seal bait-less too).
+  applyCatch(j, ev('linnet', 'coast', 'day'));
+  applyCatch(j, ev('brentgoose', 'coast', 'day'));
+  applyCatch(j, ev('turnstone', 'coast', 'day'));
+  applyCatch(j, ev('herringgull', 'coast', 'day'));
+  applyCatch(j, ev('greyseal', 'coast', 'day'));
 }

@@ -30,6 +30,7 @@ describe('lockedRegions — the walled-edge set (the bug fix, at the logic seam)
     unlockBiome(w, 'wetland');
     unlockBiome(w, 'highlands');
     unlockBiome(w, 'riverbank'); // §4.2 — the 5th biome must also be open for zero walls
+    unlockBiome(w, 'coast'); // §4.2 — and the 6th (Coast)
     expect(walledEdges(w)).toHaveLength(0);
   });
 
@@ -45,8 +46,8 @@ describe('lockedRegions — the walled-edge set (the bug fix, at the logic seam)
 describe('lockedRegions — the dim/fog (locked-biome) set', () => {
   it('shrinks as biomes unlock', () => {
     const w = createWorld();
-    expect([...lockedBiomes(w)].sort()).toEqual(['highlands', 'riverbank', 'wetland', 'woodland']);
+    expect([...lockedBiomes(w)].sort()).toEqual(['coast', 'highlands', 'riverbank', 'wetland', 'woodland']);
     unlockBiome(w, 'woodland');
-    expect([...lockedBiomes(w)].sort()).toEqual(['highlands', 'riverbank', 'wetland']); // Woodland un-fogged
+    expect([...lockedBiomes(w)].sort()).toEqual(['coast', 'highlands', 'riverbank', 'wetland']); // Woodland un-fogged
   });
 });
