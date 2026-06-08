@@ -364,6 +364,15 @@ body.modal-open .touch-stick-thumb {
   font-size: 21px;
   line-height: 1;
 }
+/* The consistent inline-SVG glyph set (ICON_* in rendering/icons.ts). One stroke
+ * weight, drawn in the button's currentColor, so the whole cluster reads as one
+ * visual language (replacing the mixed-weight OS emoji). */
+.action-btn svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  pointer-events: none;
+}
 
 /* --- Start screen / title splash (Plan #11, dawn-meadow polish) -------- */
 /* A SPLASH, not a gameplay panel: the backdrop is a procedural, OPAQUE dawn-meadow
