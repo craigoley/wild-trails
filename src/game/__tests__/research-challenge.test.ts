@@ -49,12 +49,20 @@ describe('research challenge — completes ONLY on the right species AT the righ
   });
 });
 
-describe('warm-miss teaching hint — teaches, never punishes', () => {
-  it('a non-completing catch IN the challenge biome pushes the hint (and destroys no progress)', () => {
+describe('warm-miss teaching hint — the SAME-SPECIES near-miss only (the cadence fix)', () => {
+  it('⚠️ the near-miss (the TARGET species at the wrong phase) DOES push the hint — and resets nothing', () => {
     const j = createJournal();
-    const r = evaluateCatch(j, ev('hedgehog', 'meadow', 'dusk')); // a meadow catch, not the night mouse
-    expect(r.hints).toContain(MISSIONS[MOUSE].hint);
+    const r = evaluateCatch(j, ev('fieldmouse', 'meadow', 'day')); // the mouse, but by day (not night)
+    expect(r.hints).toContain(MISSIONS[MOUSE].hint); // "right forager, wrong time" — the helpful nudge
     expect(j.missions[MOUSE]?.completed ?? false).toBe(false); // not completed, not reset
+  });
+
+  it('⚠️ an UNRELATED catch in the challenge biome stays SILENT (the spam is gone)', () => {
+    const j = createJournal();
+    // A different species in the SAME biome no longer nags about the mouse challenge.
+    expect(evaluateCatch(j, ev('hedgehog', 'meadow', 'dusk')).hints).not.toContain(MISSIONS[MOUSE].hint);
+    expect(evaluateCatch(j, ev('rabbit', 'meadow', 'day')).hints).not.toContain(MISSIONS[MOUSE].hint);
+    expect(evaluateCatch(j, ev('quail', 'meadow', 'dawn')).hints).not.toContain(MISSIONS[MOUSE].hint);
   });
 
   it('a catch in a DIFFERENT biome does NOT push the meadow challenge hint', () => {
