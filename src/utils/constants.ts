@@ -94,8 +94,22 @@ export interface BiomeDef {
    *  unlock MECHANISM (missions) arrives in a later PR — this is just the
    *  initial state so the locked-but-visible rendering has something to read. */
   unlocked: boolean;
-  /** Adjacent biome ids (graph edges). */
+  /** Adjacent biome ids (graph edges). RENDER-ONLY (the locked-but-visible dim/fog/
+   *  wall) — NOT the unlock logic (that's the tier/prereq chain below). */
   adjacent: BiomeId[];
+  /** World Expansion (§4.2) — the difficulty / unlock-RING order: 0 = the starting hub
+   *  (Meadow), rising outward as biomes unlock. Distinct from a species' catch-`tier`
+   *  (this is the biome's place in the access ladder); the roster's difficulty climbs with
+   *  it. */
+  tier: number;
+  /** World Expansion (§4.2) — the access GATE: the biome whose mission-SET must complete to
+   *  unlock this one (the linear chain, made explicit metadata) — `undefined` for the hub.
+   *  RE-EXPRESSES `BIOME_SET_UNLOCK`'s inverse (BIOME_SET_UNLOCK[prereq] === this id); an
+   *  escalated gate (the Highlands) additionally carries its research-wrap via
+   *  `BIOME_GATE_CHALLENGES` + the R2 project — UNCHANGED. WE0 adds this as DESCRIPTIVE
+   *  metadata; the existing unlock logic still runs off BIOME_SET_UNLOCK (behavior-neutral).
+   *  WE-each reads it when adding biomes. */
+  prereq?: BiomeId;
   /** Ground tint, 0xRRGGBB. */
   color: number;
 }
@@ -129,6 +143,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     bounds: cell(0, 0),
     unlocked: true,
     adjacent: ['woodland', 'wetland'],
+    tier: 0, // the starting hub
     color: 0x2f6b3a,
   },
   woodland: {
@@ -137,6 +152,8 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     bounds: cell(0, PITCH),
     unlocked: false,
     adjacent: ['meadow', 'highlands'],
+    tier: 1,
+    prereq: 'meadow', // the Meadow set unlocks the Woodland (gentle gate)
     color: 0x244f2c,
   },
   wetland: {
@@ -145,6 +162,8 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     bounds: cell(PITCH, 0),
     unlocked: false,
     adjacent: ['meadow', 'highlands'],
+    tier: 2,
+    prereq: 'woodland', // the Woodland set unlocks the Wetland (gentle gate)
     color: 0x2a5a55,
   },
   highlands: {
@@ -153,6 +172,11 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     bounds: cell(PITCH, PITCH),
     unlocked: false,
     adjacent: ['woodland', 'wetland'],
+    tier: 3,
+    // The Wetland set unlocks the Highlands — but ESCALATED: also research-mouse-night
+    // (BIOME_GATE_CHALLENGES) + the R2 research wrap. The prereq names the set; the wrap is
+    // unchanged.
+    prereq: 'wetland',
     color: 0x4a4f57,
   },
 };
