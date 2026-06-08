@@ -89,7 +89,7 @@ describe('placement — posts sit in their cell, clear of spawn / cover / the se
         p.radius + TRACKING.sett.radius,
       );
     }
-    expect(SUPPLY_POSTS.map((p) => p.biome).sort()).toEqual(['highlands', 'meadow', 'riverbank', 'wetland', 'woodland']);
+    expect(SUPPLY_POSTS.map((p) => p.biome).sort()).toEqual(['coast', 'highlands', 'meadow', 'riverbank', 'wetland', 'woodland']);
   });
 });
 

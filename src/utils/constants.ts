@@ -81,7 +81,7 @@ export const WORLD = {
 } as const;
 
 /** The biomes in the world. `meadow` is the starting region. */
-export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank';
+export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast';
 
 /** Static definition of one biome: its finite bounds, display name, adjacency
  *  in the world graph, initial unlocked state, and ground tint. */
@@ -125,7 +125,7 @@ function cell(cx: number, cy: number): Rect {
 }
 
 /** Iteration order for the biome graph (deterministic; render + lookup order). */
-export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank'];
+export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast'];
 
 /**
  * The biome graph. A 2x2 grid of equal cells:
@@ -188,10 +188,25 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Riverbank',
     bounds: cell(PITCH, PITCH * 2), // north of the Highlands — [20,60] x [60,100]
     unlocked: false,
-    adjacent: ['highlands'],
+    adjacent: ['highlands', 'coast'],
     tier: 4,
     prereq: 'highlands', // the Highlands set + the R2 wrap precede it; its own gate is research-rabbit-dawn
     color: 0x35756b,
+  },
+  // World Expansion (§4.2) — COAST, the 2nd new biome: a SEA-dominant shore north of the
+  // Riverbank (the river meets the sea). A new equal cell — the clamp extends unchanged. The
+  // SEA is a large #55 water region on the cell's OUTER (north / world-boundary) edge — NOT
+  // covering the shared y=100 seam, so the beach edge stays walkable to the Riverbank. An OPEN
+  // biome (2 cover spots) — BOTH biome nets shine (throwing on the beach, dip across the sea).
+  coast: {
+    id: 'coast',
+    displayName: 'Coast',
+    bounds: cell(PITCH, PITCH * 3), // north of the Riverbank — [20,60] x [100,140]
+    unlocked: false,
+    adjacent: ['riverbank'],
+    tier: 5,
+    prereq: 'riverbank', // gated by research-mouse-dusk + the unlock-the-coast project
+    color: 0xc9b489, // sand / shingle
   },
 };
 
@@ -321,7 +336,13 @@ export type SpeciesId =
   | 'dipper'
   // Riverbank fish-eaters (§4.1.5 — the FISH diet; the apex catches).
   | 'kingfisher'
-  | 'otter';
+  | 'otter'
+  // Coast (§4.2, tier 4-5 — the sea; the fish-diet synergy + the apex grey seal).
+  | 'linnet'
+  | 'brentgoose'
+  | 'turnstone'
+  | 'herringgull'
+  | 'greyseal';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -395,6 +416,11 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'dipper',
   'kingfisher',
   'otter',
+  'linnet',
+  'brentgoose',
+  'turnstone',
+  'herringgull',
+  'greyseal',
 ];
 
 /**
@@ -553,6 +579,42 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'A sleek, playful swimmer — at the first alarm it slips into the river and is gone, hunting underwater with whiskers that feel the current.',
     status: 'Back from the brink — otters now thrive again on clean, well-stocked rivers right across the country.',
+  },
+  // Coast (§4.2) — written soul-AWARE: HONEST conservation status, the real spectrum.
+  linnet: {
+    fieldNote:
+      'A small finch of the coastal scrub and dunes — the linnet picks seeds from low plants by day. Watch the rough ground above the beach.',
+    behaviour:
+      'Flocks twist and turn together over the dunes; the breeding male flushes rose-pink on the breast and forehead.',
+    status: 'Red-listed and in decline — the loss of seeding plants on farmland and coast has hit the linnet hard.',
+  },
+  brentgoose: {
+    fieldNote:
+      'A small, dark goose of the winter shore — the brent goose grazes eelgrass and saltmarsh by day along the tideline.',
+    behaviour:
+      'Travels in loose, chattering flocks low over the water; it crops the eelgrass beds that only the shallow coast grows.',
+    status: 'Doing well where its eelgrass beds and saltmarshes are protected — a winter visitor in good numbers.',
+  },
+  turnstone: {
+    fieldNote:
+      'A stout little wader of the tideline — the turnstone flips over seaweed and stones for sandhoppers and small invertebrates by day.',
+    behaviour:
+      'Works the strandline in busy, restless parties, levering over weed and shells with its short strong bill to grab what hides beneath.',
+    status: 'Common on rocky and sandy shores in winter — a hardy, adaptable little traveller.',
+  },
+  herringgull: {
+    fieldNote:
+      'A big, bold gull of the coast — the herring gull takes fish and scavenges the shore by day (§4.1.5: it eats FISH).',
+    behaviour:
+      'Loud and clever, it patrols the tideline and harbours; the pink-legged adult drops shellfish onto rocks to crack them.',
+    status: 'Surprisingly red-listed and in decline — the bold “town gull” masks a real fall in our wild seabird colonies.',
+  },
+  greyseal: {
+    fieldNote:
+      'A fish-hunter of the open sea — the grey seal hauls out on the rocks by day and hunts fish offshore (§4.1.5: it eats FISH).',
+    behaviour:
+      'Curious and powerful; at the first alarm it slides off the rocks into the sea and is gone, hunting underwater on a single long breath.',
+    status: 'A conservation success — Britain now safeguards nearly half the world’s grey seals, back from the brink.',
   },
 };
 
@@ -918,6 +980,92 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     // third fleesToWater species, the apex of the water-edge catch).
     fleesToWater: true,
   },
+  // --- Coast (§4.2) — the sea; tier 4-5, the fish-diet synergy + the apex grey seal. ---
+  linnet: {
+    id: 'linnet',
+    displayName: 'Linnet',
+    biome: 'coast',
+    // The Coast VALVE (0.50): a small, calm seed-eater of the dunes — catchable bait-less.
+    spawnWeight: 6,
+    baseFleeSpeed: 2.8,
+    detectionRadius: 2.6,
+    activityWindow: 'day',
+    tier: 4,
+    baseCatchRate: 0.5,
+    bait: 'seeds',
+    color: 0x9a5a4a,
+    size: 0.3,
+    profile:
+      'A small finch of coastal scrub and dunes, eating seeds from low plants. The breeding male flushes rose-pink — but it is red-listed, hit hard by the loss of seeding ground.',
+  },
+  brentgoose: {
+    id: 'brentgoose',
+    displayName: 'Brent Goose',
+    biome: 'coast',
+    spawnWeight: 4,
+    baseFleeSpeed: 3.6,
+    detectionRadius: 3.4,
+    activityWindow: 'day',
+    tier: 4,
+    baseCatchRate: 0.38,
+    bait: 'greens',
+    color: 0x33312e,
+    size: 0.42,
+    profile:
+      'A small, dark winter goose that grazes the eelgrass and saltmarsh of the shallow coast, travelling in loose chattering flocks low over the water.',
+  },
+  turnstone: {
+    id: 'turnstone',
+    displayName: 'Turnstone',
+    biome: 'coast',
+    spawnWeight: 5,
+    baseFleeSpeed: 4.0,
+    detectionRadius: 3.4,
+    activityWindow: 'day',
+    tier: 5,
+    baseCatchRate: 0.34,
+    bait: 'insects',
+    color: 0xb5733f,
+    size: 0.28,
+    profile:
+      'A stout tideline wader that flips over seaweed and stones with its short strong bill to grab the sandhoppers and small invertebrates hiding beneath.',
+  },
+  herringgull: {
+    id: 'herringgull',
+    displayName: 'Herring Gull',
+    biome: 'coast',
+    spawnWeight: 4,
+    baseFleeSpeed: 3.8,
+    detectionRadius: 3.6,
+    activityWindow: 'day',
+    tier: 4,
+    baseCatchRate: 0.32,
+    bait: 'fish', // §4.1.5 — fish + scavenge
+    color: 0xe6e8ec,
+    size: 0.4,
+    profile:
+      'A big, bold gull that takes fish and scavenges the shore — and, surprisingly, a red-listed bird in decline: the town gull masks a real fall in our wild seabird colonies.',
+  },
+  greyseal: {
+    id: 'greyseal',
+    displayName: 'Grey Seal',
+    biome: 'coast',
+    // The new APEX catch (0.12, the hardest of all): a large, wary, offshore hunter.
+    spawnWeight: 2,
+    baseFleeSpeed: 4.8,
+    detectionRadius: 4.5,
+    activityWindow: 'day',
+    tier: 5,
+    baseCatchRate: 0.12,
+    bait: 'fish', // §4.1.5 — a fish hunter of the open sea
+    color: 0xb0a89a,
+    size: 0.56,
+    profile:
+      'A powerful sea hunter that hauls out on the rocks and hunts fish offshore on a single long breath. A conservation success — Britain safeguards nearly half the world’s grey seals.',
+    // §55 reuse: the seal slides INTO the sea to escape — the apex water-diver; the dip-net's
+    // biggest moment (across the open sea).
+    fleesToWater: true,
+  },
 };
 
 // ===========================================================================
@@ -1025,6 +1173,12 @@ export const HIDING_SPOTS: readonly HidingSpotDef[] = [
   { biome: 'riverbank', x: 28, y: 68, radius: 2.2, kind: 'reeds' },
   { biome: 'riverbank', x: 50, y: 70, radius: 2.0, kind: 'reeds' },
   { biome: 'riverbank', x: 35, y: 92, radius: 2.4, kind: 'reeds' },
+  // Coast — marram grass on the dunes/beach (x∈[20,60], y∈[100,123], clear of the sea): just 2
+  // spots (an OPEN biome, like the Highlands — so the throwing net's open-ground reach applies on
+  // the beach, while the sea makes the dip-net matter: Coast is where BOTH biome nets shine).
+  // Reuses the meadow grass render.
+  { biome: 'coast', x: 30, y: 108, radius: 2.2, kind: 'grass' },
+  { biome: 'coast', x: 50, y: 114, radius: 2.0, kind: 'grass' },
 ];
 
 /** The portable HIDE (Nets & Gear slice C) — naturalist gear you DEPLOY at your
@@ -1062,6 +1216,14 @@ export const WATER: readonly WaterDef[] = [
   { biome: 'riverbank', x: 30, y: 80, radius: 6 },
   { biome: 'riverbank', x: 40, y: 80, radius: 6 },
   { biome: 'riverbank', x: 50, y: 80, radius: 6 },
+  // Coast (§4.2) — the SEA: a LARGE #55 region of overlapping discs along the cell's OUTER
+  // (north / world-boundary) edge, covering the seaward half (y≈123-140). It sits well clear of
+  // the y=100 seam to the Riverbank — the beach (y≈100-123) stays walkable. The disc barrier /
+  // slide / flee are reused VERBATIM (the sea is the disc mechanic scaled up — visual, not new);
+  // the grey seal slips into it (the apex water-diver — the dip-net's biggest moment).
+  { biome: 'coast', x: 28, y: 132, radius: 9 },
+  { biome: 'coast', x: 40, y: 132, radius: 9 },
+  { biome: 'coast', x: 52, y: 132, radius: 9 },
 ];
 
 /** Frog flee-to-water steering (slice W): how strongly a fleeing frog's heading is
@@ -1145,6 +1307,7 @@ export const SUPPLY_POSTS: readonly SupplyPostDef[] = [
   { biome: 'wetland', x: 55, y: -14, radius: 2.5 },
   { biome: 'highlands', x: 55, y: 55, radius: 2.5 },
   { biome: 'riverbank', x: 52, y: 66, radius: 2.5 }, // clear of the river band + the reeds
+  { biome: 'coast', x: 40, y: 106, radius: 2.5 }, // on the beach, clear of the sea + the marram
 ];
 
 /** Closing the Field Supply steps the player OUT the door (−y), this far PAST the
@@ -1741,6 +1904,40 @@ export const SPECIES_MODEL: Record<
     tailLengthR: 1.3,
     tailRadiusR: 0.22,
   },
+  // Coast (§4.2) — four shore birds (the BIRD build) + the grey seal (the MAMMAL build, large,
+  // round, tiny ears + a short tail for the flippers/read).
+  linnet: {
+    kind: 'bird',
+    accent: 0xc0533a, // rose-pink breast
+    beakLengthR: 0.4,
+    crestHeightR: 0.25,
+  },
+  brentgoose: {
+    kind: 'bird',
+    accent: 0xf0f0f0, // white stern
+    beakLengthR: 0.5,
+    crestHeightR: 0.15,
+  },
+  turnstone: {
+    kind: 'bird',
+    accent: 0xd98b4a, // tortoiseshell back
+    beakLengthR: 0.45,
+    crestHeightR: 0.2,
+  },
+  herringgull: {
+    kind: 'bird',
+    accent: 0xf2c84a, // yellow bill
+    beakLengthR: 0.6,
+    crestHeightR: 0.15,
+  },
+  greyseal: {
+    kind: 'mouse',
+    accent: 0xdcd6cb,
+    earHeightR: 0.1,
+    earRadiusR: 0.1,
+    tailLengthR: 0.3,
+    tailRadiusR: 0.2,
+  },
 } as const;
 
 // ===========================================================================
@@ -1819,6 +2016,7 @@ export const MISSION_ORDER: readonly string[] = [
   'research-mouse-night',
   'research-rabbit-night',
   'research-rabbit-dawn',
+  'research-mouse-dusk',
 ];
 
 /**
@@ -1971,6 +2169,21 @@ export const MISSIONS: Record<string, MissionDef> = {
     standalone: true,
     hint: 'Not the one — be out at DAWN for a meadow grazer at first light.',
   },
+  // §4.2 — the Coast's by-PLAY mastery gate. NON-FORCED: the fieldmouse forages at ANY hour, so
+  // requiring it AT DUSK is a deliberate field-craft choice (normal play never forces a dusk
+  // mouse — the #48 inverse holds). Doable in the always-open Meadow with the starter.
+  'research-mouse-dusk': {
+    id: 'research-mouse-dusk',
+    biome: 'meadow',
+    title: 'Research: The Evening Watch',
+    description:
+      'A round-the-clock forager of the meadow grass, out at every hour — most field-watchers meet it by day. Catch a field mouse at DUSK, as the light fades.',
+    requirement: { kind: 'research', species: 'fieldmouse', phase: 'dusk', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not the one — seek a meadow forager at DUSK, as the light fades.',
+  },
 };
 
 /** Completing ALL of a biome's missions unlocks the mapped biome (lateral reward
@@ -1980,6 +2193,7 @@ export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, BiomeId>> = {
   woodland: 'wetland',
   wetland: 'highlands',
   highlands: 'riverbank', // §4.2 — the Highlands set + its R2 wrap precede the Riverbank gate
+  riverbank: 'coast', // §4.2 — the Riverbank precedes the Coast gate (the river meets the sea)
 };
 
 /** §4.1c ESCALATING knowledge gates: in ADDITION to the catch-set, a biome's unlock
@@ -1996,6 +2210,11 @@ export const BIOME_GATE_CHALLENGES: Partial<Record<BiomeId, readonly string[]>> 
   // by-PLAY mastery challenge (research-rabbit-dawn, a NON-FORCED dawn catch). The
   // unlock-the-riverbank research project wraps it (R2 generalized).
   highlands: ['research-rabbit-dawn'],
+  // §4.2 — reaching the Coast: a by-PLAY mastery challenge (research-mouse-dusk, a NON-FORCED
+  // dusk catch). ⚠️ This uses the LAST free non-forced slot — the any-window species
+  // (fieldmouse/rabbit) × the free phases (night/dawn/dusk) are now ALL used; the NEXT biome
+  // needs a mission-system enhancement for more non-forced-challenge variety (logged).
+  riverbank: ['research-mouse-dusk'],
 };
 
 // ===========================================================================
@@ -2137,6 +2356,18 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     activityRequirement: { kind: 'catch-in-biome', biome: 'riverbank', count: 4 },
     reward: { kind: 'bait-access', bait: 'fish' },
   },
+  // §4.2 — COAST access (R2's pattern again). cost 0 (Coast's species are win-required -> anti-
+  // wall). knowledgeRequirement = research-mouse-dusk (a NON-FORCED dusk catch, by play —
+  // double-enforced with the isUnlockGateMet re-check). The activity is riverbank study.
+  'unlock-the-coast': {
+    id: 'unlock-the-coast',
+    name: 'Coast Access',
+    blurb: 'Follow the river to where it meets the sea, and learn the dusk meadow — then the shore opens.',
+    cost: 0,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'riverbank', count: 4 },
+    knowledgeRequirement: 'research-mouse-dusk', // by PLAY only — the non-forced dusk catch
+    reward: { kind: 'biome-access', biome: 'coast' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
@@ -2148,6 +2379,7 @@ export const RESEARCH_ORDER: readonly string[] = [
   'unlock-the-highlands',
   'unlock-the-riverbank',
   'study-aquatic-life',
+  'unlock-the-coast',
 ];
 
 // ===========================================================================

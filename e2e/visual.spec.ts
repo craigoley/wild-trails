@@ -21,6 +21,8 @@ const scenes = [
   { name: 'meadow-cover-hide', query: `?seed=${SEED}&freeze=1&hide=1` },
   // §4.2 — the first new biome: the Riverbank river reach (the reused #55 water as a band).
   { name: 'riverbank-river', query: `?seed=${SEED}&freeze=1&unlock=all&at=40,80` },
+  // §4.2 — the 2nd new biome: the Coast shore + the large outer-edge SEA (the player on the beach).
+  { name: 'coast-shore', query: `?seed=${SEED}&freeze=1&unlock=all&at=40,114` },
 ];
 
 for (const scene of scenes) {

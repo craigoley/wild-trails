@@ -12,8 +12,11 @@ import { MISSIONS, BIOMES } from '../../utils/constants';
 import type { Vec2 } from '../../utils/math';
 
 /** A meadow catch at a given phase. */
+// Use a species with NO research challenge (quail) so a generic dusk/night catch tests the
+// timephase missions in ISOLATION — a fieldmouse/rabbit would ALSO fire its research challenge
+// (research-mouse-dusk/night etc), which is correct game behaviour but couples these tests to it.
 const ev = (phase: CatchEvent['phase'], biome: CatchEvent['biome'] = 'meadow'): CatchEvent => ({
-  species: 'fieldmouse',
+  species: 'quail',
   biome,
   phase,
 });
