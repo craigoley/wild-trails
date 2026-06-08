@@ -98,7 +98,7 @@ describe('achievability — the win is REACHABLE with shipped content (no grind)
     const speciesPts = SPECIES_ORDER.length * RANK.perSpeciesFound;
     const top = RANKS[RANKS.length - 1].minPoints;
     expect(missionPts).toBe(231); // post-§4.1b-fix ceiling (2 non-forced challenges)
-    expect(SPECIES_ORDER.length).toBe(17); // bigger roster, bigger win bar
+    expect(SPECIES_ORDER.length).toBe(19); // bigger roster, bigger win bar
     expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // clears with margin
   });
 

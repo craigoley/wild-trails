@@ -18,7 +18,7 @@ describe('Journal panel — grouped by biome', () => {
     // The grouping lives INSIDE the scroll body — the scroll architecture is untouched.
     expect(document.querySelector('.journal-scroll > .journal-grid > .journal-biome')).not.toBeNull();
     // Overall "X of N" total still in the panel header.
-    expect(document.querySelector('.journal-title')!.textContent).toContain('0 of 17');
+    expect(document.querySelector('.journal-title')!.textContent).toContain('0 of 19');
   });
 
   it('undiscovered species stay "???" (name NOT leaked) under their biome header', () => {

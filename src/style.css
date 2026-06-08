@@ -1053,6 +1053,8 @@ body.modal-open .touch-stick-thumb {
   bottom: 16px;
   z-index: 25;
   display: flex;
+  flex-wrap: wrap; /* §4.1.5 — the 4th (fish) chip wraps rather than crowd the controls on a narrow screen */
+  max-width: 64vw;
   gap: 8px;
   pointer-events: none; /* the tray container is layout-only */
 }
@@ -1134,6 +1136,24 @@ body.modal-open .touch-stick-thumb {
 }
 .icon-insect::before { left: -7px; transform: rotate(18deg); box-shadow: 0 4px 0 #8a6cff, 0 8px 0 #8a6cff; }
 .icon-insect::after { right: -7px; transform: rotate(-18deg); box-shadow: 0 4px 0 #8a6cff, 0 8px 0 #8a6cff; }
+/* FISH (§4.1.5) — a teal body (a leaf-ish oval) with a triangular tail fin. */
+.icon-fish {
+  background: #4fb6c8;
+  border-radius: 60% 40% 40% 60%;
+  width: 12px;
+  height: 8px;
+  margin: 4px 2px;
+}
+.icon-fish::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: -5px;
+  width: 0;
+  height: 0;
+  border: 4px solid transparent;
+  border-right-color: #4fb6c8; /* the tail fin */
+}
 
 /* ?debug=1 readout — top left, monospace, unobtrusive. */
 .hud-debug {

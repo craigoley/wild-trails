@@ -26,8 +26,8 @@ describe('Bait — inventory + deployment', () => {
     expect(s.selected).toBe(BAIT_ORDER[0]);
     cycleSelectedBait(s);
     expect(s.selected).toBe(BAIT_ORDER[1]);
-    cycleSelectedBait(s);
-    cycleSelectedBait(s);
+    // cycle the rest of the way round (length-robust — now 4 baits with fish) -> wraps to the first.
+    for (let i = 1; i < BAIT_ORDER.length; i++) cycleSelectedBait(s);
     expect(s.selected).toBe(BAIT_ORDER[0]); // wrapped
   });
 

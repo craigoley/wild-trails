@@ -110,4 +110,8 @@ export function catchRemainingSpecies(j: Journal): void {
   applyCatch(j, ev('watervole', 'riverbank', 'day'));
   applyCatch(j, ev('greywagtail', 'riverbank', 'day'));
   applyCatch(j, ev('dipper', 'riverbank', 'day'));
+  // §4.1.5 — the fish-eaters. Caught here WITHOUT researching fish bait (applyCatch records a
+  // catch; no bait deployed) — proving the win is reachable bait-less (fish bait is convenience).
+  applyCatch(j, ev('kingfisher', 'riverbank', 'day'));
+  applyCatch(j, ev('otter', 'riverbank', 'dusk'));
 }

@@ -29,7 +29,7 @@ import { TimeIndicator } from './rendering/TimeIndicator';
 import { JournalPanel } from './rendering/JournalPanel';
 import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
 import { ResearchPanel } from './rendering/ResearchPanel';
-import { evaluateResearch, startResearch, completeResearch } from './game/Research';
+import { evaluateResearch, startResearch, completeResearch, isBaitUnlocked } from './game/Research';
 import { grantTool } from './game/Tools';
 import { syncModalOpenClass } from './rendering/modalClass';
 import { Banner } from './rendering/Banner';
@@ -52,6 +52,7 @@ import { evaluateCatch, reconcileResearchUnlocks, shouldCelebrateWin } from './g
 import { WinScreen } from './rendering/WinScreen';
 import { unlockBiome, supplyPostAt, supplyExitPosition, clampToUnlocked } from './game/World';
 import {
+  BAIT_DISPLAY,
   BIOMES,
   MAX_FRAME_DT,
   MISSION_ORDER,
@@ -62,6 +63,7 @@ import {
   SUPPLY_POSTS,
   TOOLS,
   TRACKING,
+  type BaitId,
   type BiomeId,
   type ResearchReward,
 } from './utils/constants';
@@ -173,7 +175,13 @@ function applyResearchReward(reward: ResearchReward): void {
   if (reward.kind === 'grant-tool') {
     grantTool(journal, reward.toolId);
     banner.enqueue(`New net unlocked: ${TOOLS[reward.toolId].displayName} — equip it in the Field Supply`, 'research');
+  } else if (reward.kind === 'bait-access') {
+    // §4.1.5 — fish bait is now BUYABLE in the Field Supply (the unlock derives from the
+    // completed project; the shop reads it). The tray's chip un-hides once it's unlocked.
+    banner.enqueue(`New bait unlocked: ${BAIT_DISPLAY[reward.bait].label} — buy it in the Field Supply`, 'research');
   }
+  // 'biome-access' is handled by the order-independent reconcileResearchUnlocks (R2); 'journal-layer'
+  // is a READ the dex card does (R0b). No-ops here.
 }
 // The Field Supply (§12 1b) — spend credits on extra bait. A purchase persists (so
 // it survives reload); the buy mutates journal.credits + the live game.bait counts.
@@ -187,6 +195,7 @@ const shopPanel = new ShopPanel(app, persist, (toolId) => {
 // Walk-in tracking: detect the close EDGE (open→closed) to step the player out.
 let shopWasOpen = false;
 const exitOut = { x: 0, y: 0 }; // reused — no per-frame alloc in the loop
+const baitUnlocked = (id: BaitId): boolean => isBaitUnlocked(journal, id);
 // The "Field Guide Complete" win screen (Plan #10). maybeFireWin fires it ONCE —
 // when the win condition is first met (the persisted `won` flag guards re-firing)
 // — then dismissing it returns to free-roam. Checked at boot (so a save that
@@ -410,7 +419,7 @@ function frame(nowMs: number): void {
   // chance, and surface the first-time "try bait" hint.
   controls.setCatchState(game.catchArmed, game.targetChance);
   controls.setBaitHint(game.catchArmed && !game.targetBaited && !game.usedBaitEver);
-  controls.setBaitTray(game.bait);
+  controls.setBaitTray(game.bait, baitUnlocked);
 
   // Field Journal toggle (UI-only edge action; consumed at the boundary, not the
   // sim). Refresh on open so it shows the latest roster.
