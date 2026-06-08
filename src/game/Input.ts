@@ -81,6 +81,7 @@ export const ACTION_KEYS = {
   journal: ['j'],
   missions: ['m'],
   research: ['r'],
+  baitPanel: ['e'],
   mute: ['k'],
 } as const;
 

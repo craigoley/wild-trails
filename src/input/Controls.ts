@@ -61,9 +61,8 @@ export class Controls {
   private readonly baitBtn: HTMLButtonElement;
   /** Badge on the BAIT button showing the currently-selected bait (icon + count). */
   private readonly baitCurrent: HTMLSpanElement;
-  /** Last-rendered "selected:count" key, so the per-frame badge update is a no-op
-   *  unless it actually changed (no per-frame DOM churn). */
-  private lastBaitKey = '';
+  private lastBaitId = '';
+  private lastBaitCount = -1;
   private readonly muteBtn: HTMLButtonElement;
   private readonly baitHint: HTMLDivElement;
 
@@ -136,7 +135,7 @@ export class Controls {
     hint.className = 'touch-hint';
     hint.textContent = isTouch
       ? 'Drag to roam · CATCH · BAIT · 🪱 to pick bait'
-      : 'WASD roam · Space catch · B bait · 1/2/3 pick bait';
+      : 'WASD roam · Space catch · B bait · E/1/2/3 pick bait';
     target.appendChild(hint);
   }
 
@@ -148,9 +147,9 @@ export class Controls {
   setCurrentBait(bait: BaitState): void {
     const id = bait.selected;
     const count = bait.counts[id];
-    const key = `${id}:${count}`;
-    if (key === this.lastBaitKey) return;
-    this.lastBaitKey = key;
+    if (id === this.lastBaitId && count === this.lastBaitCount) return;
+    this.lastBaitId = id;
+    this.lastBaitCount = count;
     const disp = BAIT_DISPLAY[id];
     this.baitCurrent.innerHTML =
       `<span class="chip-icon icon-${disp.icon}"></span>` +
@@ -230,6 +229,7 @@ export class Controls {
     if (includes(ACTION_KEYS.journal, k)) this.intent.journalToggle = true;
     if (includes(ACTION_KEYS.missions, k)) this.intent.missionToggle = true;
     if (includes(ACTION_KEYS.research, k)) this.intent.researchToggle = true;
+    if (includes(ACTION_KEYS.baitPanel, k)) this.intent.baitPanelToggle = true;
     if (includes(ACTION_KEYS.mute, k)) this.intent.muteToggle = true;
     // 1/2/3 direct-select the corresponding bait chip.
     const baitIdx = baitIndexForKey(k);
