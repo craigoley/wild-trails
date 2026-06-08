@@ -85,11 +85,29 @@ export function completeHighlandsResearch(j: Journal): void {
   reconcileResearchUnlocks(j);
 }
 
-/** Catch the remaining roster (rabbit + the alpine three) so the dex fills for the win.
- *  rabbit@night doubles as the second night-forager challenge. */
+/**
+ * §4.2 — unlock the RIVERBANK (the first new biome, R2's gate generalized). Its access is a
+ * research project gated on a NON-FORCED mastery challenge by play (research-rabbit-dawn — a
+ * rabbit at DAWN; the rabbit is any-window so dawn is a deliberate choice) + the highlands
+ * activity. cost 0 (win-required → anti-wall). Mirrors completeHighlandsResearch.
+ */
+export function completeRiverbankGate(j: Journal): void {
+  applyCatch(j, ev('rabbit', 'meadow', 'dawn')); // research-rabbit-dawn (the non-forced mastery)
+  startResearch(j, 'unlock-the-riverbank');
+  for (let i = 0; i < 4; i++) evaluateResearch(j, ev('ptarmigan', 'highlands', 'day')); // catch-in-highlands ×4
+  reconcileResearchUnlocks(j);
+}
+
+/** Catch the remaining roster (rabbit + the alpine three + the Riverbank four) so the dex
+ *  fills for the win. rabbit@night doubles as the second night-forager challenge. */
 export function catchRemainingSpecies(j: Journal): void {
   applyCatch(j, ev('rabbit', 'meadow', 'night')); // research-rabbit-night + finds rabbit
   applyCatch(j, ev('ptarmigan', 'highlands', 'day'));
   applyCatch(j, ev('mountainhare', 'highlands', 'dusk'));
   applyCatch(j, ev('dotterel', 'highlands', 'day'));
+  // §4.2 — the Riverbank roster (caught once it's unlocked).
+  applyCatch(j, ev('reedbunting', 'riverbank', 'day'));
+  applyCatch(j, ev('watervole', 'riverbank', 'day'));
+  applyCatch(j, ev('greywagtail', 'riverbank', 'day'));
+  applyCatch(j, ev('dipper', 'riverbank', 'day'));
 }

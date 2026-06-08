@@ -16,9 +16,10 @@ import {
  * The unlock BEHAVIOR itself is proven unchanged by the untouched L1 progression-to-win guards.
  */
 describe('World model WE0 — ⚠️ the current 4 are byte-identical (behavior-neutral keystone)', () => {
-  it('the 4 biomes + their bounds are unchanged (no shifted bound; still exactly the 2x2 cells)', () => {
-    expect(BIOME_ORDER).toEqual(['meadow', 'woodland', 'wetland', 'highlands']); // still the 4
-    // The exact cell rects (halfSize 20, pitch 40) — a shifted bound fails here.
+  it('the original 4 biomes + their bounds are unchanged (no shifted bound; still exactly the 2x2 cells)', () => {
+    // WE0 kept the 4 byte-identical; WE-each (Riverbank) appends a 5th cell — the original
+    // 4 stay first, with their EXACT rects. A shifted original bound still fails here.
+    expect(BIOME_ORDER.slice(0, 4)).toEqual(['meadow', 'woodland', 'wetland', 'highlands']);
     expect(BIOMES.meadow.bounds).toEqual({ minX: -20, minY: -20, maxX: 20, maxY: 20 });
     expect(BIOMES.woodland.bounds).toEqual({ minX: -20, minY: 20, maxX: 20, maxY: 60 });
     expect(BIOMES.wetland.bounds).toEqual({ minX: 20, minY: -20, maxX: 60, maxY: 20 });

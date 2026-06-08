@@ -154,7 +154,7 @@ describe('Plan #9 — diet gate holds for the new species (correct bait > wrong 
 
 describe('Plan #9 — roster count is data-driven', () => {
   it('the roster is 13 and contains the 4 Plan #9 species', () => {
-    expect(SPECIES_ORDER.length).toBe(13); // Highlands content added ptarmigan/hare/dotterel
+    expect(SPECIES_ORDER.length).toBe(17); // Highlands content added ptarmigan/hare/dotterel
     for (const id of NEW) expect(SPECIES_ORDER).toContain(id);
   });
 });

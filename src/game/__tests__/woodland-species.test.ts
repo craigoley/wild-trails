@@ -41,7 +41,7 @@ describe('Woodland species — tier-2 difficulty (harder than the Meadow band)',
 
 describe('Woodland species — roster count is data-driven', () => {
   it('the species roster grew to 13 (the journal header reads this, not a literal)', () => {
-    expect(SPECIES_ORDER.length).toBe(13); // Highlands content added Ptarmigan, Mountain Hare, Dotterel
+    expect(SPECIES_ORDER.length).toBe(17); // Highlands content added Ptarmigan, Mountain Hare, Dotterel
     for (const id of WOODLAND) expect(SPECIES_ORDER).toContain(id);
     // Each shipped species has a profile + a model config (cards + silhouettes).
     for (const id of WOODLAND) {

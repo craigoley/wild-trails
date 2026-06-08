@@ -81,7 +81,7 @@ export const WORLD = {
 } as const;
 
 /** The biomes in the world. `meadow` is the starting region. */
-export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands';
+export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank';
 
 /** Static definition of one biome: its finite bounds, display name, adjacency
  *  in the world graph, initial unlocked state, and ground tint. */
@@ -125,7 +125,7 @@ function cell(cx: number, cy: number): Rect {
 }
 
 /** Iteration order for the biome graph (deterministic; render + lookup order). */
-export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands'];
+export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank'];
 
 /**
  * The biome graph. A 2x2 grid of equal cells:
@@ -171,13 +171,27 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Highlands',
     bounds: cell(PITCH, PITCH),
     unlocked: false,
-    adjacent: ['woodland', 'wetland'],
+    adjacent: ['woodland', 'wetland', 'riverbank'],
     tier: 3,
     // The Wetland set unlocks the Highlands — but ESCALATED: also research-mouse-night
     // (BIOME_GATE_CHALLENGES) + the R2 research wrap. The prereq names the set; the wrap is
     // unchanged.
     prereq: 'wetland',
     color: 0x4a4f57,
+  },
+  // World Expansion (§4.2) — RIVERBANK, the first NEW biome: a flowing-water reach north of
+  // the Highlands (a new equal cell, edge-adjacent — the rectangular clamp extends to it
+  // unchanged). Tier 4, reached by RESEARCH past the Highlands. The river reuses the #55
+  // water discs (rendered as a band); the water vole flees into it (the dip-net call-back).
+  riverbank: {
+    id: 'riverbank',
+    displayName: 'Riverbank',
+    bounds: cell(PITCH, PITCH * 2), // north of the Highlands — [20,60] x [60,100]
+    unlocked: false,
+    adjacent: ['highlands'],
+    tier: 4,
+    prereq: 'highlands', // the Highlands set + the R2 wrap precede it; its own gate is research-rabbit-dawn
+    color: 0x35756b,
   },
 };
 
@@ -299,7 +313,12 @@ export type SpeciesId =
   // Highlands (tier 4 — alpine high-tops, the hardest roster of all).
   | 'ptarmigan'
   | 'mountainhare'
-  | 'dotterel';
+  | 'dotterel'
+  // Riverbank (§4.2, tier 4-5 — flowing water; the dip-net's biome via the water vole).
+  | 'reedbunting'
+  | 'watervole'
+  | 'greywagtail'
+  | 'dipper';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -366,6 +385,10 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'ptarmigan',
   'mountainhare',
   'dotterel',
+  'reedbunting',
+  'watervole',
+  'greywagtail',
+  'dipper',
 ];
 
 /**
@@ -482,6 +505,34 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'Unusually tame, it lets you come close; and unusually, the brighter female leaves the duller male to sit on the eggs and raise the chicks.',
     status: 'A rare summer visitor — dotterel nest only on the highest, wildest ground, which keeps them safe and undisturbed.',
+  },
+  reedbunting: {
+    fieldNote:
+      'A seed-eater of the reedy riverbank — the reed bunting works the wet margins for seeds (and insects in summer). Look low among the reeds by day.',
+    behaviour:
+      'The male wears a black head and a white collar, and sings a simple scratchy song from a swaying reed stem.',
+    status: 'Doing well where riverbanks and wet farmland keep their reeds and rough, seeding margins.',
+  },
+  watervole: {
+    fieldNote:
+      'A bankside grazer of slow, clear rivers — the water vole crops waterside grasses, reeds and sedges along the bank. Watch the green margins by day.',
+    behaviour:
+      '“Ratty” of The Wind in the Willows — at the first alarm it dives off the bank into the water with a loud “plop” and swims for cover.',
+    status: 'Britain’s fastest-declining mammal — but where clean banks are kept safe from American mink, the water vole bounces back.',
+  },
+  greywagtail: {
+    fieldNote:
+      'An insect-hunter of fast water — the grey wagtail snaps up insects along stony river edges by day.',
+    behaviour:
+      'It bobs its long tail constantly on the midstream rocks; despite the name, it flashes vivid lemon-yellow underneath.',
+    status: 'At home on clean, fast rivers — it spreads wherever the water runs clear and insect-rich.',
+  },
+  dipper: {
+    fieldNote:
+      'A streambed hunter of fast rivers — the dipper prises caddis and mayfly larvae from the riverbed by day.',
+    behaviour:
+      'The only British songbird that swims — it walks UNDERWATER against the current, then bobs on a midstream rock, white bib flashing.',
+    status: 'A sign of clean water — dippers thrive only where fast rivers stay unpolluted and full of insect life.',
   },
 };
 
@@ -737,6 +788,77 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     profile:
       'Dotterel nest on the highest, stoniest ground of all. Unusually, it is the female who is brighter coloured — the male sits on the eggs and raises the chicks alone.',
   },
+  // --- Riverbank (§4.2) — flowing water; tier 4-5, the dip-net's biome. ---
+  reedbunting: {
+    id: 'reedbunting',
+    displayName: 'Reed Bunting',
+    biome: 'riverbank',
+    // The Riverbank VALVE (0.52): a small, calm seed-eater of the reeds — comfortably
+    // catchable bait-less with the starter (the anti-lockout valve, like each biome's easiest).
+    spawnWeight: 6,
+    baseFleeSpeed: 2.6,
+    detectionRadius: 2.4,
+    activityWindow: 'day',
+    tier: 4,
+    baseCatchRate: 0.52,
+    bait: 'seeds',
+    color: 0x7a6a4a,
+    size: 0.32,
+    profile:
+      'Reed buntings work the reedy margins of rivers and wet farmland for seeds. The black-headed male sings a simple scratchy song from a swaying reed.',
+  },
+  watervole: {
+    id: 'watervole',
+    displayName: 'Water Vole',
+    biome: 'riverbank',
+    spawnWeight: 5,
+    baseFleeSpeed: 3.4,
+    detectionRadius: 2.8,
+    activityWindow: 'day',
+    tier: 4,
+    baseCatchRate: 0.38,
+    bait: 'greens',
+    color: 0x6b5a45,
+    size: 0.4,
+    profile:
+      'The water vole — “Ratty” of The Wind in the Willows — grazes bankside grasses, then dives off the bank with a plop when startled. Britain’s fastest-declining mammal.',
+    // §55 reuse: the vole leaps INTO the river when startled (like the frog) — out of the
+    // hand net's reach; the dip-net (B1) is the answer again (the Riverbank synergy).
+    fleesToWater: true,
+  },
+  greywagtail: {
+    id: 'greywagtail',
+    displayName: 'Grey Wagtail',
+    biome: 'riverbank',
+    spawnWeight: 4,
+    baseFleeSpeed: 4.2,
+    detectionRadius: 3.6,
+    activityWindow: 'day',
+    tier: 5,
+    baseCatchRate: 0.28,
+    bait: 'insects',
+    color: 0xc9bf55,
+    size: 0.28,
+    profile:
+      'A wagtail of fast, stony rivers, snapping up insects at the water’s edge — bobbing its long tail and flashing vivid lemon-yellow underneath, despite the “grey” name.',
+  },
+  dipper: {
+    id: 'dipper',
+    displayName: 'Dipper',
+    biome: 'riverbank',
+    // The Riverbank's HARDEST (0.20): a rare, fast river specialist.
+    spawnWeight: 3,
+    baseFleeSpeed: 4.4,
+    detectionRadius: 3.8,
+    activityWindow: 'day',
+    tier: 5,
+    baseCatchRate: 0.2,
+    bait: 'insects',
+    color: 0x4a3f38,
+    size: 0.3,
+    profile:
+      'The only British songbird that swims: the dipper walks underwater along the riverbed hunting larvae, then bobs on a midstream rock, white bib flashing. A sign of clean, fast water.',
+  },
 };
 
 // ===========================================================================
@@ -838,6 +960,12 @@ export const HIDING_SPOTS: readonly HidingSpotDef[] = [
   // valuable not mandatory).
   { biome: 'highlands', x: 30, y: 32, radius: 2.2, kind: 'rocks' },
   { biome: 'highlands', x: 50, y: 46, radius: 2.0, kind: 'rocks' },
+  // Riverbank — bankside reeds (x∈[20,60], y∈[60,100]), clear of the river band (y≈74-86):
+  // 3 spots (cover-rich, like the wetland — NOT open, so the dip-net not the throwing net is
+  // the biome's tool). Reuses the wetland reed render.
+  { biome: 'riverbank', x: 28, y: 68, radius: 2.2, kind: 'reeds' },
+  { biome: 'riverbank', x: 50, y: 70, radius: 2.0, kind: 'reeds' },
+  { biome: 'riverbank', x: 35, y: 92, radius: 2.4, kind: 'reeds' },
 ];
 
 /** The portable HIDE (Nets & Gear slice C) — naturalist gear you DEPLOY at your
@@ -867,7 +995,15 @@ export interface WaterDef {
  *  x∈[20,60], y∈[-20,20]), clear of spawn, the supply post (55,-14), the reeds, and the
  *  x=20 entry; radius 6 leaves a real gap (a centre-fled frog sits ~6 > the hand net's
  *  reach 2.6 from any shore). Zero-asset (a flat teal disc). */
-export const WATER: readonly WaterDef[] = [{ biome: 'wetland', x: 40, y: 8, radius: 6 }];
+export const WATER: readonly WaterDef[] = [
+  { biome: 'wetland', x: 40, y: 8, radius: 6 },
+  // Riverbank (§4.2) — a flowing RIVER reach: three overlapping #55 discs forming a
+  // continuous E-W band across the cell (reuses the disc barrier/slide/flee VERBATIM; the
+  // render draws it as a connected band). The water vole flees into it (the dip-net answers).
+  { biome: 'riverbank', x: 30, y: 80, radius: 6 },
+  { biome: 'riverbank', x: 40, y: 80, radius: 6 },
+  { biome: 'riverbank', x: 50, y: 80, radius: 6 },
+];
 
 /** Frog flee-to-water steering (slice W): how strongly a fleeing frog's heading is
  *  blended TOWARD the nearest water centre vs straight away from the player (0 = away,
@@ -949,6 +1085,7 @@ export const SUPPLY_POSTS: readonly SupplyPostDef[] = [
   { biome: 'woodland', x: 15, y: 25, radius: 2.5 },
   { biome: 'wetland', x: 55, y: -14, radius: 2.5 },
   { biome: 'highlands', x: 55, y: 55, radius: 2.5 },
+  { biome: 'riverbank', x: 52, y: 66, radius: 2.5 }, // clear of the river band + the reeds
 ];
 
 /** Closing the Field Supply steps the player OUT the door (−y), this far PAST the
@@ -1491,6 +1628,33 @@ export const SPECIES_MODEL: Record<
     beakLengthR: 0.35,
     crestHeightR: 0.15,
   },
+  // Riverbank (§4.2) — three river birds (reuse the BIRD build) + the vole (the MOUSE build).
+  reedbunting: {
+    kind: 'bird',
+    accent: 0x2a2a2a, // black head
+    beakLengthR: 0.4,
+    crestHeightR: 0.3,
+  },
+  watervole: {
+    kind: 'mouse',
+    accent: 0x4a3b2a,
+    earHeightR: 0.22,
+    earRadiusR: 0.2,
+    tailLengthR: 0.9,
+    tailRadiusR: 0.09,
+  },
+  greywagtail: {
+    kind: 'bird',
+    accent: 0xf2e04a, // lemon-yellow underparts
+    beakLengthR: 0.45,
+    crestHeightR: 0.2,
+  },
+  dipper: {
+    kind: 'bird',
+    accent: 0xffffff, // white bib
+    beakLengthR: 0.4,
+    crestHeightR: 0.25,
+  },
 } as const;
 
 // ===========================================================================
@@ -1568,6 +1732,7 @@ export const MISSION_ORDER: readonly string[] = [
   // conditions (§4.1b-fix): the meadow round-the-clock foragers at NIGHT.
   'research-mouse-night',
   'research-rabbit-night',
+  'research-rabbit-dawn',
 ];
 
 /**
@@ -1704,6 +1869,22 @@ export const MISSIONS: Record<string, MissionDef> = {
     standalone: true,
     hint: 'Not the one — you are after a burrow-grazer that crops the turf under the moon. Look in the meadow at night.',
   },
+  // §4.2 — the Riverbank's by-PLAY mastery gate (research-gated unlock, R2). NON-FORCED: the
+  // rabbit is active at ANY hour, so requiring it AT DAWN is a deliberate field-craft choice
+  // (normal progression never forces a dawn rabbit — the #48 inverse holds). Doable in the
+  // always-open Meadow with the starter (anti-wall); a count-1 standalone challenge.
+  'research-rabbit-dawn': {
+    id: 'research-rabbit-dawn',
+    biome: 'meadow',
+    title: 'Research: The Dawn Watch',
+    description:
+      'A grazer busiest at dawn and dusk, yet found at any hour — most field-watchers meet it by day. Prove your early-rising field-craft: find a rabbit cropping the meadow at first light.',
+    requirement: { kind: 'research', species: 'rabbit', phase: 'dawn', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not the one — be out at DAWN for a meadow grazer at first light.',
+  },
 };
 
 /** Completing ALL of a biome's missions unlocks the mapped biome (lateral reward
@@ -1712,6 +1893,7 @@ export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, BiomeId>> = {
   meadow: 'woodland',
   woodland: 'wetland',
   wetland: 'highlands',
+  highlands: 'riverbank', // §4.2 — the Highlands set + its R2 wrap precede the Riverbank gate
 };
 
 /** §4.1c ESCALATING knowledge gates: in ADDITION to the catch-set, a biome's unlock
@@ -1724,6 +1906,10 @@ export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, BiomeId>> = {
  *  a wall (#37 shows the requirement). A biome with no entry gates on its catch-set alone. */
 export const BIOME_GATE_CHALLENGES: Partial<Record<BiomeId, readonly string[]>> = {
   wetland: ['research-mouse-night'],
+  // §4.2 — reaching the Riverbank is ESCALATED like the Highlands: the Highlands set AND a
+  // by-PLAY mastery challenge (research-rabbit-dawn, a NON-FORCED dawn catch). The
+  // unlock-the-riverbank research project wraps it (R2 generalized).
+  highlands: ['research-rabbit-dawn'],
 };
 
 // ===========================================================================
@@ -1836,6 +2022,20 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     knowledgeRequirement: 'research-mouse-night', // the §4.1c mastery challenge — by PLAY only
     reward: { kind: 'biome-access', biome: 'highlands' },
   },
+  // §4.2 — RIVERBANK access (R2's pattern, generalized to the first NEW biome). cost 0 (the
+  // Riverbank's species are win-required -> zero wall risk on core progression, like the
+  // Highlands). knowledgeRequirement = research-rabbit-dawn (a NON-FORCED mastery challenge,
+  // by PLAY) — double-enforced with the isUnlockGateMet re-check (the highlands set + the same
+  // challenge). The activity is highlands study (you're there by now).
+  'unlock-the-riverbank': {
+    id: 'unlock-the-riverbank',
+    name: 'Riverbank Access',
+    blurb: 'Master the high tops, prove your dawn field-craft, and the route down to the riverbank opens.',
+    cost: 0,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'highlands', count: 4 },
+    knowledgeRequirement: 'research-rabbit-dawn', // by PLAY only — the non-forced dawn catch
+    reward: { kind: 'biome-access', biome: 'riverbank' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
@@ -1845,6 +2045,7 @@ export const RESEARCH_ORDER: readonly string[] = [
   'study-the-wetland',
   'study-the-uplands',
   'unlock-the-highlands',
+  'unlock-the-riverbank',
 ];
 
 // ===========================================================================
