@@ -1428,14 +1428,6 @@ body.modal-open .touch-stick-thumb {
   color: rgba(159, 240, 168, 0.82);
 }
 /* Right-hand controls (Start/Complete reuse .shop-buy). */
-.research-need {
-  flex: none;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: rgba(255, 209, 102, 0.9);
-  text-align: right;
-  max-width: 40%;
-}
 .research-done {
   flex: none;
   padding: 7px 12px;
