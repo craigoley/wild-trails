@@ -5,8 +5,8 @@ import { AmbientAudio } from '../AmbientAudio';
 import { AUDIO } from '../../utils/constants';
 
 /**
- * A minimal Web Audio mock — jsdom has no AudioContext. It records the AudioParam ramps so we
- * can assert the mute bus + the biome crossfade without a real audio device.
+ * A minimal Web Audio mock — jsdom has no AudioContext. The create* methods are spies so we
+ * can assert the mute bus works AND that the ambient builds NO synthesis nodes (A1b: silent).
  */
 class FakeParam {
   value = 0;
@@ -48,11 +48,11 @@ class FakeAudioContext {
   currentTime = 0;
   sampleRate = 44100;
   destination = new FakeNode();
-  createGain = (): FakeGain => new FakeGain();
-  createBiquadFilter = (): FakeFilter => new FakeFilter();
-  createBufferSource = (): FakeSource => new FakeSource();
-  createOscillator = (): FakeSource => new FakeSource();
-  createBuffer = (_ch: number, len: number): FakeBuffer => new FakeBuffer(len);
+  createGain = vi.fn((): FakeGain => new FakeGain());
+  createBiquadFilter = vi.fn((): FakeFilter => new FakeFilter());
+  createBufferSource = vi.fn((): FakeSource => new FakeSource());
+  createOscillator = vi.fn((): FakeSource => new FakeSource());
+  createBuffer = vi.fn((_ch: number, len: number): FakeBuffer => new FakeBuffer(len));
   resume = vi.fn(() => Promise.resolve());
 }
 
@@ -95,15 +95,15 @@ describe('AudioEngine — headless-safe init + the master-bus mute (A1)', () => 
   });
 });
 
-describe('AmbientAudio — gesture-gated start + the biome crossfade (A1)', () => {
-  const make = (): { ambient: AmbientAudio; audio: AudioEngine } => {
+describe('AmbientAudio — silent-ready: lifecycle kept, synthesis stripped (A1b)', () => {
+  const make = (): { ambient: AmbientAudio; audio: AudioEngine; ctx: FakeAudioContext } => {
     const audio = new AudioEngine();
     audio.init();
     const ambient = new AmbientAudio(audio.context!, audio.master!);
-    return { ambient, audio };
+    return { ambient, audio, ctx: audio.context as unknown as FakeAudioContext };
   };
 
-  it('does NOT start on construction — only on the explicit gesture call (the mobile gate)', () => {
+  it('does NOT start on construction — only on the explicit gesture call (the mobile gate kept)', () => {
     withMockAudio();
     const { ambient } = make();
     expect(ambient.isStarted()).toBe(false); // not auto-started on load
@@ -113,34 +113,34 @@ describe('AmbientAudio — gesture-gated start + the biome crossfade (A1)', () =
     expect(ambient.isStarted()).toBe(true);
   });
 
-  it('setScene is a no-op before start() and when the biome+phase are unchanged', () => {
+  it('⚠️ SILENT-READY: start() + setScene build NO synthesis nodes (the static is gone)', () => {
     withMockAudio();
-    const { ambient } = make();
-    ambient.setScene('meadow', 'day'); // before start -> nothing
+    const { ambient, ctx } = make();
+    // The master gain was built by AudioEngine.init() — clear so we measure only the ambient.
+    ctx.createGain.mockClear();
+    ctx.createBufferSource.mockClear();
+    ctx.createOscillator.mockClear();
+    ctx.createBiquadFilter.mockClear();
+
     ambient.start();
-    ambient.setScene('meadow', 'day'); // first call: ramps the meadow voice in
-    const voiceParam = findVoiceParam(ambient);
-    const callsAfterFirst = voiceParam.linearRampToValueAtTime.mock.calls.length;
-    ambient.setScene('meadow', 'day'); // UNCHANGED -> no further work
-    expect(voiceParam.linearRampToValueAtTime.mock.calls.length).toBe(callsAfterFirst);
+    ambient.setScene('meadow', 'day');
+    ambient.setScene('woodland', 'night'); // a biome change — still silent
+
+    expect(ctx.createBufferSource).not.toHaveBeenCalled(); // no noise sources (the "static")
+    expect(ctx.createOscillator).not.toHaveBeenCalled(); // no LFO
+    expect(ctx.createBiquadFilter).not.toHaveBeenCalled(); // no filters
+    expect(ctx.createGain).not.toHaveBeenCalled(); // no wind / voice gains
   });
 
-  it('a biome CHANGE crossfades the meadow voice (ramps the gain — no abrupt cut)', () => {
+  it('setScene is a no-op before start(); after start it tracks state silently (never throws)', () => {
     withMockAudio();
     const { ambient } = make();
+    expect(() => ambient.setScene('meadow', 'day')).not.toThrow(); // before start -> nothing
     ambient.start();
-    const voiceParam = findVoiceParam(ambient);
-
-    ambient.setScene('meadow', 'day'); // in the meadow -> voice ramps toward voiceGain
-    expect(voiceParam.linearRampToValueAtTime).toHaveBeenLastCalledWith(AUDIO.voiceGain, expect.any(Number));
-
-    ambient.setScene('woodland', 'day'); // leaving -> voice ramps OUT to 0 (the crossfade)
-    expect(voiceParam.linearRampToValueAtTime).toHaveBeenLastCalledWith(0, expect.any(Number));
+    expect(() => {
+      ambient.setScene('meadow', 'day');
+      ambient.setScene('meadow', 'day'); // unchanged -> no-op
+      ambient.setScene('woodland', 'night'); // changed -> tracked, still silent
+    }).not.toThrow();
   });
 });
-
-/** Reach the voice GainNode's gain param on the AmbientAudio instance (private — test-only). */
-function findVoiceParam(ambient: AmbientAudio): FakeParam {
-  const voice = (ambient as unknown as { voice: FakeGain }).voice;
-  return voice.gain;
-}
