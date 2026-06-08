@@ -31,7 +31,6 @@ import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
 import { ResearchPanel } from './rendering/ResearchPanel';
 import { evaluateResearch, startResearch, completeResearch } from './game/Research';
 import { grantTool } from './game/Tools';
-import { ScrollProbe } from './rendering/ScrollProbe';
 import { syncModalOpenClass } from './rendering/modalClass';
 import { Banner } from './rendering/Banner';
 import { missionBannerMessages, researchBannerMessages } from './rendering/missionBanners';
@@ -188,10 +187,6 @@ const shopPanel = new ShopPanel(app, persist, (toolId) => {
 // Walk-in tracking: detect the close EDGE (open→closed) to step the player out.
 let shopWasOpen = false;
 const exitOut = { x: 0, y: 0 }; // reused — no per-frame alloc in the loop
-// Runtime scroll PROBE (debug instrumentation, not a fix) — ?debug=1-gated, inert
-// in normal play. Reads the live scroll-chain values when a panel is open so the
-// real cause of the iOS scroll bug is legible on-device.
-new ScrollProbe(app);
 // The "Field Guide Complete" win screen (Plan #10). maybeFireWin fires it ONCE —
 // when the win condition is first met (the persisted `won` flag guards re-firing)
 // — then dismissing it returns to free-roam. Checked at boot (so a save that
