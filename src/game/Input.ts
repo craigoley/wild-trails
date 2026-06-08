@@ -39,6 +39,9 @@ export interface InputIntent {
   missionToggle: boolean;
   /** Toggle the Research overlay (open/close). UI-only edge action (§4.1.4 R0b). */
   researchToggle: boolean;
+  /** Toggle the Bait selection sub-screen (open/close). UI-only edge action — bait
+   *  TYPE-selection moved off the main HUD into a panel; DEPLOY stays a HUD button. */
+  baitPanelToggle: boolean;
   /** Toggle audio mute (all sound on/off). UI-only edge action (Atmosphere A1). */
   muteToggle: boolean;
 }
@@ -55,6 +58,7 @@ export function createIntent(): InputIntent {
     journalToggle: false,
     missionToggle: false,
     researchToggle: false,
+    baitPanelToggle: false,
     muteToggle: false,
   };
 }
@@ -77,6 +81,7 @@ export const ACTION_KEYS = {
   journal: ['j'],
   missions: ['m'],
   research: ['r'],
+  baitPanel: ['e'],
   mute: ['k'],
 } as const;
 

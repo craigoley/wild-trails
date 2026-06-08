@@ -29,6 +29,7 @@ import { TimeIndicator } from './rendering/TimeIndicator';
 import { JournalPanel } from './rendering/JournalPanel';
 import { MissionPanel, type MissionTelemetry } from './rendering/MissionPanel';
 import { ResearchPanel } from './rendering/ResearchPanel';
+import { BaitPanel } from './rendering/BaitPanel';
 import { evaluateResearch, startResearch, completeResearch, isBaitUnlocked } from './game/Research';
 import { grantTool } from './game/Tools';
 import { syncModalOpenClass } from './rendering/modalClass';
@@ -145,6 +146,12 @@ const journalPanel = new JournalPanel(app);
 journalPanel.refresh(journal); // seed the roster from the loaded journal
 const missionPanel = new MissionPanel(app);
 refreshMissionPanel();
+// Bait selection sub-screen — type-selection moved off the main HUD (declutter).
+// A row tap writes the SAME baitSelect intent the 1/2/3 keys use (the pure sim path
+// is unchanged); the on-screen BAIT button still deploys the selected bait one-tap.
+const baitPanel = new BaitPanel(app, (index) => {
+  controls.intent.baitSelect = index;
+});
 // The Research panel (§4.1.4 R0b) — start a project (spend credits), and complete a ready
 // one (charge any top-up + reveal its journal-knowledge layer). Both persist.
 const researchPanel = new ResearchPanel(
@@ -404,6 +411,7 @@ function frame(nowMs: number): void {
     journalPanel.isOpen() ||
     missionPanel.isOpen() ||
     researchPanel.isOpen() ||
+    baitPanel.isOpen() ||
     shopPanel.isOpen() ||
     winScreen.isOpen() ||
     startScreen.isOpen();
@@ -419,7 +427,7 @@ function frame(nowMs: number): void {
   // chance, and surface the first-time "try bait" hint.
   controls.setCatchState(game.catchArmed, game.targetChance);
   controls.setBaitHint(game.catchArmed && !game.targetBaited && !game.usedBaitEver);
-  controls.setBaitTray(game.bait, baitUnlocked);
+  controls.setCurrentBait(game.bait);
 
   // Field Journal toggle (UI-only edge action; consumed at the boundary, not the
   // sim). Refresh on open so it shows the latest roster.
@@ -439,6 +447,13 @@ function frame(nowMs: number): void {
     controls.intent.researchToggle = false;
     researchPanel.setOpen(!researchPanel.isOpen());
     if (researchPanel.isOpen()) researchPanel.refresh(journal);
+  }
+  // Bait selection sub-screen toggle (🪱) — refresh from the live bait on open so the
+  // counts + selected highlight are current.
+  if (controls.intent.baitPanelToggle) {
+    controls.intent.baitPanelToggle = false;
+    baitPanel.setOpen(!baitPanel.isOpen());
+    if (baitPanel.isOpen()) baitPanel.refresh(game.bait, baitUnlocked);
   }
   // Mute toggle (K) — Atmosphere A1. Flips the master bus + remembers it (device setting,
   // separate from the save). Always available; instant.

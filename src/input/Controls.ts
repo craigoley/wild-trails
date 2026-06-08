@@ -24,7 +24,7 @@ import {
 } from '../game/Input';
 import type { BaitState } from '../game/Bait';
 import { isBaitSelectable } from '../game/Bait';
-import { BAIT_DISPLAY, BAIT_ORDER, TOUCH, type BaitId } from '../utils/constants';
+import { BAIT_DISPLAY, TOUCH } from '../utils/constants';
 
 const includes = (keys: readonly string[], k: string): boolean => keys.includes(k);
 
@@ -59,13 +59,12 @@ export class Controls {
   // (CATCH arms + shows the chance; a first-time "try bait" hint).
   private readonly catchBtn: HTMLButtonElement;
   private readonly baitBtn: HTMLButtonElement;
+  /** Badge on the BAIT button showing the currently-selected bait (icon + count). */
+  private readonly baitCurrent: HTMLSpanElement;
+  private lastBaitId = '';
+  private lastBaitCount = -1;
   private readonly muteBtn: HTMLButtonElement;
   private readonly baitHint: HTMLDivElement;
-
-  // Bait tray — one chip per bait type; each shows icon + label + count, with a
-  // count span updated each frame and selected/empty classes toggled.
-  private readonly trayChips: HTMLButtonElement[] = [];
-  private readonly trayCounts: HTMLSpanElement[] = [];
 
   constructor(target: HTMLElement = document.body) {
     window.addEventListener('keydown', this.onKeyDown);
@@ -87,6 +86,12 @@ export class Controls {
     this.baitBtn = this.makeActionButton(target, 'BAIT', 'action-bait', () => {
       this.intent.baitDeploy = true;
     });
+    // A small badge on the BAIT button showing the SELECTED bait (icon + count) —
+    // the at-a-glance "what will I deploy" the always-visible tray used to give, now
+    // that type-selection lives in the bait sub-screen. Updated each frame.
+    this.baitCurrent = document.createElement('span');
+    this.baitCurrent.className = 'bait-current';
+    this.baitBtn.appendChild(this.baitCurrent);
     // Portable hide deploy (slice C; also the 'H' key) — mobile PARITY with the key.
     this.makeActionButton(target, 'HIDE', 'action-hide', () => {
       this.intent.hideDeploy = true;
@@ -108,14 +113,15 @@ export class Controls {
     this.makeActionButton(topRight, '🔬', 'action-research', () => {
       this.intent.researchToggle = true;
     });
+    // Bait selection sub-screen toggle — type-selection moved off the main HUD into
+    // a panel (declutter); the BAIT button still deploys the selected bait one-tap.
+    this.makeActionButton(topRight, '🪱', 'action-baitpanel', () => {
+      this.intent.baitPanelToggle = true;
+    });
     // Mute toggle (also the 'K' key) — Atmosphere A1. The glyph reflects the live state.
     this.muteBtn = this.makeActionButton(topRight, '🔊', 'action-mute', () => {
       this.intent.muteToggle = true;
     });
-    // Bait tray — replaces the old ↻ cycler. One tappable chip per bait type,
-    // always visible, showing what you have / what's selected / how much is left.
-    this.buildBaitTray(target);
-
     // First-time affordance: a small "try bait" pointer near the BAIT button,
     // shown only when a target is armed but unbaited and bait was never used.
     this.baitHint = document.createElement('div');
@@ -128,53 +134,27 @@ export class Controls {
     const hint = document.createElement('div');
     hint.className = 'touch-hint';
     hint.textContent = isTouch
-      ? 'Drag to roam · CATCH · BAIT · tap a chip to pick bait'
-      : 'WASD roam · Space catch · B bait · 1/2/3 pick bait';
+      ? 'Drag to roam · CATCH · BAIT · 🪱 to pick bait'
+      : 'WASD roam · Space catch · B bait · E/1/2/3 pick bait';
     target.appendChild(hint);
   }
 
-  /** Build the always-visible bait tray: one chip per bait type. Tapping a chip
-   *  sets the direct-select intent (the sim ignores it if that bait is empty). */
-  private buildBaitTray(target: HTMLElement): void {
-    const tray = document.createElement('div');
-    tray.className = 'bait-tray';
-    BAIT_ORDER.forEach((id, index) => {
-      const disp = BAIT_DISPLAY[id];
-      const chip = document.createElement('button');
-      chip.className = `bait-chip chip-${disp.icon}`;
-      chip.innerHTML =
-        `<span class="chip-icon icon-${disp.icon}"></span>` +
-        `<span class="chip-label">${index + 1} ${disp.label}</span>`;
-      const count = document.createElement('span');
-      count.className = 'chip-count';
-      chip.appendChild(count);
-      chip.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        this.intent.baitSelect = index;
-      });
-      chip.addEventListener('touchstart', (e) => e.stopPropagation());
-      tray.appendChild(chip);
-      this.trayChips.push(chip);
-      this.trayCounts.push(count);
-    });
-    target.appendChild(tray);
-  }
-
-  /** Reflect bait state on the tray each frame: counts, the selected highlight,
-   *  and the greyed/non-selectable state for empty baits (the #5.3 scarcity made
-   *  visible). READS bait state; never mutates it. */
-  setBaitTray(bait: BaitState, isUnlocked: (id: BaitId) => boolean): void {
-    for (let i = 0; i < BAIT_ORDER.length; i++) {
-      const id = BAIT_ORDER[i];
-      // §4.1.5 — a research-gated bait (fish) hides until its study unlocks it (so it's 3
-      // chips until then; the 4th appears earned). Most of the game the tray stays slim.
-      const unlocked = isUnlocked(id);
-      this.trayChips[i].style.display = unlocked ? '' : 'none';
-      if (!unlocked) continue;
-      this.trayCounts[i].textContent = `×${bait.counts[id]}`;
-      this.trayChips[i].classList.toggle('selected', bait.selected === id);
-      this.trayChips[i].classList.toggle('empty', !isBaitSelectable(bait, id));
-    }
+  /** Reflect the SELECTED bait on the BAIT button's badge (icon + remaining count),
+   *  greyed when that bait is empty. The at-a-glance read the always-visible tray
+   *  used to give, now that type-selection lives in the bait sub-screen. READS bait
+   *  state; never mutates it. Guarded so the per-frame call only rewrites the DOM
+   *  when the selection or count actually changed (no per-frame allocation). */
+  setCurrentBait(bait: BaitState): void {
+    const id = bait.selected;
+    const count = bait.counts[id];
+    if (id === this.lastBaitId && count === this.lastBaitCount) return;
+    this.lastBaitId = id;
+    this.lastBaitCount = count;
+    const disp = BAIT_DISPLAY[id];
+    this.baitCurrent.innerHTML =
+      `<span class="chip-icon icon-${disp.icon}"></span>` +
+      `<span class="bait-current-count">×${count}</span>`;
+    this.baitCurrent.classList.toggle('empty', !isBaitSelectable(bait, id));
   }
 
   /** Create an on-screen button that fires an edge action on press. */
@@ -249,6 +229,7 @@ export class Controls {
     if (includes(ACTION_KEYS.journal, k)) this.intent.journalToggle = true;
     if (includes(ACTION_KEYS.missions, k)) this.intent.missionToggle = true;
     if (includes(ACTION_KEYS.research, k)) this.intent.researchToggle = true;
+    if (includes(ACTION_KEYS.baitPanel, k)) this.intent.baitPanelToggle = true;
     if (includes(ACTION_KEYS.mute, k)) this.intent.muteToggle = true;
     // 1/2/3 direct-select the corresponding bait chip.
     const baitIdx = baitIndexForKey(k);

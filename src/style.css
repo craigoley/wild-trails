@@ -61,7 +61,6 @@ body {
  * path. Passive labels (biome/time/status) are left — they don't bleed brightly
  * and aren't interactive. */
 body.modal-open .action-btn,
-body.modal-open .bait-tray,
 body.modal-open .bait-hint,
 body.modal-open .hud-hidden,
 body.modal-open .touch-stick-base,
@@ -344,7 +343,10 @@ body.modal-open .touch-stick-thumb {
   right: 12px;
   z-index: 25;
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: calc(100vw - 110px); /* leave the top-left time block its room; wrap if a 5th+ toggle won't fit */
+  gap: 8px;
   pointer-events: none;
 }
 /* ALL four cluster toggles (journal / missions / research / audio) share ONE look: a uniform
@@ -1045,62 +1047,34 @@ body.modal-open .touch-stick-thumb {
   letter-spacing: 0.2em;
 }
 
-/* --- Bait tray (replaces the old ↻ cycler) ----------------------------- */
-/* The bait SELECTOR is its own band ABOVE the action buttons — NOT bottom-left
- * fighting the bottom-right cluster for the same band. That earlier setup
- * collided on mobile: the wrapping tray grew UP into the BAIT/HIDE buttons (a
- * real tap-target collision) and over the instruction strip. Lifting it above the
- * tallest action button (HIDE tops out ~202px from the bottom) means chip count /
- * label width can grow and STILL can't reach the buttons — they're a different
- * band. Wrap is now safe (it grows up into empty world space, not onto a button).
- * pointer-events:auto on the chips; the container is layout-only. */
-.bait-tray {
-  position: fixed;
-  left: 14px;
-  bottom: 212px;
-  z-index: 25;
-  display: flex;
-  flex-wrap: wrap; /* now harmless — it wraps UP into the world, away from the buttons */
-  max-width: calc(100vw - 28px);
-  gap: 8px;
-  pointer-events: none; /* the tray container is layout-only */
-}
-.bait-chip {
-  pointer-events: auto;
+/* --- Selected-bait badge (on the BAIT button) -------------------------- */
+/* The always-visible bait tray was retired — type-SELECTION moved into the bait
+ * sub-screen (.bait-overlay below). This badge keeps the at-a-glance "what will I
+ * deploy" read: the selected diet icon + remaining count, pinned to the BAIT
+ * button's top-right corner. It's a child of the .action-bait button, so the #32
+ * modal-open hide (which hides .action-btn) carries it for free. */
+.bait-current {
+  position: absolute;
+  top: -6px;
+  right: -6px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 9px 5px 7px;
-  border: 2px solid rgba(255, 255, 255, 0.18);
-  border-radius: 10px;
-  background: rgba(20, 30, 20, 0.62);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-}
-.bait-chip .chip-count {
-  font-variant-numeric: tabular-nums;
-  opacity: 0.85;
-}
-/* Selected chip: bright border + glow + lifted background. */
-.bait-chip.selected {
-  border-color: rgba(255, 207, 107, 0.95);
-  background: rgba(255, 179, 71, 0.22);
+  gap: 3px;
+  padding: 2px 6px 2px 4px;
+  border: 1.5px solid rgba(255, 207, 107, 0.85);
+  border-radius: 999px;
+  background: rgba(20, 30, 20, 0.92);
+  font-size: 11px;
+  font-weight: 800;
   color: #fff;
-  box-shadow: 0 0 10px rgba(255, 207, 107, 0.45);
+  pointer-events: none;
 }
-/* Empty bait: greyed + non-selectable (the #5.3 scarcity, made visible). */
-.bait-chip.empty {
-  opacity: 0.35;
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(40, 40, 40, 0.4);
+.bait-current.empty {
+  opacity: 0.45;
+  border-color: rgba(255, 255, 255, 0.25);
 }
-.bait-chip.empty.selected {
-  box-shadow: none;
+.bait-current-count {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Procedural diet icons (CSS shapes only — zero assets). */
@@ -1233,6 +1207,102 @@ body.modal-open .touch-stick-thumb {
 
 /* --- Research panel (§4.1.4 R0b) — clones the mission/journal panel architecture
  * EXACTLY (overlay → bounded-scroll panel) so the iOS scroll fix carries over. ------ */
+/* --- Bait selection sub-screen — clones the mission/research panel architecture
+ * EXACTLY (overlay → bounded-scroll panel) so the iOS scroll + safe-area + #32
+ * modal-open behaviour carry over. NEW panel; the others are untouched. ---------- */
+.bait-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 41;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 14, 8, 0.78);
+  pointer-events: auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+.bait-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 92vw);
+  max-height: 88dvh;
+  min-height: 0;
+  overflow: hidden;
+  background: rgba(16, 26, 18, 0.98);
+  border: 2px solid rgba(255, 207, 107, 0.4);
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.92);
+}
+.bait-header {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 8px 56px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.bait-header-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-align: center;
+  color: #ffe2a6;
+}
+.bait-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 14px 16px 18px;
+}
+.bait-select-list {
+  display: grid;
+  gap: 10px;
+}
+/* One selectable bait row — a big tap target (≥48px) with the diet icon, label, and
+ * remaining count. Selected = amber highlight; empty = greyed (the #5.3 scarcity). */
+.bait-select-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 14px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+.bait-select-row.selected {
+  border-color: rgba(255, 207, 107, 0.95);
+  background: rgba(255, 179, 71, 0.18);
+  box-shadow: 0 0 12px rgba(255, 207, 107, 0.3);
+}
+.bait-select-row.empty {
+  opacity: 0.4;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.bait-select-label {
+  flex: 1 1 auto;
+}
+.bait-select-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: rgba(255, 226, 166, 0.95);
+}
+
 .research-overlay {
   position: fixed;
   inset: 0;
