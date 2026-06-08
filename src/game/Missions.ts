@@ -24,7 +24,6 @@ import {
   RANKS,
   RESEARCH_ORDER,
   RESEARCH_PROJECTS,
-  SPECIES,
   SPECIES_ORDER,
   type BiomeId,
   type DayPhase,
@@ -173,10 +172,13 @@ export function evaluateCatch(journal: Journal, ev: CatchEvent): MissionEval {
     journal.missions[id] = prog;
     if (prog.completed) continue; // already done — never re-progress / re-award
     if (!meets(def.requirement, ev)) {
-      // §4.1b teaching-moment: a "warm miss" on an active research challenge — a
-      // catch in the challenge's biome that didn't satisfy it. Re-frame the clue;
+      // §4.1b teaching-moment: a "warm miss" on an active research challenge. Scoped to the
+      // SAME SPECIES (not the whole biome) — since this only runs on a failed challenge, a
+      // same-species catch here necessarily failed on PHASE: the genuine near-miss ("you found
+      // the forager — but it's not dusk yet"). SILENT on every unrelated catch (a rabbit/quail no
+      // longer nags about the dusk-mouse), so the hint helps instead of spamming (P4/P6).
       // progress is untouched (count-1 — nothing to reset).
-      if (def.requirement.kind === 'research' && def.hint && ev.biome === SPECIES[def.requirement.species].biome) {
+      if (def.requirement.kind === 'research' && def.hint && ev.species === def.requirement.species) {
         result.hints.push(def.hint);
       }
       continue;
