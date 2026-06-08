@@ -21,6 +21,12 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   expect: {
+    // The screenshot STABILISATION budget (consecutive-frame settle). The default 5s is marginal
+    // for the busier scenes under container CPU load (the canvas is large + the build just ran),
+    // which showed as a flaky "Timeout 5000ms exceeded" on a different scene each run. 30s gives
+    // ample settle room — it is NOT the diff tolerance (that stays maxDiffPixelRatio below), so the
+    // gate's strictness is unchanged; only slow stabilisation gets more time.
+    timeout: 30_000,
     // WebGL renders vary slightly run-to-run, so visual diffs allow a small pixel ratio.
     toHaveScreenshot: { maxDiffPixelRatio: 0.02 },
   },

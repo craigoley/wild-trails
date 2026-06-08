@@ -238,7 +238,14 @@ const startScreen = new StartScreen(app, {
   },
   onSkip: () => skipOnboarding(onboarding),
 });
-startScreen.show(firstRun);
+// A frozen L2 scene captures the staged WORLD — so skip the title splash + onboarding prompts
+// (they're an HTML overlay that would otherwise cover the canvas, capturing the splash instead
+// of the game). Only ?freeze captures take this path; normal boot shows the splash as before.
+if (l2Frozen) {
+  skipOnboarding(onboarding);
+} else {
+  startScreen.show(firstRun);
+}
 // Tracks the body.modal-open flag so the per-frame sync only writes on transitions.
 let modalOpenPrev = false;
 // Transient banners for mission completions + biome unlocks (the missing
@@ -495,7 +502,9 @@ function frame(nowMs: number): void {
 
   // Render the interpolated state. Renderers read prev+current; never mutate.
   entities.sync(game, alpha);
-  scene.updateFollow(game, alpha, dt);
+  // Frozen (L2) scenes snap the camera to the player so the capture is byte-stable (the normal
+  // exponential ease never settles — the screenshot would drift forever). No effect on play.
+  scene.updateFollow(game, alpha, dt, l2Frozen);
   scene.render();
   hud.update(game);
   hud.setCredits(journal.credits); // §12 1a — the persistent balance (cheap text set)

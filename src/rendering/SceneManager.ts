@@ -96,10 +96,20 @@ export class SceneManager {
    *  player leaves the dead-zone — within it the focus holds still so the marker
    *  drifts on screen. `dt` is the real frame delta (camera smoothing is a
    *  render-side effect, not a sim step). */
-  updateFollow(state: GameState, alpha: number, dt: number): void {
+  updateFollow(state: GameState, alpha: number, dt: number, snap = false): void {
     const p = state.player;
     const px = lerp(p.prevX, p.x, alpha);
     const py = lerp(p.prevY, p.y, alpha);
+    // L2 ?freeze determinism: the focus eases EXPONENTIALLY toward the player (`k` never reaches 1),
+    // so even a frozen scene drifts sub-pixel every frame forever — a screenshot never settles to
+    // two identical frames (the capture hangs). When `snap`, centre the focus on the player
+    // immediately so the frozen frame is byte-stable. Gameplay is never `snap` (no visual change).
+    if (snap) {
+      this.focusX = px;
+      this.focusY = py;
+      this.place();
+      return;
+    }
     const k = 1 - Math.exp(-TUNING.camLerp * dt);
     const f = deadZoneFollow(this.focusX, this.focusY, px, py, TUNING.deadZone, k, this._focusOut);
     this.focusX = f.x;
