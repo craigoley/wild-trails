@@ -19,7 +19,7 @@
  * Research Spine). Only CAUGHT species get a species entry (absence === not found).
  */
 
-import { BAIT, BAIT_ORDER, STARTER_TOOL, TOOL_ORDER, TOOLS, type BaitId, type BiomeId, type ToolId } from '../utils/constants';
+import { BAIT, BAIT_ORDER, startingBaitCount, STARTER_TOOL, TOOL_ORDER, TOOLS, type BaitId, type BiomeId, type ToolId } from '../utils/constants';
 
 const STORAGE_KEY = 'wild-trails:journal';
 
@@ -88,10 +88,12 @@ export interface ResearchState {
   completed: boolean;
 }
 
-/** Full-bait counts (the fresh-game / safe-default value), startingCount per type. */
+/** Fresh-game bait counts: the 3 original diets stocked (startingCount); a research-gated
+ *  bait (fish, §4.1.5) starts at 0 — you don't begin with bait you can't use until you've
+ *  studied it. */
 function defaultBait(): Record<BaitId, number> {
   const counts = {} as Record<BaitId, number>;
-  for (const id of BAIT_ORDER) counts[id] = BAIT.startingCount;
+  for (const id of BAIT_ORDER) counts[id] = startingBaitCount(id);
   return counts;
 }
 
@@ -207,7 +209,7 @@ function sanitizeBait(raw: unknown): Record<BaitId, number> {
     const v = obj[id];
     out[id] = typeof v === 'number' && Number.isFinite(v) && v >= 0
       ? Math.min(v, BAIT.maxCount)
-      : BAIT.startingCount;
+      : startingBaitCount(id); // a v7 save without the fish key -> fish defaults to 0 (no bump)
   }
   return out;
 }

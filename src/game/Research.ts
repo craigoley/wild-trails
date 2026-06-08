@@ -176,3 +176,27 @@ export function researchProjectForTool(toolId: string): ResearchProject | null {
   }
   return null;
 }
+
+/**
+ * The research project whose completion unlocks `bait` for purchase (§4.1.5 — the bait-access
+ * reward), or null if the bait isn't research-gated. The shop reads this to OFFER a gated bait
+ * only once its project is done (the unlock derives from completion, like R1's nets). Pure.
+ */
+export function researchProjectForBait(bait: string): ResearchProject | null {
+  for (const id of RESEARCH_ORDER) {
+    const p = RESEARCH_PROJECTS[id];
+    if (p.reward.kind === 'bait-access' && p.reward.bait === bait) return p;
+  }
+  return null;
+}
+
+/**
+ * Is `bait` available to the player (§4.1.5)? The 3 original diets are ALWAYS unlocked; a
+ * research-gated bait (fish) is unlocked once its bait-access project is complete. Derived from
+ * `journal.research` — no extra persisted state.
+ */
+export function isBaitUnlocked(journal: Journal, bait: string): boolean {
+  const p = researchProjectForBait(bait);
+  if (!p) return true; // not research-gated -> always available
+  return journal.research[p.id]?.completed === true;
+}

@@ -24,7 +24,7 @@ import {
 } from '../game/Input';
 import type { BaitState } from '../game/Bait';
 import { isBaitSelectable } from '../game/Bait';
-import { BAIT_DISPLAY, BAIT_ORDER, TOUCH } from '../utils/constants';
+import { BAIT_DISPLAY, BAIT_ORDER, TOUCH, type BaitId } from '../utils/constants';
 
 const includes = (keys: readonly string[], k: string): boolean => keys.includes(k);
 
@@ -163,9 +163,14 @@ export class Controls {
   /** Reflect bait state on the tray each frame: counts, the selected highlight,
    *  and the greyed/non-selectable state for empty baits (the #5.3 scarcity made
    *  visible). READS bait state; never mutates it. */
-  setBaitTray(bait: BaitState): void {
+  setBaitTray(bait: BaitState, isUnlocked: (id: BaitId) => boolean): void {
     for (let i = 0; i < BAIT_ORDER.length; i++) {
       const id = BAIT_ORDER[i];
+      // §4.1.5 — a research-gated bait (fish) hides until its study unlocks it (so it's 3
+      // chips until then; the 4th appears earned). Most of the game the tray stays slim.
+      const unlocked = isUnlocked(id);
+      this.trayChips[i].style.display = unlocked ? '' : 'none';
+      if (!unlocked) continue;
       this.trayCounts[i].textContent = `×${bait.counts[id]}`;
       this.trayChips[i].classList.toggle('selected', bait.selected === id);
       this.trayChips[i].classList.toggle('empty', !isBaitSelectable(bait, id));

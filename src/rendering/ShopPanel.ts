@@ -13,7 +13,7 @@
 import { addOverlayDismiss } from './overlayDismiss';
 import { baitBuyState, buyBait } from '../game/Economy';
 import { equipTool, ownsTool } from '../game/Tools';
-import { researchProjectForTool } from '../game/Research';
+import { researchProjectForTool, isBaitUnlocked } from '../game/Research';
 import type { BaitState } from '../game/Bait';
 import type { Journal } from '../state/Journal';
 import { BAIT, BAIT_DISPLAY, BAIT_ORDER, CREDITS, SHOP, TOOLS, TOOL_ORDER, type BaitId, type ToolId } from '../utils/constants';
@@ -87,7 +87,11 @@ export class ShopPanel {
     this.baitState = baitState;
     this.balance.textContent = `${CREDITS.glyph} ${journal.credits}`;
     this.list.replaceChildren();
-    for (const id of BAIT_ORDER) this.list.appendChild(this.row(id));
+    // §4.1.5 — a research-gated bait (fish) is OFFERED only once its study project is complete
+    // (the unlock derives from journal.research). The 3 original diets always show.
+    for (const id of BAIT_ORDER) {
+      if (isBaitUnlocked(journal, id)) this.list.appendChild(this.row(id));
+    }
     // Nets & Gear — the durable-net section (buy / equip). B1: ALL nets listed; owned ones
     // Equip/Equipped, unowned ones Buy. The flavor lines teach which net suits which biome.
     const gearHeader = document.createElement('div');

@@ -29,15 +29,15 @@ describe('Bait round-trip — counts -> store -> parse -> rehydrate', () => {
   it('persists bait counts and restores them to the same values', () => {
     vi.stubGlobal('localStorage', memoryStorage());
     const j = createJournal();
-    setBaitCounts(j, { seeds: 2, greens: 5, insects: 8 });
+    setBaitCounts(j, { seeds: 2, greens: 5, insects: 8, fish: 0 });
     saveJournal(j);
 
     const loaded = loadJournal();
-    expect(loaded.bait).toEqual({ seeds: 2, greens: 5, insects: 8 });
+    expect(loaded.bait).toEqual({ seeds: 2, greens: 5, insects: 8, fish: 0 });
 
     const bait = createBaitState(); // a fresh (full) bait state
     restoreBaitCounts(bait, loaded.bait);
-    expect(bait.counts).toEqual({ seeds: 2, greens: 5, insects: 8 });
+    expect(bait.counts).toEqual({ seeds: 2, greens: 5, insects: 8, fish: 0 });
   });
 });
 
@@ -56,7 +56,7 @@ describe('loadJournal — corrupt store degrades to a fresh journal (no throw)',
 
 describe('Rehydrate restores DURABLE bait but recomputes TRANSIENT world state', () => {
   it('only bait carries across; position/clock/biome are fresh from createGameState', () => {
-    const journalBait = { seeds: 1, greens: 2, insects: 3 };
+    const journalBait = { seeds: 1, greens: 2, insects: 3, fish: 0 };
     const game = createGameState(123);
     restoreBaitCounts(game.bait, journalBait);
 

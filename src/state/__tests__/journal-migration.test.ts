@@ -8,7 +8,7 @@ import { BAIT } from '../../utils/constants';
  * `won` flag; v5 (§12) `credits`; v6 (Nets & Gear) the owned/active nets; v7 (§4.1.4
  * Research Spine) the research map. This pins the full chain + the v6->v7 hop + sanitize.
  */
-const FULL_BAIT = { seeds: BAIT.startingCount, greens: BAIT.startingCount, insects: BAIT.startingCount };
+const FULL_BAIT = { seeds: BAIT.startingCount, greens: BAIT.startingCount, insects: BAIT.startingCount, fish: 0 }; // fish (§4.1.5) is research-gated -> starts at 0
 
 describe('Journal — schema version', () => {
   it('is now 7, and a fresh journal has an empty research map', () => {
@@ -66,7 +66,7 @@ describe('Journal — v6 -> v7 (the new hop: add empty research, keep ALL v6 dat
     const out = migrate(v6Store);
 
     expect(out.schemaVersion).toBe(7);
-    expect(out.bait).toEqual({ seeds: 2, greens: 5, insects: 9 }); // all v3-v6 data kept
+    expect(out.bait).toEqual({ seeds: 2, greens: 5, insects: 9, fish: 0 }); // all v3-v6 data kept; fish defaults 0
     expect(out.species.rabbit).toBeDefined();
     expect(out.rankPoints).toBe(30);
     expect(out.won).toBe(true);
@@ -84,7 +84,7 @@ describe('Journal — a current v7 store round-trips exactly', () => {
       missions: { 'meadow-survey': { progress: 4, completed: true } },
       rankPoints: 30,
       unlockedBiomes: ['woodland'],
-      bait: { seeds: 2, greens: 5, insects: 9 },
+      bait: { seeds: 2, greens: 5, insects: 9, fish: 0 },
       won: true,
       credits: 42,
       ownedTools: ['net'],

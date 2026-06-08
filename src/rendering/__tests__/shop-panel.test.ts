@@ -5,7 +5,7 @@ import { createBaitState } from '../../game/Bait';
 import { createJournal } from '../../state/Journal';
 import { addCredits } from '../../game/Economy';
 import { grantTool } from '../../game/Tools';
-import { BAIT, BAIT_ORDER, SHOP, TOOL_ORDER } from '../../utils/constants';
+import { BAIT, BAIT_ORDER, RESEARCH_GATED_BAITS, SHOP, TOOL_ORDER } from '../../utils/constants';
 
 const fireDown = (el: Element) => el.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -40,8 +40,11 @@ describe('ShopPanel — rows, balance, and button states', () => {
     const p = new ShopPanel(document.body, vi.fn(), vi.fn());
     p.refresh(j, createBaitState());
     expect(document.querySelector('.shop-balance')!.textContent).toContain('7');
-    // Bait rows only (the net rows are .shop-net-row — see the gear test below).
-    expect(document.querySelectorAll('.shop-row:not(.shop-net-row)')).toHaveLength(BAIT_ORDER.length);
+    // Bait rows only (the net rows are .shop-net-row — see the gear test below). §4.1.5: a
+    // research-gated bait (fish) is HIDDEN until its study unlocks it, so a fresh journal shows
+    // the 3 always-stocked diets, not all of BAIT_ORDER.
+    const unlocked = BAIT_ORDER.filter((id) => !RESEARCH_GATED_BAITS.includes(id));
+    expect(document.querySelectorAll('.shop-row:not(.shop-net-row)')).toHaveLength(unlocked.length);
   });
 
   it('lists ALL nets — the starter Equipped, the un-owned biome nets show the research hint (R1)', () => {

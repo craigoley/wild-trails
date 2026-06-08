@@ -124,11 +124,12 @@ describe('W #3 — isInWater + the per-animal inWater flag (the B1 hook)', () =>
 });
 
 describe('W #4 — frog flees TO water; mallard (+ all others) flee straight away', () => {
-  it('only the frog + the water vole have fleesToWater (the water-dive species)', () => {
+  it('only the frog + the water vole + the otter have fleesToWater (the water-dive species)', () => {
+    const divers = new Set(['frog', 'watervole', 'otter']); // §4.2 vole + §4.1.5 otter join the frog
     for (const id of SPECIES_ORDER) {
-      // §4.2: the Riverbank water vole dives into the river like the frog (the dip-net
-      // call-back). Every other species flees straight away (the anti-lockout bound).
-      expect(!!SPECIES[id].fleesToWater).toBe(id === 'frog' || id === 'watervole');
+      // The dip-net call-back: these three leap/slip INTO the water. Every other species
+      // flees straight away (the anti-lockout bound).
+      expect(!!SPECIES[id].fleesToWater).toBe(divers.has(id));
     }
   });
 

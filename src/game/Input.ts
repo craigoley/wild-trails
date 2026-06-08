@@ -82,7 +82,7 @@ export const ACTION_KEYS = {
 
 /** Number keys for DIRECT bait selection, positional: index 0 = '1', 1 = '2', …
  *  (chip 1 selects the first bait). */
-export const BAIT_SELECT_KEYS = ['1', '2', '3'] as const;
+export const BAIT_SELECT_KEYS = ['1', '2', '3', '4'] as const;
 
 /** The bait index a key selects, or -1 if the key isn't a bait-select key. Pure
  *  — the off-by-one guard ('1' -> index 0) is pinned in a test. */

@@ -318,15 +318,19 @@ export type SpeciesId =
   | 'reedbunting'
   | 'watervole'
   | 'greywagtail'
-  | 'dipper';
+  | 'dipper'
+  // Riverbank fish-eaters (§4.1.5 — the FISH diet; the apex catches).
+  | 'kingfisher'
+  | 'otter';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
 export type Tier = 1 | 2 | 3 | 4 | 5;
 
 /** Bait types = animal diets. The right bait for a species' diet calms it and
- *  lures it closer; the wrong bait does nothing (the diet-learning mechanic). */
-export type BaitId = 'seeds' | 'greens' | 'insects';
+ *  lures it closer; the wrong bait does nothing (the diet-learning mechanic).
+ *  `fish` (§4.1.5) is the 4th diet — RESEARCH-GATED (the kingfisher + otter eat it). */
+export type BaitId = 'seeds' | 'greens' | 'insects' | 'fish';
 
 /**
  * Static definition of one species. The two axes the design keeps INDEPENDENT:
@@ -389,6 +393,8 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'watervole',
   'greywagtail',
   'dipper',
+  'kingfisher',
+  'otter',
 ];
 
 /**
@@ -533,6 +539,20 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'The only British songbird that swims — it walks UNDERWATER against the current, then bobs on a midstream rock, white bib flashing.',
     status: 'A sign of clean water — dippers thrive only where fast rivers stay unpolluted and full of insect life.',
+  },
+  kingfisher: {
+    fieldNote:
+      'A fish-hunter of the open river — the kingfisher watches from a low branch by day, then plunges to spear a small fish (§4.1.5: it eats FISH).',
+    behaviour:
+      'An electric-blue arrow: it sits dead still, then dives head-first into the water and is back on its perch in a flash — flying off fast when disturbed.',
+    status: 'A jewel of clean rivers — kingfishers thrive wherever the water runs clear and full of small fish.',
+  },
+  otter: {
+    fieldNote:
+      'A fish-hunter of the whole river — the otter works the water at dusk for fish (§4.1.5: it eats FISH). Watch the banks as the light fades.',
+    behaviour:
+      'A sleek, playful swimmer — at the first alarm it slips into the river and is gone, hunting underwater with whiskers that feel the current.',
+    status: 'Back from the brink — otters now thrive again on clean, well-stocked rivers right across the country.',
   },
 };
 
@@ -858,6 +878,45 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     size: 0.3,
     profile:
       'The only British songbird that swims: the dipper walks underwater along the riverbed hunting larvae, then bobs on a midstream rock, white bib flashing. A sign of clean, fast water.',
+  },
+  // --- Riverbank fish-eaters (§4.1.5) — the FISH diet. Catchable BAIT-LESS (hard); fish bait
+  //     (research-gated) makes them easier, never required (anti-lockout). ---
+  kingfisher: {
+    id: 'kingfisher',
+    displayName: 'Kingfisher',
+    biome: 'riverbank',
+    spawnWeight: 3,
+    baseFleeSpeed: 4.6,
+    detectionRadius: 4.0,
+    activityWindow: 'day',
+    tier: 5,
+    baseCatchRate: 0.2,
+    bait: 'fish', // §4.1.5 — eats fish (dives for small fish)
+    color: 0x1a8fb5, // electric blue
+    size: 0.28,
+    profile:
+      'An electric-blue arrow over the river: the kingfisher sits still on a low branch, then plunges head-first to spear a small fish, and is back in a flash. Flies off fast when disturbed.',
+    // No fleesToWater: it dives FOR fish but escapes by FLIGHT, not by hiding in the water.
+  },
+  otter: {
+    id: 'otter',
+    displayName: 'Otter',
+    biome: 'riverbank',
+    // The APEX catch (0.15, the hardest in the game): a large, elusive, crepuscular river hunter.
+    spawnWeight: 2,
+    baseFleeSpeed: 4.6,
+    detectionRadius: 4.2,
+    activityWindow: 'dusk',
+    tier: 5,
+    baseCatchRate: 0.15,
+    bait: 'fish', // §4.1.5 — a fish hunter of the whole river
+    color: 0x5a4632,
+    size: 0.46,
+    profile:
+      'A sleek river hunter: the otter works the water at dusk for fish, hunting underwater with whiskers that feel the current. At the first alarm it slips into the river and is gone.',
+    // §55 reuse: the otter slips INTO the river to escape — the dip-net's biome deepens (the
+    // third fleesToWater species, the apex of the water-edge catch).
+    fleesToWater: true,
   },
 };
 
@@ -1191,10 +1250,20 @@ export const STARTER_TOOL: ToolId = 'net';
 /** Bait deltas — the diet-learning lure. Correct bait (matches a species' diet)
  *  calms it toward the catch ceiling AND lures it to APPROACH; wrong bait does
  *  nothing. Bait is a consumable with an in-memory count. */
-export const BAIT_ORDER: readonly BaitId[] = ['seeds', 'greens', 'insects'];
+export const BAIT_ORDER: readonly BaitId[] = ['seeds', 'greens', 'insects', 'fish'];
+
+/** Baits that are RESEARCH-GATED (§4.1.5): they start at 0 (locked) and become buyable only
+ *  once their unlocking research completes. The 3 original diets are always stocked. */
+export const RESEARCH_GATED_BAITS: readonly BaitId[] = ['fish'];
+
+/** Starting count for a bait: the 3 original diets start stocked; a research-gated bait
+ *  (fish) starts at 0 — you don't begin with bait you can't use until you've studied it. */
+export function startingBaitCount(id: BaitId): number {
+  return RESEARCH_GATED_BAITS.includes(id) ? 0 : BAIT.startingCount;
+}
 
 /** The procedural diet-icon glyph a bait chip draws (CSS shapes, zero assets). */
-export type BaitIconKind = 'seeds' | 'leaf' | 'insect';
+export type BaitIconKind = 'seeds' | 'leaf' | 'insect' | 'fish';
 
 /** Tray DISPLAY metadata per bait — a short label + which procedural icon to
  *  draw. Diet legibility (§5): the icon teaches "what this bait IS". */
@@ -1202,6 +1271,7 @@ export const BAIT_DISPLAY: Record<BaitId, { label: string; icon: BaitIconKind }>
   seeds: { label: 'Seeds', icon: 'seeds' },
   greens: { label: 'Greens', icon: 'leaf' },
   insects: { label: 'Insects', icon: 'insect' },
+  fish: { label: 'Fish', icon: 'fish' },
 };
 
 export const BAIT = {
@@ -1655,6 +1725,22 @@ export const SPECIES_MODEL: Record<
     beakLengthR: 0.4,
     crestHeightR: 0.25,
   },
+  // Riverbank fish-eaters (§4.1.5) — the kingfisher (bird, long dagger beak) + the otter (a
+  // low quadruped, the mouse build with a long thick tail).
+  kingfisher: {
+    kind: 'bird',
+    accent: 0xe88a4a, // orange breast
+    beakLengthR: 0.9, // the long dagger bill
+    crestHeightR: 0.2,
+  },
+  otter: {
+    kind: 'mouse',
+    accent: 0xcdbfa6, // pale throat
+    earHeightR: 0.14,
+    earRadiusR: 0.14,
+    tailLengthR: 1.3,
+    tailRadiusR: 0.22,
+  },
 } as const;
 
 // ===========================================================================
@@ -1937,7 +2023,10 @@ export type ResearchReward =
   | { kind: 'journal-layer'; layer: string }
   | { kind: 'grant-tool'; toolId: ToolId }
   | { kind: 'shop-access'; key: string }
-  | { kind: 'biome-access'; biome: BiomeId };
+  | { kind: 'biome-access'; biome: BiomeId }
+  // §4.1.5 — unlock a research-gated BAIT for purchase in the shop (the 4th reward kind,
+  // mirroring grant-tool / biome-access). "Is it unlocked" derives from the completed project.
+  | { kind: 'bait-access'; bait: BaitId };
 
 export interface ResearchProject {
   id: string;
@@ -2036,6 +2125,18 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     knowledgeRequirement: 'research-rabbit-dawn', // by PLAY only — the non-forced dawn catch
     reward: { kind: 'biome-access', biome: 'riverbank' },
   },
+  // §4.1.5 — the FISH diet, research-gated (the 4th reward kind: bait-access). OPTIONAL
+  // convenience (fish bait is a ×3.5 multiplier, never required — the kingfisher/otter are
+  // catchable bait-less), so it carries a credit COST (a sink) and NO knowledgeRequirement
+  // (not core-progression). Completing it unlocks fish bait for purchase in the Field Supply.
+  'study-aquatic-life': {
+    id: 'study-aquatic-life',
+    name: 'Aquatic Life',
+    blurb: 'Study the river’s fish-eaters until you can match their diet — then the Field Supply stocks fish bait.',
+    cost: 15,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'riverbank', count: 4 },
+    reward: { kind: 'bait-access', bait: 'fish' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
@@ -2046,6 +2147,7 @@ export const RESEARCH_ORDER: readonly string[] = [
   'study-the-uplands',
   'unlock-the-highlands',
   'unlock-the-riverbank',
+  'study-aquatic-life',
 ];
 
 // ===========================================================================
