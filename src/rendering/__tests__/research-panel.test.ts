@@ -6,7 +6,7 @@ import { researchBannerMessages } from '../missionBanners';
 import { createJournal, recordCatch } from '../../state/Journal';
 import { startResearch, evaluateResearch } from '../../game/Research';
 import { addCredits } from '../../game/Economy';
-import { RESEARCH_PROJECTS, SPECIES_INFO } from '../../utils/constants';
+import { SPECIES_INFO } from '../../utils/constants';
 
 const fireDown = (el: Element) => el.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 const ev = (species: string, biome: string, phase: string) =>
@@ -42,7 +42,11 @@ describe('ResearchPanel — projects, Start, and state', () => {
     const onStart = vi.fn((id: string) => startResearch(j, id));
     const p = new ResearchPanel(document.body, onStart, vi.fn());
     p.refresh(j);
-    expect(document.querySelectorAll('.research-row').length).toBe(Object.keys(RESEARCH_PROJECTS).length);
+    // Grouped + focused: a fresh journal (only meadow accessed) shows the MEADOW projects
+    // as cards; not-yet-accessed areas are collapsed (their internal projects hidden).
+    expect(document.querySelectorAll('.research-row').length).toBe(2); // study-hedgehog + study-after-dark
+    expect(document.body.textContent).toContain('Meadow'); // the area header (grouped by area)
+    expect(document.body.textContent).not.toContain('The Open Tops'); // a highlands internal — hidden until reached
 
     // Start the first project (study-hedgehog, cost 8).
     const startBtn = document.querySelector('.research-row .shop-buy') as HTMLButtonElement;

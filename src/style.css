@@ -1382,6 +1382,33 @@ body.modal-open .touch-stick-thumb {
   display: grid;
   gap: 12px;
 }
+/* Per-area section header (the research panel groups by area). Mirrors the journal's
+ * biome header; a not-yet-reached area is dimmed with a "· locked" suffix. */
+.research-area {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffe2a6;
+  margin-top: 14px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 207, 107, 0.25);
+}
+.research-area:first-child {
+  margin-top: 0;
+}
+.research-area.locked {
+  color: rgba(255, 255, 255, 0.42);
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+/* The collapsed-area teaser — a quiet, dimmed line under a locked area's header. It says
+ * THAT there's more (or more lands) without naming the projects/species (focus). */
+.research-teaser {
+  font-size: 12.5px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 2px 2px 4px;
+}
 .research-row {
   display: flex;
   align-items: center;
