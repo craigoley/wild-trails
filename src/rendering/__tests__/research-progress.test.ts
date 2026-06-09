@@ -53,6 +53,60 @@ describe('Research progress bar — fill DERIVES from progress/count (no new sta
   });
 });
 
+const rowFor = (project: string): HTMLElement =>
+  [...document.querySelectorAll('.research-row')].find(
+    (r) => r.querySelector('.research-name')?.textContent?.includes(project),
+  ) as HTMLElement;
+
+describe('Research progress — UNIFIED: the bar CARRIES its count + action (not a disconnected strip)', () => {
+  it('a started project renders the action+count ON the bar (one element), not a separate activity line', () => {
+    const j = createJournal();
+    addCredits(j, 50);
+    startResearch(j, 'study-hedgehog'); // Catch the Hedgehog · 0/3
+    const p = new ResearchPanel(document.body, vi.fn(), vi.fn());
+    p.refresh(j);
+
+    const row = rowFor('Hedgehog');
+    const bar = row.querySelector('.research-progress')!;
+    expect(bar).not.toBeNull();
+    // The label lives INSIDE the bar and carries the action + count (the unify) ...
+    const label = bar.querySelector('.research-progress-label')!;
+    expect(label).not.toBeNull();
+    expect(label.textContent).toMatch(/Catch the hedgehog · 0 \/ 3/);
+    // ... and the fill is still inside the same bar (so the bar IS the visual of that count).
+    expect(bar.querySelector('.research-progress-fill')).not.toBeNull();
+    // The OLD separate activity line is gone while studying — the count isn't fragmented off the bar.
+    expect(row.querySelector('.research-activity')).toBeNull();
+  });
+
+  it('⚠️ a knowledge-gated row keeps the mastery line DISTINCT from the bar (#37 two-requirement)', () => {
+    const j = createJournal();
+    addCredits(j, 50);
+    startResearch(j, 'study-after-dark'); // activity bar + a "by play" mastery challenge
+    const p = new ResearchPanel(document.body, vi.fn(), vi.fn());
+    p.refresh(j);
+
+    const row = rowFor('Nocturnal');
+    const bar = row.querySelector('.research-progress')!;
+    // The activity is ON the bar ...
+    expect(bar.querySelector('.research-progress-label')!.textContent).toMatch(/·\s*0 \/ 3/);
+    // ... and the mastery requirement is a SEPARATE sibling line — NOT merged into the bar.
+    const knowledge = row.querySelector('.research-knowledge')!;
+    expect(knowledge).not.toBeNull();
+    expect(knowledge.textContent).toContain('by play');
+    expect(bar.querySelector('.research-knowledge')).toBeNull(); // distinct, never inside the bar
+  });
+
+  it('un-started shows the plain activity line (no bar yet) so the pre-Start read is intact', () => {
+    const j = createJournal();
+    const p = new ResearchPanel(document.body, vi.fn(), vi.fn());
+    p.refresh(j);
+    const row = rowFor('Hedgehog');
+    expect(row.querySelector('.research-progress')).toBeNull(); // no bar before Start
+    expect(row.querySelector('.research-activity')!.textContent).toMatch(/Catch the hedgehog · 0 \/ 3/);
+  });
+});
+
 describe('Research progress — ⚠️ activity-remaining, NEVER a time/ETA (R0a)', () => {
   it('the indicator carries NO time/duration text (no minutes/seconds/ETA — research is activity-driven)', () => {
     const j = createJournal();
