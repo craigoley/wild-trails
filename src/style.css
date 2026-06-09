@@ -1411,20 +1411,46 @@ body.modal-open .touch-stick-thumb {
   font-weight: 700;
   color: rgba(159, 240, 168, 0.92);
 }
-/* The research PROGRESS BAR — fill = progress/count (set inline). Makes "In progress" VISUAL
- * (how far along by ACTIVITY — "N more catches", never a time/ETA). Shown while in progress. */
+/* The research PROGRESS BAR — UNIFIED with its label so it never reads as an inert empty strip.
+ * The bar CARRIES "Catch in the … · X / N" ON it (the fill = progress/count, set inline; the
+ * label sits on top), so an empty 0/N bar reads as "this fills as you catch here", not a
+ * disconnected line + a dead bar. Activity-driven (R0a) — "N more catches", NEVER a time/ETA. */
 .research-progress {
-  margin-top: 6px;
-  height: 7px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  position: relative;
+  margin-top: 8px;
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(159, 240, 168, 0.3);
   overflow: hidden;
 }
+/* The fill is the coloured progress BEHIND the label (left-anchored; width = progress/count). A
+ * softer alpha than the old solid bar so the white label reads over the filled portion too. */
 .research-progress-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #6ad08a, #9ff0a8);
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 7px 0 0 7px;
+  background: linear-gradient(90deg, rgba(106, 208, 138, 0.55), rgba(159, 240, 168, 0.6));
   transition: width 0.25s ease;
+}
+/* The label ON the bar — the action + count, legible over both the filled and empty track
+ * (text-shadow). This is what makes the bar self-explanatory at 0/N. */
+.research-progress-label {
+  position: relative;
+  z-index: 1;
+  padding: 0 10px;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 /* The knowledge-gated mastery challenge state (the #37 pattern), shown ALONGSIDE the activity
  * bar so a two-requirement project never hides one: amber while pending, green when met (by play). */

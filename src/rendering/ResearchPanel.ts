@@ -129,16 +129,23 @@ export class ResearchPanel {
     const challenge = p.knowledgeRequirement && !s.completed ? p.knowledgeRequirement : null;
     const challengeDone = challenge ? journal.missions[challenge]?.completed === true : false;
 
+    // The activity NAMES what advances it; the count is the activity-remaining read (N more
+    // catches) — never a time estimate (research is activity-driven, R0a).
+    const activityText = `${describeActivity(p.activityRequirement)} · ${done} / ${count}`;
     info.innerHTML =
       `<div class="research-name">${p.name}</div>` +
       `<div class="research-blurb">${p.blurb}</div>` +
-      // The activity NAMES what advances it; the count is the activity-remaining read (N more
-      // catches) — never a time estimate (research is activity-driven, R0a).
-      `<div class="research-activity">${describeActivity(p.activityRequirement)} · ${done} / ${count}</div>` +
+      // UNIFIED progress element (while studying): the bar CARRIES its own label, so an empty
+      // 0/N bar reads as "Catch in the … · 0/N — fills as you catch", not a disconnected inert
+      // strip. The label sits ON the fill (the fill = progress/count, derived; NO timer/ETA).
+      // Not-yet-started / completed: the plain activity line (no bar — Start / ✓ is the action).
       (studying
-        ? `<div class="research-progress" role="progressbar" aria-valuenow="${done}" aria-valuemax="${count}">` +
-          `<div class="research-progress-fill" style="width: ${pct}%"></div></div>`
-        : '') +
+        ? `<div class="research-progress" role="progressbar" aria-valuenow="${done}" aria-valuemax="${count}" aria-label="${activityText}">` +
+          `<div class="research-progress-fill" style="width: ${pct}%"></div>` +
+          `<div class="research-progress-label">${activityText}</div></div>`
+        : `<div class="research-activity">${activityText}</div>`) +
+      // §4.1c/R2 — the mastery-challenge requirement stays a DISTINCT line (the #37 two-requirement
+      // legibility): the BAR is the activity; THIS is the separate "by play" knowledge gate.
       (challenge
         ? `<div class="research-knowledge${challengeDone ? ' done' : ''}">` +
           `${challengeDone ? '✓' : '+'} ${MISSIONS[challenge]?.title ?? 'a research challenge'} — by play</div>`
