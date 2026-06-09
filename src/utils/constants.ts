@@ -2276,6 +2276,11 @@ export type ResearchReward =
 
 export interface ResearchProject {
   id: string;
+  /** The AREA this project CONCERNS — its panel grouping (the research panel groups by
+   *  area). A `biome-access` project belongs to the area it OPENS (its breadcrumb lives
+   *  in that area's section); an internal project belongs to where its activity happens.
+   *  A pure DATA tag — the engine never reads it; only the panel groups by it. */
+  area: BiomeId;
   name: string;
   /** Naturalist framing — what it studies (P2/P5). */
   blurb: string;
@@ -2303,6 +2308,7 @@ export interface ResearchProject {
 export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
   'study-hedgehog': {
     id: 'study-hedgehog',
+    area: 'meadow',
     name: 'The Hedgehog at Dusk',
     blurb: 'Spend evenings with the meadow hedgehog to fill out its field-guide page.',
     cost: 8,
@@ -2311,6 +2317,7 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
   },
   'study-after-dark': {
     id: 'study-after-dark',
+    area: 'meadow',
     name: 'Nocturnal Field Study',
     blurb: 'Work the meadow after dark — but first prove you can find a round-the-clock forager at night.',
     cost: 10,
@@ -2326,6 +2333,7 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
   // done with the STARTER net (anti-lockout — you never need a net to earn a net).
   'study-the-wetland': {
     id: 'study-the-wetland',
+    area: 'wetland',
     name: 'The Water’s Edge',
     blurb: 'Learn how the wetland’s creatures use the open water — and how to reach across it. Earns the dip-net.',
     cost: 20,
@@ -2334,6 +2342,7 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
   },
   'study-the-uplands': {
     id: 'study-the-uplands',
+    area: 'highlands',
     name: 'The Open Tops',
     blurb: 'Learn the open highland ground, where there is no cover to close the gap. Earns the throwing net.',
     cost: 20,
@@ -2350,6 +2359,7 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
   // never a paywall (the credit sink lives in the OPTIONAL R0b/R1 projects).
   'unlock-the-highlands': {
     id: 'unlock-the-highlands',
+    area: 'highlands',
     name: 'Highlands Access',
     blurb: 'Study the wetland thoroughly, then prove your tracking mastery — and the route up to the highlands opens.',
     cost: 0,
@@ -2364,6 +2374,7 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
   // challenge). The activity is highlands study (you're there by now).
   'unlock-the-riverbank': {
     id: 'unlock-the-riverbank',
+    area: 'riverbank',
     name: 'Riverbank Access',
     blurb: 'Master the high tops, prove your dawn field-craft, and the route down to the riverbank opens.',
     cost: 0,
@@ -2377,6 +2388,7 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
   // (not core-progression). Completing it unlocks fish bait for purchase in the Field Supply.
   'study-aquatic-life': {
     id: 'study-aquatic-life',
+    area: 'riverbank',
     name: 'Aquatic Life',
     blurb: 'Study the river’s fish-eaters until you can match their diet — then the Field Supply stocks fish bait.',
     cost: 15,
@@ -2388,6 +2400,7 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
   // double-enforced with the isUnlockGateMet re-check). The activity is riverbank study.
   'unlock-the-coast': {
     id: 'unlock-the-coast',
+    area: 'coast',
     name: 'Coast Access',
     blurb: 'Follow the river to where it meets the sea, and learn the dusk meadow — then the shore opens.',
     cost: 0,

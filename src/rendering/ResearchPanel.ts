@@ -11,11 +11,13 @@
 
 import { addOverlayDismiss } from './overlayDismiss';
 import { canStartResearch, isResearchReady, researchState } from '../game/Research';
+import { groupResearchByArea, type ResearchAreaGroup } from './researchGroups';
 import type { Journal } from '../state/Journal';
 import {
   BIOMES,
   CREDITS,
   MISSIONS,
+  PANEL_LABELS,
   RESEARCH_ORDER,
   RESEARCH_PROJECTS,
   SPECIES,
@@ -100,14 +102,53 @@ export class ResearchPanel {
       RESEARCH_ORDER.map((id) => {
         const s = journal.research[id];
         return `${id}:${s ? `${s.started ? 's' : ''}${s.progress}${s.completed ? 'c' : ''}` : '-'}`;
-      }).join('|') + `|c${journal.credits}`;
+      }).join('|') +
+      `|c${journal.credits}` +
+      // Re-render when an area unlocks — the grouping/collapse keys off access state.
+      `|u${journal.unlockedBiomes.join(',')}`;
     if (sig === this.signature) return;
     this.signature = sig;
 
     this.header.textContent = 'Research';
     this.balance.textContent = `${CREDITS.glyph} ${journal.credits}`;
     this.list.replaceChildren();
-    for (const id of RESEARCH_ORDER) this.list.appendChild(this.row(id));
+    // Grouped BY AREA (researchGroups is pure). Accessed areas render their projects
+    // fully; a not-yet-accessed area collapses to a dimmed header + a teaser (and its
+    // gating breadcrumb renders as a visible card when reachable — the one-area-ahead
+    // horizon). The hide rule lives in researchGroups (activity-area accessed OR started).
+    for (const g of groupResearchByArea(journal)) {
+      this.list.appendChild(ResearchPanel.areaHeader(g));
+      for (const id of g.visibleIds) this.list.appendChild(this.row(id));
+      if (!g.accessed) {
+        const teaser = ResearchPanel.collapsedTeaser(g);
+        if (teaser) this.list.appendChild(teaser);
+      }
+    }
+  }
+
+  /** A section header per area — dimmed with a "· locked" suffix when not yet reached
+   *  (mirrors the journal's locked-biome header so the two surfaces read the same). */
+  private static areaHeader(g: ResearchAreaGroup): HTMLDivElement {
+    const head = document.createElement('div');
+    head.className = `research-area${g.accessed ? '' : ' locked'}`;
+    head.textContent = g.displayName + (g.accessed ? '' : PANEL_LABELS.lockedSuffix);
+    return head;
+  }
+
+  /** The collapsed-area teaser: "more to study here" when the area is reachable and has
+   *  hidden internal projects; "more lands ahead" for an area still beyond the horizon
+   *  (its breadcrumb isn't actionable yet). Null when the visible card already says it
+   *  all (a reachable area whose only project is its gating breadcrumb). Never names the
+   *  hidden projects/species (focus). */
+  private static collapsedTeaser(g: ResearchAreaGroup): HTMLDivElement | null {
+    let text: string;
+    if (g.gatingVisible && g.hasHiddenInternal) text = 'More to study here once you arrive.';
+    else if (!g.gatingVisible) text = 'More lands ahead.';
+    else return null;
+    const el = document.createElement('div');
+    el.className = 'research-teaser';
+    el.textContent = text;
+    return el;
   }
 
   private row(id: string): HTMLDivElement {
