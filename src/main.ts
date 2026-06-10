@@ -352,6 +352,7 @@ function frame(nowMs: number): void {
         species: game.lastCaughtSpecies,
         biome: game.lastCaughtBiome,
         phase: game.lastCaughtPhase,
+        bait: game.lastCaughtBait, // §4.4 — the bait active at catch time (multi-condition challenges)
       });
       // §4.1b: the one-time research-challenge credit bonus (separate from the
       // catch's own credits, granted above). Applied at the boundary like all credits.

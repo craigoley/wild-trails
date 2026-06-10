@@ -94,10 +94,11 @@ describe('achievability — the win is REACHABLE with shipped content (no grind)
     // from 3 auto-satisfied ghosts to 2 genuinely NON-FORCED ones: +24 (not +36) to
     // the ceiling, so mission points 195 -> 219. They're OPTIONAL (standalone) — the
     // win never requires them; they only RAISE the achievable ceiling.
+    // §4.4 added 3 MULTI-CONDITION research challenges (+12 each, OPTIONAL/standalone): 243 -> 279.
     const missionPts = MISSION_ORDER.reduce((s, id) => s + MISSIONS[id].rewardPoints, 0);
     const speciesPts = SPECIES_ORDER.length * RANK.perSpeciesFound;
     const top = RANKS[RANKS.length - 1].minPoints;
-    expect(missionPts).toBe(243); // post-§4.1b-fix ceiling (2 non-forced challenges)
+    expect(missionPts).toBe(279); // +3 standalone multi-condition challenges (only RAISE the ceiling)
     expect(SPECIES_ORDER.length).toBe(24); // bigger roster, bigger win bar
     expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // clears with margin
   });

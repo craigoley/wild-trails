@@ -25,6 +25,7 @@ import {
   RESEARCH_ORDER,
   RESEARCH_PROJECTS,
   SPECIES_ORDER,
+  type BaitId,
   type BiomeId,
   type DayPhase,
   type MissionRequirement,
@@ -38,6 +39,11 @@ export interface CatchEvent {
   species: SpeciesId;
   biome: BiomeId;
   phase: DayPhase;
+  /** The bait that was ACTIVE (deployed) at catch time, or null if bait-less. Carried so
+   *  multi-condition research challenges can require a species' diet bait. Optional so the
+   *  many existing event builders (tests) stay valid; absent/null never satisfies a bait
+   *  condition. Captured at the boundary BEFORE the lure is cleared (game.lastCaughtBait). */
+  bait?: BaitId | null;
 }
 
 /** Per-event deltas (for telemetry + applying rewards at the boundary). */
@@ -70,8 +76,16 @@ function meets(req: MissionRequirement, ev: CatchEvent): boolean {
     case 'track-and-catch':
       return ev.species === req.species; // the target only appears via tracking
     case 'research':
-      // BOTH dimensions required (§4.1b) — the right species UNDER its condition.
-      return ev.species === req.species && ev.phase === req.phase;
+      // MULTI-CONDITION (§4.4) — the right species AND every PRESENT condition; absent
+      // conditions are SKIPPED, so a single-condition def (phase only / bait only) behaves
+      // exactly as before. The AND means a bare catch can never auto-satisfy it (#48): you
+      // must add the bait (and/or phase) choice = apply the knowledge. A bait condition is a
+      // strict equality, so a bait-less catch (ev.bait null/undefined) never matches it.
+      return (
+        ev.species === req.species &&
+        (req.phase === undefined || ev.phase === req.phase) &&
+        (req.bait === undefined || ev.bait === req.bait)
+      );
   }
 }
 

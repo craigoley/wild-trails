@@ -1985,12 +1985,15 @@ export type MissionRequirement =
   // via the tracking flow (signs + a seeded sett spawn), so catching it IS the
   // proof you tracked it. Gates on applied journal knowledge, not recall (§5.5).
   | { kind: 'track-and-catch'; species: SpeciesId; count: number }
-  // §4.1b RESEARCH challenge: catch a species UNDER its biological condition (its
-  // activity phase). BOTH dimensions are required, so completing it PROVES applied
-  // knowledge — you can't catch the dusk-only roe deer except in the woodland at
-  // dusk. The clue describes TRAITS, never the name, so the player identifies it
-  // from the field-guide cards (#45). Anti-accident by construction.
-  | { kind: 'research'; species: SpeciesId; phase: DayPhase; count: number };
+  // §4.1b RESEARCH challenge: catch a species UNDER its biological condition(s) — a
+  // MULTI-CONDITION mastery test composing the existing axes. `species` is always
+  // required; `phase` and/or `bait` are OPTIONAL extra conditions (meets() ANDs the
+  // PRESENT ones and SKIPS absent ones — so single-condition defs are byte-identical).
+  // Composing axes is harder to auto-satisfy (the #48 non-forced core) and — because
+  // BAIT is never forced (you can always catch bait-less) — it opens the ~22 phase-
+  // LOCKED species as challenge subjects via their REAL diet ("the dusk insectivore,
+  // fed insects"). The clue describes TRAITS, never the name (#45). Anti-accident.
+  | { kind: 'research'; species: SpeciesId; phase?: DayPhase; bait?: BaitId; count: number };
 
 export interface MissionDef {
   id: string;
@@ -2044,6 +2047,11 @@ export const MISSION_ORDER: readonly string[] = [
   'research-rabbit-night',
   'research-rabbit-dawn',
   'research-mouse-dusk',
+  // §4.4 MULTI-CONDITION challenges (standalone — fresh non-forced gate-fuel). Compose
+  // species + bait [+ phase]; bait is the non-forced lever for the phase-locked species.
+  'research-hedgehog-insects',
+  'research-mouse-night-seeds',
+  'research-otter-fish',
 ];
 
 /**
@@ -2210,6 +2218,57 @@ export const MISSIONS: Record<string, MissionDef> = {
     creditReward: RESEARCH.creditReward,
     standalone: true,
     hint: 'Not the one — seek a meadow forager at DUSK, as the light fades.',
+  },
+  // §4.4 MULTI-CONDITION challenges — compose the existing axes (species + bait [+ phase]).
+  // NON-FORCED via BAIT: you can always catch bait-less (the anti-lockout valve), so requiring
+  // a species' REAL diet bait is a deliberate, knowledge-applying choice — and it opens the
+  // phase-LOCKED species (whose phase is forced) as challenge subjects. Standalone (gates
+  // nothing yet) — fresh non-forced gate-fuel for World Expansion + richer research.
+
+  // 2-condition (species + bait): the dusk INSECTIVORE, fed its diet. The hedgehog is
+  // dusk-locked, so phase can't be the lever — bait is. (#48: a bait-less hedgehog won't do.)
+  'research-hedgehog-insects': {
+    id: 'research-hedgehog-insects',
+    biome: 'meadow',
+    title: 'Research: The Hedgehog’s Table',
+    description:
+      'A snuffling insectivore of the meadow edge, abroad at dusk — it hunts beetles, worms and slugs. Identify it from your field guide, then prove you know its table: catch one over INSECT bait.',
+    requirement: { kind: 'research', species: 'hedgehog', bait: 'insects', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not quite — set out INSECT bait for the meadow insectivore, the food it truly hunts.',
+  },
+
+  // 3-condition (species + phase + bait): the sparing escalation — the round-the-clock
+  // seed-eater, AT NIGHT, over its SEED diet. Maximally non-forced (two applied facts).
+  'research-mouse-night-seeds': {
+    id: 'research-mouse-night-seeds',
+    biome: 'meadow',
+    title: 'Research: The Midnight Granary',
+    description:
+      'A round-the-clock forager of the meadow grass — a seed-eater out among the stems at every hour. Prove you know both its clock and its diet: catch one AT NIGHT over SEED bait.',
+    requirement: { kind: 'research', species: 'fieldmouse', phase: 'night', bait: 'seeds', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not quite — the round-the-clock grass forager, AT NIGHT, over SEED bait (its true diet).',
+  },
+
+  // 2-condition (species + bait): the dusk PISCIVORE, fed fish. ⚠️ Fish bait is research-gated
+  // (study-aquatic-life, #71), so this is completable ONLY once fish bait is accessible — it is
+  // STANDALONE and gates nothing, so it can never wall progression before then.
+  'research-otter-fish': {
+    id: 'research-otter-fish',
+    biome: 'riverbank',
+    title: 'Research: The River’s Hunter',
+    description:
+      'A sleek hunter of the riverbank, working the water at dusk for fish. Identify it from your field guide, then prove you know its prey: catch one over FISH bait.',
+    requirement: { kind: 'research', species: 'otter', bait: 'fish', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not quite — the riverbank’s dusk hunter takes FISH; set out fish bait for it.',
   },
 };
 
