@@ -63,7 +63,7 @@ describe('Riverbank — ⚠️ anti-lockout (the easiest catchable bait-less wit
 
 describe('Riverbank — ⚠️ the research gate (R2 generalized, knowledge-by-play double-enforced)', () => {
   it('wired by DATA only: BIOME_SET_UNLOCK extended + a cost-0 biome-access project', () => {
-    expect(BIOME_SET_UNLOCK.highlands).toBe('riverbank');
+    expect(BIOME_SET_UNLOCK.highlands).toContain('riverbank'); // §4.2 branch: forks to BOTH riverbank + moor
     expect(isResearchGatedUnlock('riverbank')).toBe(true);
     const p = RESEARCH_PROJECTS['unlock-the-riverbank'];
     expect(p.reward).toEqual({ kind: 'biome-access', biome: 'riverbank' });

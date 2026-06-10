@@ -86,7 +86,7 @@ describe('Coast — ⚠️ anti-lockout (the easiest + the fish-eaters catchable
 
 describe('Coast — ⚠️ the research gate (R2 generalized; knowledge-by-play double-enforced)', () => {
   it('wired by DATA only: BIOME_SET_UNLOCK extended + a cost-0 biome-access project', () => {
-    expect(BIOME_SET_UNLOCK.riverbank).toBe('coast');
+    expect(BIOME_SET_UNLOCK.riverbank).toContain('coast'); // §4.2 — successor arrays (single-element here)
     expect(isResearchGatedUnlock('coast')).toBe(true);
     const p = RESEARCH_PROJECTS['unlock-the-coast'];
     expect(p.reward).toEqual({ kind: 'biome-access', biome: 'coast' });

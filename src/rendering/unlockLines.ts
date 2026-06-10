@@ -107,38 +107,48 @@ function gatingProgress(journal: Journal, biome: BiomeId): { done: number; total
   return { done, total };
 }
 
-/** One UnlockLine per gating set, in chain order. The panel renders the ones whose
- *  `unlocks !== null` (terminal sets — no onward biome — are still returned with
- *  unlocks: null so callers/tests can see them, but produce no carrot line). */
+/** Build ONE UnlockLine for a gating set + ONE of its successors (or null = terminal).
+ *  A BRANCHED set (≥2 successors) emits one line PER successor, so BOTH "how to reach"
+ *  breadcrumbs show at the branch (branching = a visible choice, never a silent wall on
+ *  the second arm). The set-side progress/challenges repeat per successor (they gate
+ *  every arm); the target-side research/name differ per successor. */
+function oneLine(journal: Journal, setBiome: BiomeId, unlocks: BiomeId | null): UnlockLine {
+  const { done, total } = gatingProgress(journal, setBiome);
+  // §4.1c — the escalated gate's required research challenge(s), each with its done
+  // state, so the player is TOLD what's required (never a silent knowledge-wall).
+  const requiredChallenges = (BIOME_GATE_CHALLENGES[setBiome] ?? []).map((id) => ({
+    id,
+    title: MISSIONS[id].title,
+    done: journal.missions[id]?.completed ?? false,
+  }));
+  const requiredResearch = requiredResearchFor(journal, unlocks);
+  return {
+    setBiome,
+    setName: BIOMES[setBiome].displayName,
+    unlocks,
+    unlocksName: unlocks ? BIOMES[unlocks].displayName : null,
+    done,
+    total,
+    requiredChallenges,
+    requiredResearch,
+    // §4.1c/R2: the target is "reached" only once it's actually in the journal's unlocks.
+    // For a GENTLE gate (no required research), isBiomeGateMet implies the imminent unlock,
+    // so it still counts. For a RESEARCH-WRAPPED gate, the research must ALSO complete — so
+    // isBiomeGateMet alone does NOT mark it reached (the carrot + the research step stay).
+    alreadyUnlocked: unlocks
+      ? journal.unlockedBiomes.includes(unlocks) ||
+        (requiredResearch === null && isBiomeGateMet(journal, setBiome))
+      : false,
+  };
+}
+
+/** One UnlockLine per (gating set × successor), in chain order. A set that BRANCHES into
+ *  two biomes emits TWO lines (both breadcrumbs); a terminal set — no onward biome — is
+ *  still returned with unlocks: null so callers/tests can see it, but produces no carrot. */
 export function unlockLines(journal: Journal): UnlockLine[] {
-  return gatingSetBiomes().map((setBiome) => {
-    const unlocks = BIOME_SET_UNLOCK[setBiome] ?? null;
-    const { done, total } = gatingProgress(journal, setBiome);
-    // §4.1c — the escalated gate's required research challenge(s), each with its done
-    // state, so the player is TOLD what's required (never a silent knowledge-wall).
-    const requiredChallenges = (BIOME_GATE_CHALLENGES[setBiome] ?? []).map((id) => ({
-      id,
-      title: MISSIONS[id].title,
-      done: journal.missions[id]?.completed ?? false,
-    }));
-    const requiredResearch = requiredResearchFor(journal, unlocks);
-    return {
-      setBiome,
-      setName: BIOMES[setBiome].displayName,
-      unlocks,
-      unlocksName: unlocks ? BIOMES[unlocks].displayName : null,
-      done,
-      total,
-      requiredChallenges,
-      requiredResearch,
-      // §4.1c/R2: the target is "reached" only once it's actually in the journal's unlocks.
-      // For a GENTLE gate (no required research), isBiomeGateMet implies the imminent unlock,
-      // so it still counts. For a RESEARCH-WRAPPED gate, the research must ALSO complete — so
-      // isBiomeGateMet alone does NOT mark it reached (the carrot + the research step stay).
-      alreadyUnlocked: unlocks
-        ? journal.unlockedBiomes.includes(unlocks) ||
-          (requiredResearch === null && isBiomeGateMet(journal, setBiome))
-        : false,
-    };
+  return gatingSetBiomes().flatMap((setBiome) => {
+    const successors = BIOME_SET_UNLOCK[setBiome] ?? [];
+    if (successors.length === 0) return [oneLine(journal, setBiome, null)];
+    return successors.map((unlocks) => oneLine(journal, setBiome, unlocks));
   });
 }

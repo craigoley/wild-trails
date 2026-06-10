@@ -136,7 +136,7 @@ export function isResearchGatedUnlock(target: BiomeId): boolean {
  */
 export function isUnlockGateMet(journal: Journal, target: BiomeId): boolean {
   for (const source of Object.keys(BIOME_SET_UNLOCK) as BiomeId[]) {
-    if (BIOME_SET_UNLOCK[source] === target) return isBiomeGateMet(journal, source);
+    if (BIOME_SET_UNLOCK[source]?.includes(target)) return isBiomeGateMet(journal, source);
   }
   return false;
 }
@@ -218,14 +218,16 @@ export function evaluateCatch(journal: Journal, ev: CatchEvent): MissionEval {
   if (result.completed.length > 0) {
     for (const biome of Object.keys(BIOME_SET_UNLOCK) as BiomeId[]) {
       if (!isBiomeGateMet(journal, biome)) continue;
-      const target = BIOME_SET_UNLOCK[biome];
-      // R2: a research-gated target (the Highlands) no longer auto-unlocks here — its
-      // research project owns the unlock (via the biome-access reward dispatch, which
-      // re-checks this same gate). The gentle gates fall through and unlock as before.
-      if (target && isResearchGatedUnlock(target)) continue;
-      if (target && !journal.unlockedBiomes.includes(target)) {
-        journal.unlockedBiomes.push(target);
-        result.unlocked.push(target);
+      // The chain may FORK (§4.2 branch) — iterate every successor of this set.
+      for (const target of BIOME_SET_UNLOCK[biome] ?? []) {
+        // R2: a research-gated target (the Highlands / Riverbank / Moor) no longer auto-unlocks
+        // here — its research project owns the unlock (via the biome-access reward dispatch,
+        // which re-checks this same gate). The gentle gates fall through and unlock as before.
+        if (isResearchGatedUnlock(target)) continue;
+        if (!journal.unlockedBiomes.includes(target)) {
+          journal.unlockedBiomes.push(target);
+          result.unlocked.push(target);
+        }
       }
     }
   }

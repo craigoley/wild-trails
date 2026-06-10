@@ -110,8 +110,24 @@ export function completeCoastGate(j: Journal): void {
   reconcileResearchUnlocks(j);
 }
 
-/** Catch the remaining roster (rabbit + the alpine three + the Riverbank four) so the dex
- *  fills for the win. rabbit@night doubles as the second night-forager challenge. */
+/**
+ * §4.2 — unlock the MOOR (the 1st BRANCHED biome: the Highlands set forks to BOTH the Riverbank
+ * AND the Moor). Gated on a NON-FORCED MULTI-CONDITION mastery challenge by play
+ * (research-ptarmigan-greens — a ptarmigan over GREENS bait, its real diet; bait is never forced,
+ * so this is a deliberate field-craft choice) + the highlands activity. The shared source gate
+ * (research-rabbit-dawn) is already met by completeRiverbankGate. cost 0 (win-required → anti-wall).
+ */
+export function completeMoorGate(j: Journal): void {
+  // The multi-condition challenge: ptarmigan + GREENS bait (its diet) — non-forced, in the prereq.
+  applyCatch(j, { species: 'ptarmigan', biome: 'highlands', phase: 'day', bait: 'greens' } as CatchEvent);
+  startResearch(j, 'unlock-the-moor');
+  for (let i = 0; i < 4; i++) evaluateResearch(j, ev('ptarmigan', 'highlands', 'day')); // catch-in-highlands ×4
+  reconcileResearchUnlocks(j);
+}
+
+/** Catch the remaining roster (rabbit + the alpine three + the Riverbank four + the Coast five +
+ *  the Moor five) so the dex fills for the win. rabbit@night doubles as the second night-forager
+ *  challenge. */
 export function catchRemainingSpecies(j: Journal): void {
   applyCatch(j, ev('rabbit', 'meadow', 'night')); // research-rabbit-night + finds rabbit
   applyCatch(j, ev('ptarmigan', 'highlands', 'day'));
@@ -132,4 +148,10 @@ export function catchRemainingSpecies(j: Journal): void {
   applyCatch(j, ev('turnstone', 'coast', 'day'));
   applyCatch(j, ev('herringgull', 'coast', 'day'));
   applyCatch(j, ev('greyseal', 'coast', 'day'));
+  // §4.2 — the Moor roster (caught once it's unlocked; the twite is the bait-less valve).
+  applyCatch(j, ev('twite', 'moor', 'day'));
+  applyCatch(j, ev('stonechat', 'moor', 'day'));
+  applyCatch(j, ev('redgrouse', 'moor', 'day'));
+  applyCatch(j, ev('curlew', 'moor', 'day'));
+  applyCatch(j, ev('reddeer', 'moor', 'day'));
 }

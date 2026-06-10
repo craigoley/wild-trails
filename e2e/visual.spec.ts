@@ -23,6 +23,9 @@ const scenes = [
   { name: 'riverbank-river', query: `?seed=${SEED}&freeze=1&unlock=all&at=40,80` },
   // §4.2 — the 2nd new biome: the Coast shore + the large outer-edge SEA (the player on the beach).
   { name: 'coast-shore', query: `?seed=${SEED}&freeze=1&unlock=all&at=40,114` },
+  // §4.2 — the 1st BRANCHED biome: the Moor's heather-purple ground, east of the Highlands (a new
+  // frozen baseline — the world canvas grows a new cell; the existing 5 baselines are unchanged).
+  { name: 'moor-heather', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,40` },
 ];
 
 for (const scene of scenes) {

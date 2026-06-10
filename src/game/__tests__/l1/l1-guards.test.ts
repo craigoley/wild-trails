@@ -8,6 +8,7 @@ import {
   completeHighlandsResearch,
   completeRiverbankGate,
   completeCoastGate,
+  completeMoorGate,
   catchRemainingSpecies,
 } from './harness';
 import { createJournal } from '../../../state/Journal';
@@ -105,8 +106,15 @@ describe('L1 Guard 3 — progression-to-win (the unlock chain + the win fires)',
     expect(j.unlockedBiomes).not.toContain('coast');
     completeCoastGate(j);
     expect(j.unlockedBiomes).toContain('coast');
-    // Fill the dex (every roster, incl. the Coast five) -> the win fires. WIN REACHABLE through
-    // every research-gated biome (the cardinal anti-wall pin: no impossible state).
+    // §4.2 — the MOOR (the 1st BRANCHED biome) forks off the SAME Highlands set as the Riverbank,
+    // but behind its OWN multi-condition gate (research-ptarmigan-greens + the highlands activity).
+    // The branch is ADDITIVE: unlocking the Riverbank/Coast arm never opened the Moor, and the
+    // Moor's own gate now opens it — proving both arms of the fork gate independently.
+    expect(j.unlockedBiomes).not.toContain('moor');
+    completeMoorGate(j);
+    expect(j.unlockedBiomes).toContain('moor');
+    // Fill the dex (every roster, incl. the Coast five + the Moor five) -> the win fires. WIN
+    // REACHABLE through every research-gated biome (the cardinal anti-wall pin: no impossible state).
     catchRemainingSpecies(j);
     expect(SPECIES_ORDER.every((id) => j.species[id])).toBe(true);
     expect(isGameComplete(j)).toBe(true);

@@ -81,7 +81,7 @@ export const WORLD = {
 } as const;
 
 /** The biomes in the world. `meadow` is the starting region. */
-export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast';
+export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor';
 
 /** Static definition of one biome: its finite bounds, display name, adjacency
  *  in the world graph, initial unlocked state, and ground tint. */
@@ -125,7 +125,7 @@ function cell(cx: number, cy: number): Rect {
 }
 
 /** Iteration order for the biome graph (deterministic; render + lookup order). */
-export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast'];
+export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor'];
 
 /**
  * The THROUGH-LINE (§4.3 TL1) — the soul layer's first slice. A biome's "thriving" derives from
@@ -198,7 +198,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Highlands',
     bounds: cell(PITCH, PITCH),
     unlocked: false,
-    adjacent: ['woodland', 'wetland', 'riverbank'],
+    adjacent: ['woodland', 'wetland', 'riverbank', 'moor'], // §4.2 — the BRANCH: forks E to the Moor
     tier: 3,
     // The Wetland set unlocks the Highlands — but ESCALATED: also research-mouse-night
     // (BIOME_GATE_CHALLENGES) + the R2 research wrap. The prereq names the set; the wrap is
@@ -234,6 +234,20 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     tier: 5,
     prereq: 'riverbank', // gated by research-mouse-dusk + the unlock-the-coast project
     color: 0xc9b489, // sand / shingle
+  },
+  // §4.2 — HEATHLAND/MOOR: the 1st BRANCHED biome (the world goes 2D). EAST of the Highlands
+  // [60,100]x[20,60] — the moor on the mountain's flank. The Highlands now unlocks BOTH the
+  // Riverbank AND the Moor (BIOME_SET_UNLOCK forks). Gated by the Highlands set + the shared
+  // §4.1c challenge + a NEW multi-condition mastery challenge (the #92 unblock).
+  moor: {
+    id: 'moor',
+    displayName: 'Moor',
+    bounds: cell(PITCH * 2, PITCH), // east of the Highlands — [60,100] x [20,60]
+    unlocked: false,
+    adjacent: ['highlands'],
+    tier: 4, // a parallel arm off the Highlands (like the Riverbank)
+    prereq: 'highlands',
+    color: 0x6a4f72, // heather purple
   },
 };
 
@@ -369,7 +383,13 @@ export type SpeciesId =
   | 'brentgoose'
   | 'turnstone'
   | 'herringgull'
-  | 'greyseal';
+  | 'greyseal'
+  // Moor (§4.2, the 1st BRANCHED biome — heather upland; honest declining ground-nesters).
+  | 'twite'
+  | 'stonechat'
+  | 'redgrouse'
+  | 'curlew'
+  | 'reddeer';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -458,6 +478,12 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'turnstone',
   'herringgull',
   'greyseal',
+  // Moor (§4.2 — the 1st branched biome).
+  'twite',
+  'stonechat',
+  'redgrouse',
+  'curlew',
+  'reddeer',
 ];
 
 /**
@@ -652,6 +678,42 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'Curious and powerful; at the first alarm it slides off the rocks into the sea and is gone, hunting underwater on a single long breath.',
     status: 'A conservation success — Britain now safeguards nearly half the world’s grey seals, back from the brink.',
+  },
+  // Moor (§4.2) — the 1st BRANCHED biome; HONEST conservation status, the real upland spectrum.
+  twite: {
+    fieldNote:
+      'The moorland linnet — a small upland finch that picks seeds from low moorland plants by day. Watch the rough heather and grass for restless little flocks.',
+    behaviour:
+      'A streaky brown finch with a pink rump and a nasal “tweet” call; it flocks over the open moor and nests low in the heather.',
+    status: 'Red-listed and declining — the twite has lost the seeding plants of the hay meadows and rough ground it depends on.',
+  },
+  stonechat: {
+    fieldNote:
+      'The gorse-top sentinel — the stonechat hawks insects from a low perch over the heath by day. Look for it bobbing on the tallest sprig.',
+    behaviour:
+      'It scolds with a hard “tac-tac” like two stones knocked together; the male wears a black head, white collar and a burnt-orange breast.',
+    status: 'A genuine recovery story — the stonechat is doing well, spreading back across our heaths and moors.',
+  },
+  redgrouse: {
+    fieldNote:
+      'The bird of the heather — the red grouse crops young heather shoots by day and is found nowhere else on Earth. Watch the open moor at your feet.',
+    behaviour:
+      'It bursts up underfoot with a loud “go-back, go-back, go-back”, then glides low on stiff wings; the male flashes a red comb over each eye.',
+    status: 'A British endemic of the managed moor — its fortunes rise and fall with how the heather uplands are kept.',
+  },
+  curlew: {
+    fieldNote:
+      'The voice of the moor — the curlew probes the soft ground for insects and worms by day with its long downcurved bill. Its bubbling call IS the upland spring.',
+    behaviour:
+      'Our largest wader, streaky brown with a huge sickle bill; it rises with a haunting rippling cry and circles wide over its nesting ground.',
+    status: 'Near-threatened and falling fast — and Britain is a global stronghold, so the curlew is the upland’s biggest single stake.',
+  },
+  reddeer: {
+    fieldNote:
+      'The monarch of the moor — the red deer grazes grasses, heather and shoots over the open hill by day. Britain’s largest wild land mammal.',
+    behaviour:
+      'It moves in wary herds and freezes at the faintest scent before flowing away over the slope; the autumn stag roars across the glen and carries great branching antlers.',
+    status: 'A success with caveats — red deer have recovered so well that in places there are now too many for the hill to bear.',
   },
 };
 
@@ -1127,6 +1189,96 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     // biggest moment (across the open sea).
     fleesToWater: true,
   },
+  // --- Moor (§4.2) — the 1st BRANCHED biome; honest declining uplanders, no new mechanic. ---
+  // Dry heather upland → NO water (no fleesToWater), cover-sparse → the net shines. Catch-band
+  // mirrors the Coast (0.14–0.5). CJ2 gaits by tag: four BIRDs + the red deer's WALK.
+  twite: {
+    id: 'twite',
+    gait: 'bird',
+    displayName: 'Twite',
+    biome: 'moor',
+    // The Moor VALVE (0.50): a small, calm seed-eater — catchable bait-less (anti-lockout).
+    spawnWeight: 6,
+    baseFleeSpeed: 2.8,
+    detectionRadius: 2.6,
+    activityWindow: 'day',
+    tier: 4,
+    baseCatchRate: 0.5,
+    bait: 'seeds',
+    color: 0x7a5a3a,
+    size: 0.28,
+    profile:
+      'The moorland linnet — a small upland finch with a pink rump, picking seeds from low moorland plants in restless flocks. Red-listed, hit by the loss of its seeding ground.',
+  },
+  stonechat: {
+    id: 'stonechat',
+    gait: 'bird',
+    displayName: 'Stonechat',
+    biome: 'moor',
+    spawnWeight: 5,
+    baseFleeSpeed: 3.4,
+    detectionRadius: 3.0,
+    activityWindow: 'day',
+    tier: 4,
+    baseCatchRate: 0.4,
+    bait: 'insects',
+    color: 0xc2542a,
+    size: 0.26,
+    profile:
+      'The gorse-top sentinel, hawking insects from a low perch and scolding “tac-tac” like two stones. The black-headed, orange-breasted male is a genuine recovery story.',
+  },
+  redgrouse: {
+    id: 'redgrouse',
+    gait: 'bird',
+    displayName: 'Red Grouse',
+    biome: 'moor',
+    spawnWeight: 4,
+    baseFleeSpeed: 3.6,
+    detectionRadius: 3.4,
+    activityWindow: 'day',
+    tier: 4,
+    baseCatchRate: 0.36,
+    bait: 'greens',
+    color: 0x8a3a2a,
+    size: 0.4,
+    profile:
+      'The bird of the heather, cropping young shoots and bursting up underfoot with a loud “go-back, go-back”. A British endemic — found nowhere else on Earth.',
+  },
+  curlew: {
+    id: 'curlew',
+    gait: 'bird',
+    displayName: 'Curlew',
+    biome: 'moor',
+    spawnWeight: 4,
+    baseFleeSpeed: 3.9,
+    detectionRadius: 3.8,
+    activityWindow: 'day',
+    tier: 5,
+    baseCatchRate: 0.28,
+    bait: 'insects',
+    color: 0xa88a5a,
+    size: 0.42,
+    profile:
+      'The voice of the moor — our largest wader, probing the soft ground with a huge sickle bill and rising with a haunting bubbling cry. Near-threatened, and Britain is its global stronghold.',
+  },
+  reddeer: {
+    id: 'reddeer',
+    gait: 'walk',
+    displayName: 'Red Deer',
+    biome: 'moor',
+    // The Moor APEX (0.14): large, wary, fast — Britain's largest wild land mammal.
+    spawnWeight: 2,
+    baseFleeSpeed: 4.6,
+    detectionRadius: 4.5,
+    activityWindow: 'day',
+    tier: 5,
+    baseCatchRate: 0.14,
+    bait: 'greens',
+    color: 0x8a5a3a,
+    size: 0.62,
+    profile:
+      'The monarch of the moor, grazing the open hill in wary herds and flowing away at the faintest scent. The autumn stag roars across the glen under great branching antlers.',
+  },
 };
 
 // ===========================================================================
@@ -1240,6 +1392,11 @@ export const HIDING_SPOTS: readonly HidingSpotDef[] = [
   // Reuses the meadow grass render.
   { biome: 'coast', x: 30, y: 108, radius: 2.2, kind: 'grass' },
   { biome: 'coast', x: 50, y: 114, radius: 2.0, kind: 'grass' },
+  // Moor (§4.2) — tussocks of moor-grass on the open heather (x∈[60,100], y∈[20,60]): just 2
+  // spots, an OPEN biome like the Highlands/Coast (so the throwing net's open-ground reach shines
+  // on the moor) and DRY (no water — no dip-net here). Reuses the meadow grass render.
+  { biome: 'moor', x: 72, y: 34, radius: 2.2, kind: 'grass' },
+  { biome: 'moor', x: 90, y: 48, radius: 2.0, kind: 'grass' },
 ];
 
 /** The portable HIDE (Nets & Gear slice C) — naturalist gear you DEPLOY at your
@@ -1369,6 +1526,7 @@ export const SUPPLY_POSTS: readonly SupplyPostDef[] = [
   { biome: 'highlands', x: 55, y: 55, radius: 2.5 },
   { biome: 'riverbank', x: 52, y: 66, radius: 2.5 }, // clear of the river band + the reeds
   { biome: 'coast', x: 40, y: 106, radius: 2.5 }, // on the beach, clear of the sea + the marram
+  { biome: 'moor', x: 80, y: 28, radius: 2.5 }, // on the open heather, clear of the grass tussocks
 ];
 
 /** Closing the Field Supply steps the player OUT the door (−y), this far PAST the
@@ -2072,6 +2230,39 @@ export const SPECIES_MODEL: Record<
     tailLengthR: 0.3,
     tailRadiusR: 0.2,
   },
+  // Moor (§4.2) — four moor birds (the BIRD build; the curlew's signature LONG bill) + the red
+  // deer (the large RABBIT build, like the roe deer — tall ears stand in for the deer read).
+  twite: {
+    kind: 'bird',
+    accent: 0xc77a6a, // pink rump
+    beakLengthR: 0.35,
+    crestHeightR: 0.2,
+  },
+  stonechat: {
+    kind: 'bird',
+    accent: 0xd0552a, // burnt-orange breast
+    beakLengthR: 0.35,
+    crestHeightR: 0.3, // the bold black head
+  },
+  redgrouse: {
+    kind: 'bird',
+    accent: 0xa33a2a, // red comb / red-brown
+    beakLengthR: 0.35,
+    crestHeightR: 0.2,
+  },
+  curlew: {
+    kind: 'bird',
+    accent: 0xe8dcc0, // pale streaky
+    beakLengthR: 1.0, // the long downcurved sickle bill — its signature silhouette
+    crestHeightR: 0.15,
+  },
+  reddeer: {
+    kind: 'rabbit',
+    accent: 0xc8a878, // pale rump patch
+    earHeightR: 0.55,
+    earRadiusR: 0.16,
+    tailRadiusR: 0.16,
+  },
 } as const;
 
 // ===========================================================================
@@ -2159,6 +2350,8 @@ export const MISSION_ORDER: readonly string[] = [
   'research-hedgehog-insects',
   'research-mouse-night-seeds',
   'research-otter-fish',
+  // §4.2 — the MOOR's by-PLAY mastery gate (the 1st BRANCHED biome's multi-condition challenge).
+  'research-ptarmigan-greens',
 ];
 
 /**
@@ -2377,16 +2570,38 @@ export const MISSIONS: Record<string, MissionDef> = {
     standalone: true,
     hint: 'Not quite — the riverbank’s dusk hunter takes FISH; set out fish bait for it.',
   },
+  // §4.2 — the MOOR's multi-condition mastery gate (the #92 unblock in action — the 1st biome to
+  // use it for an access gate). The ACTIVITY is in the HIGHLANDS (the prereq, an already-accessed
+  // biome) → it's the #37 breadcrumb, never a wall. NON-FORCED via BAIT: the ptarmigan is
+  // catchable bait-less in normal play, so requiring its REAL diet (greens — it crops heather and
+  // alpine shoots) is a deliberate field-craft choice that teaches the bird's diet (#48 inverse:
+  // normal Highlands progression never forces a greens-baited ptarmigan). A 2-condition challenge
+  // (species + bait); the unlock-the-moor project wraps it (R2), double-enforced by isUnlockGateMet.
+  'research-ptarmigan-greens': {
+    id: 'research-ptarmigan-greens',
+    biome: 'highlands',
+    title: 'Research: The High Grazer',
+    description:
+      'A ground bird of the highest tops, cropping young heather and alpine shoots by day. Identify it from your field guide, then prove you know its table: catch one over GREENS bait.',
+    requirement: { kind: 'research', species: 'ptarmigan', bait: 'greens', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not quite — set out GREENS bait for the high-tops grazer, the heather shoots it truly crops.',
+  },
 };
 
 /** Completing ALL of a biome's missions unlocks the mapped biome (lateral reward
  *  — a new region + its species, not flat power, §5.5). */
-export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, BiomeId>> = {
-  meadow: 'woodland',
-  woodland: 'wetland',
-  wetland: 'highlands',
-  highlands: 'riverbank', // §4.2 — the Highlands set + its R2 wrap precede the Riverbank gate
-  riverbank: 'coast', // §4.2 — the Riverbank precedes the Coast gate (the river meets the sea)
+// ⚠️ Successor ARRAYS (not a single id) so the chain can FORK — the §4.2 branch (the world goes
+// 2D). The existing biomes keep single-element arrays (behaviour-neutral); the Highlands forks to
+// BOTH the Riverbank and the Moor. Every consumer iterates the array.
+export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, readonly BiomeId[]>> = {
+  meadow: ['woodland'],
+  woodland: ['wetland'],
+  wetland: ['highlands'],
+  highlands: ['riverbank', 'moor'], // §4.2 — the 1st BRANCH: the Highlands set unlocks BOTH
+  riverbank: ['coast'], // §4.2 — the Riverbank precedes the Coast gate (the river meets the sea)
 };
 
 /** §4.1c ESCALATING knowledge gates: in ADDITION to the catch-set, a biome's unlock
@@ -2574,6 +2789,22 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     knowledgeRequirement: 'research-mouse-dusk', // by PLAY only — the non-forced dusk catch
     reward: { kind: 'biome-access', biome: 'coast' },
   },
+  // §4.2 — MOOR access (R2's pattern), the 1st BRANCHED biome: the Highlands set now forks to
+  // BOTH the Riverbank AND the Moor (BIOME_SET_UNLOCK.highlands). cost 0 (the Moor's species are
+  // win-required → zero wall risk, like the other access gates). knowledgeRequirement =
+  // research-ptarmigan-greens, a NON-FORCED multi-condition mastery challenge (#92) — double-
+  // enforced with the isUnlockGateMet re-check (the Highlands set + research-rabbit-dawn, the
+  // shared source gate). The activity is highlands study (you're there by now, having branched).
+  'unlock-the-moor': {
+    id: 'unlock-the-moor',
+    area: 'moor',
+    name: 'Moorland Access',
+    blurb: 'Range east across the high tops, learn the ptarmigan’s table, and the route onto the open moor opens.',
+    cost: 0,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'highlands', count: 4 },
+    knowledgeRequirement: 'research-ptarmigan-greens', // by PLAY only — the non-forced multi-condition catch
+    reward: { kind: 'biome-access', biome: 'moor' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
@@ -2586,6 +2817,7 @@ export const RESEARCH_ORDER: readonly string[] = [
   'unlock-the-riverbank',
   'study-aquatic-life',
   'unlock-the-coast',
+  'unlock-the-moor', // §4.2 — the 1st BRANCHED biome (off the Highlands set, beside the Riverbank)
 ];
 
 // ===========================================================================
