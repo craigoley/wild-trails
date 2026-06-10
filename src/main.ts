@@ -502,7 +502,7 @@ function frame(nowMs: number): void {
   shopWasOpen = shopPanel.isOpen();
 
   // Render the interpolated state. Renderers read prev+current; never mutate.
-  entities.sync(game, alpha);
+  entities.sync(game, alpha, dt, l2Frozen); // dt + freeze drive the CJ1 walk cycle (frozen → neutral)
   // Frozen (L2) scenes snap the camera to the player so the capture is byte-stable (the normal
   // exponential ease never settles — the screenshot would drift forever). No effect on play.
   scene.updateFollow(game, alpha, dt, l2Frozen);

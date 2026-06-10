@@ -26,11 +26,21 @@ import {
 import type { GameState } from '../game/GameState';
 import type { Encounter } from '../game/Encounter';
 import { buildAnimalModel, buildPlayerModel } from './models/builders';
+import {
+  createWalkState,
+  createWalkTransform,
+  stepWalkCycle,
+  type WalkState,
+  type WalkTransform,
+} from './walkCycle';
 import { CATCH, CATCH_FX, HIDE, PALETTE, SPAWN, SPECIES, SPECIES_ORDER, type SpeciesId } from '../utils/constants';
 import { clamp, lerp } from '../utils/math';
 
 export class EntityRenderer {
   private readonly player: Group;
+  /** CJ1 walk-cycle accumulators + reused transform scratch (no per-frame alloc). */
+  private readonly walk: WalkState = createWalkState();
+  private readonly walkOut: WalkTransform = createWalkTransform();
   /** A pool of built models per species (claimed by active animals each frame). */
   private readonly animalPools: Record<SpeciesId, Group[]>;
   /** Per-frame claim counter per species (reset each sync). */
@@ -92,10 +102,19 @@ export class EntityRenderer {
   }
 
   /** Sync all entity models to the interpolated game state. Reads only. */
-  sync(state: GameState, alpha: number): void {
+  sync(state: GameState, alpha: number, dt = 0, frozen = false): void {
     const p = state.player;
-    this.player.position.set(lerp(p.prevX, p.x, alpha), 0, lerp(p.prevY, p.y, alpha));
-    EntityRenderer.faceTravel(this.player, p.facingX, p.facingY);
+    const lx = lerp(p.prevX, p.x, alpha);
+    const lz = lerp(p.prevY, p.y, alpha);
+    // CJ1 — the procedural walk cycle. A VISUAL transform on the player Group AROUND its
+    // logical position (lx, lz): the cycle derives from the player's velocity; the logical
+    // position is unchanged (the sim — and so catch/proximity — never sees the bob). Frozen
+    // → neutral pose (the L2 capture is identical to the static capsule).
+    const a = stepWalkCycle(this.walk, Math.hypot(p.vx, p.vy), dt, frozen, this.walkOut);
+    this.player.position.set(lx, a.bobY, lz);
+    this.player.scale.set(a.scaleXZ, a.scaleY, a.scaleXZ);
+    EntityRenderer.faceTravel(this.player, p.facingX, p.facingY); // yaw (rotation.y)
+    this.player.rotation.x = a.leanX; // lean (forward pitch) composes with the facing yaw
 
     // Claim a model of each active animal's species; squash the encounter target.
     for (const id of SPECIES_ORDER) this.claimed[id] = 0;

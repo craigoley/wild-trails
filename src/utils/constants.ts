@@ -1753,6 +1753,34 @@ export const PLAYER_MODEL = {
 } as const;
 
 /**
+ * Character Juice CJ1 — the procedural player WALK CYCLE (a sliding capsule becomes a
+ * character that WALKS). Pure VISUAL transforms on the player Group, derived from
+ * velocity — zero-asset. Each effect is a SEPARATE conservative knob ("feel it, don't
+ * see it" — err SUBTLE; SQUASH is the rubbery-risk, dialled low). Cosmetic only — the
+ * logical position/movement/catch are unchanged; the visual transforms AROUND them.
+ */
+export const CHARACTER_JUICE = {
+  /** Radians of walk cycle per WORLD-UNIT walked (the stride cadence; distance-driven, so
+   *  the bob tracks pace and stops dead when not moving). */
+  strideRate: 9.0,
+  /** Speed (u/s) at/above which the walk is "full" — the lean cap + the idle↔walk crossfade
+   *  reference (≈ the player's max speed). */
+  walkSpeedRef: 2.2,
+  /** BOB — a small vertical rise/fall per footfall (two dips per cycle). */
+  bobAmplitude: 0.045, // world units (~4% of the ~1.1u character height)
+  /** SQUASH & STRETCH — VOLUME-PRESERVING (scaleY then scaleXZ = 1/√scaleY). VERY subtle
+   *  default: this is the element that reads "rubbery" if overdone — err LOW, tune up on feel. */
+  squashAmplitude: 0.05,
+  /** LEAN — a slight forward pitch into movement, eased toward speed·maxRad and springing
+   *  back to upright when stopped. */
+  leanMaxRad: 0.12, // ~7° at full speed
+  leanSpringRate: 9.0, // how fast the lean eases toward its target (1/s)
+  /** IDLE — a slow breathing bob at rest (alive, not frozen), crossfaded out as you walk. */
+  idleAmplitude: 0.018, // world units
+  idleFreqHz: 0.4, // a breath ~every 2.5 s
+} as const;
+
+/**
  * Shared quadruped proportions, as RATIOS of a species' `size`, so every animal
  * scales from one base and only its distinguishing features differ. The body is
  * a capsule lying along z (head at +z front, tail at -z back).
