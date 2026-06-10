@@ -47,12 +47,13 @@ describe('World model WE0 — the tier + prereq metadata', () => {
     expect(BIOMES.woodland.prereq).toBe('meadow');
     expect(BIOMES.wetland.prereq).toBe('woodland');
     expect(BIOMES.highlands.prereq).toBe('wetland');
-    // Each non-hub biome's prereq is the SOURCE of its BIOME_SET_UNLOCK entry, and the tier
+    // Each non-hub biome's prereq names a SOURCE of its BIOME_SET_UNLOCK entry (a successor ARRAY
+    // since the §4.2 branch — the Highlands forks to BOTH the Riverbank and the Moor), and the tier
     // climbs by exactly one along the chain — the metadata describes the REAL chain, never alters it.
     for (const id of BIOME_ORDER) {
       const prereq = BIOMES[id].prereq;
       if (prereq === undefined) continue;
-      expect(BIOME_SET_UNLOCK[prereq]).toBe(id);
+      expect(BIOME_SET_UNLOCK[prereq]).toContain(id);
       expect(BIOMES[id].tier).toBe(BIOMES[prereq].tier + 1);
     }
   });

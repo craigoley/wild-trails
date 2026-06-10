@@ -154,7 +154,7 @@ describe('Plan #9 — diet gate holds for the new species (correct bait > wrong 
 
 describe('Plan #9 — roster count is data-driven', () => {
   it('the roster is 17 and contains the 4 Plan #9 species', () => {
-    expect(SPECIES_ORDER.length).toBe(24); // +Highlands +Riverbank
+    expect(SPECIES_ORDER.length).toBe(29); // +Highlands +Riverbank +Coast +Moor (§4.2)
     for (const id of NEW) expect(SPECIES_ORDER).toContain(id);
   });
 });

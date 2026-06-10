@@ -110,7 +110,7 @@ describe('Highlands content — tier-4 difficulty + the alpine roster', () => {
       expect(SPECIES[id].biome).toBe('highlands');
       expect(SPECIES[id].baseFleeSpeed).toBeLessThan(TUNING.maxSpeed); // catchable on foot
     }
-    expect(SPECIES_ORDER.length).toBe(24);
+    expect(SPECIES_ORDER.length).toBe(29); // +5 Moor species (§4.2, the 1st branched biome)
   });
 });
 
