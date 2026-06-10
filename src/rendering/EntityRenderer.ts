@@ -29,11 +29,12 @@ import { buildAnimalModel, buildPlayerModel } from './models/builders';
 import {
   createWalkState,
   createWalkTransform,
+  stepGait,
   stepWalkCycle,
   type WalkState,
   type WalkTransform,
 } from './walkCycle';
-import { CATCH, CATCH_FX, HIDE, PALETTE, SPAWN, SPECIES, SPECIES_ORDER, type SpeciesId } from '../utils/constants';
+import { CATCH, CATCH_FX, GAIT_PROFILES, HIDE, PALETTE, SIM_DT, SPAWN, SPECIES, SPECIES_ORDER, type SpeciesId } from '../utils/constants';
 import { clamp, lerp } from '../utils/math';
 
 export class EntityRenderer {
@@ -41,6 +42,11 @@ export class EntityRenderer {
   /** CJ1 walk-cycle accumulators + reused transform scratch (no per-frame alloc). */
   private readonly walk: WalkState = createWalkState();
   private readonly walkOut: WalkTransform = createWalkTransform();
+  /** CJ2 — per-ANIMAL gait accumulators, a FIXED pool indexed by the animal's stable slot
+   *  (state.animals), allocated ONCE (no per-frame alloc). Reset on a (re)spawn edge. The
+   *  walkOut scratch above is reused across the player + every animal (applied immediately). */
+  private readonly animalGait: WalkState[] = Array.from({ length: SPAWN.maxAnimals }, createWalkState);
+  private readonly animalActivePrev: boolean[] = new Array(SPAWN.maxAnimals).fill(false);
   /** A pool of built models per species (claimed by active animals each frame). */
   private readonly animalPools: Record<SpeciesId, Group[]>;
   /** Per-frame claim counter per species (reset each sync). */
@@ -121,15 +127,38 @@ export class EntityRenderer {
     const enc = state.encounter;
     for (let idx = 0; idx < state.animals.length; idx++) {
       const a = state.animals[idx];
-      if (!a.active) continue;
+      if (!a.active) {
+        this.animalActivePrev[idx] = false;
+        continue;
+      }
       const model = this.animalPools[a.species][this.claimed[a.species]++];
-      model.position.set(lerp(a.prevX, a.x, alpha), 0, lerp(a.prevY, a.y, alpha));
+      const alx = lerp(a.prevX, a.x, alpha);
+      const alz = lerp(a.prevY, a.y, alpha);
       EntityRenderer.faceTravel(model, a.facingX, a.facingY);
       if (enc && enc.animalIndex === idx) {
+        // Encounter target: the catch-shake squash OWNS the transform (the gait yields).
+        model.position.set(alx, 0, alz);
+        model.rotation.x = 0;
         EntityRenderer.applySquash(model, enc);
       } else {
-        model.scale.set(1, 1, 1);
+        // CJ2 — the procedural gait (a VISUAL transform AROUND the logical lerp). Velocity
+        // is DERIVED prev→current (animals have no vx/vy); SWIM overrides the land gait in
+        // water; flee makes it more urgent. Frozen → neutral (the L2 capture is unchanged).
+        const g = this.animalGait[idx];
+        if (!this.animalActivePrev[idx]) {
+          // (Re)spawn edge — start this slot's gait fresh (no stale phase from a prior animal).
+          g.walkPhase = 0;
+          g.idleClock = 0;
+          g.lean = 0;
+        }
+        const speed = Math.hypot(a.x - a.prevX, a.y - a.prevY) / SIM_DT;
+        const profile = a.inWater ? GAIT_PROFILES.swim : GAIT_PROFILES[SPECIES[a.species].gait];
+        const t = stepGait(g, speed, profile, dt, frozen, a.aiState === 'flee', this.walkOut);
+        model.position.set(alx, t.bobY, alz);
+        model.scale.set(t.scaleXZ, t.scaleY, t.scaleXZ);
+        model.rotation.x = t.leanX;
       }
+      this.animalActivePrev[idx] = true;
       model.visible = true;
     }
     // Hide every unclaimed model in each species pool.
