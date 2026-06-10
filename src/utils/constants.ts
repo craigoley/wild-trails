@@ -375,6 +375,12 @@ export type SpeciesId =
  *  faster, warier. The Meadow is all tier 1. */
 export type Tier = 1 | 2 | 3 | 4 | 5;
 
+/** CJ2 gait archetypes — the procedural locomotion the renderer plays per species.
+ *  WALK (low quick scuttle), HOP (arc'd bound + land-squash), BIRD (mostly still + quick
+ *  darts), SWIM (smooth low glide — a runtime override when an animal is inWater). The
+ *  player uses the CHARACTER_JUICE 'walk' profile (CJ1). Pure DATA — the sim never reads it. */
+export type GaitKind = 'walk' | 'hop' | 'bird' | 'swim';
+
 /** Bait types = animal diets. The right bait for a species' diet calms it and
  *  lures it closer; the wrong bait does nothing (the diet-learning mechanic).
  *  `fish` (§4.1.5) is the 4th diet — RESEARCH-GATED (the kingfisher + otter eat it). */
@@ -402,6 +408,10 @@ export interface SpeciesDef {
   detectionRadius: number;
   /** Which day phase this species is active in (ANY = all hours). */
   activityWindow: ActivityWindow;
+  /** CJ2 — the species' LAND gait archetype (a pure DATA tag; only the renderer reads it,
+   *  to pick the procedural gait — WALK scuttle / HOP bound / BIRD dart). The SWIM gait is a
+   *  runtime override when the animal is inWater; flee is a runtime speed modifier. */
+  gait: GaitKind;
   tier: Tier;
   /** CATCH DIFFICULTY — the base [0,1] catch chance before tool / proximity /
    *  bait / biome modifiers (the catch loop, PR #5). INDEPENDENT of spawnWeight. */
@@ -654,6 +664,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
 export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   fieldmouse: {
     id: 'fieldmouse',
+    gait: 'walk',
     displayName: 'Field Mouse',
     biome: 'meadow',
     spawnWeight: 6,
@@ -672,6 +683,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   rabbit: {
     id: 'rabbit',
+    gait: 'hop',
     displayName: 'Rabbit',
     biome: 'meadow',
     spawnWeight: 3,
@@ -692,6 +704,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   quail: {
     id: 'quail',
+    gait: 'bird',
     displayName: 'Quail',
     biome: 'meadow',
     spawnWeight: 2,
@@ -713,6 +726,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   hedgehog: {
     id: 'hedgehog',
+    gait: 'walk',
     displayName: 'Hedgehog',
     biome: 'meadow',
     spawnWeight: 2,
@@ -734,6 +748,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   //     than the Meadow average, faster flee than the Meadow's fastest). ---
   redsquirrel: {
     id: 'redsquirrel',
+    gait: 'hop',
     displayName: 'Red Squirrel',
     biome: 'woodland',
     spawnWeight: 4,
@@ -752,6 +767,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   robin: {
     id: 'robin',
+    gait: 'bird',
     displayName: 'Robin',
     biome: 'woodland',
     spawnWeight: 3,
@@ -772,6 +788,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   // --- Woodland, tier 2 (Plan #9) — deepen the biome ---
   badger: {
     id: 'badger',
+    gait: 'walk',
     displayName: 'Badger',
     biome: 'woodland',
     spawnWeight: 3,
@@ -790,6 +807,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   roedeer: {
     id: 'roedeer',
+    gait: 'walk',
     displayName: 'Roe Deer',
     biome: 'woodland',
     spawnWeight: 2,
@@ -808,6 +826,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   // --- Wetland, tier 3 (Plan #9) — the hardest roster: rate below the Woodland band ---
   mallard: {
     id: 'mallard',
+    gait: 'bird',
     displayName: 'Mallard',
     biome: 'wetland',
     spawnWeight: 4,
@@ -824,6 +843,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   frog: {
     id: 'frog',
+    gait: 'hop',
     displayName: 'Common Frog',
     biome: 'wetland',
     spawnWeight: 5,
@@ -846,6 +866,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   // --- Highlands (tier 4 — alpine high-tops, below the Wetland floor 0.20) ------
   ptarmigan: {
     id: 'ptarmigan',
+    gait: 'bird',
     displayName: 'Rock Ptarmigan',
     biome: 'highlands',
     spawnWeight: 5,
@@ -864,6 +885,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   mountainhare: {
     id: 'mountainhare',
+    gait: 'hop',
     displayName: 'Mountain Hare',
     biome: 'highlands',
     // The FASTEST flee in the game (5.2, still below the player's maxSpeed 6 — so
@@ -882,6 +904,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   dotterel: {
     id: 'dotterel',
+    gait: 'bird',
     displayName: 'Dotterel',
     biome: 'highlands',
     // The HARDEST catch (0.12): a small, rare wader of the highest tops.
@@ -900,6 +923,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   // --- Riverbank (§4.2) — flowing water; tier 4-5, the dip-net's biome. ---
   reedbunting: {
     id: 'reedbunting',
+    gait: 'bird',
     displayName: 'Reed Bunting',
     biome: 'riverbank',
     // The Riverbank VALVE (0.52): a small, calm seed-eater of the reeds — comfortably
@@ -918,6 +942,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   watervole: {
     id: 'watervole',
+    gait: 'walk',
     displayName: 'Water Vole',
     biome: 'riverbank',
     spawnWeight: 5,
@@ -937,6 +962,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   greywagtail: {
     id: 'greywagtail',
+    gait: 'bird',
     displayName: 'Grey Wagtail',
     biome: 'riverbank',
     spawnWeight: 4,
@@ -953,6 +979,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   dipper: {
     id: 'dipper',
+    gait: 'bird',
     displayName: 'Dipper',
     biome: 'riverbank',
     // The Riverbank's HARDEST (0.20): a rare, fast river specialist.
@@ -972,6 +999,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   //     (research-gated) makes them easier, never required (anti-lockout). ---
   kingfisher: {
     id: 'kingfisher',
+    gait: 'bird',
     displayName: 'Kingfisher',
     biome: 'riverbank',
     spawnWeight: 3,
@@ -989,6 +1017,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   otter: {
     id: 'otter',
+    gait: 'walk',
     displayName: 'Otter',
     biome: 'riverbank',
     // The APEX catch (0.15, the hardest in the game): a large, elusive, crepuscular river hunter.
@@ -1010,6 +1039,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   // --- Coast (§4.2) — the sea; tier 4-5, the fish-diet synergy + the apex grey seal. ---
   linnet: {
     id: 'linnet',
+    gait: 'bird',
     displayName: 'Linnet',
     biome: 'coast',
     // The Coast VALVE (0.50): a small, calm seed-eater of the dunes — catchable bait-less.
@@ -1027,6 +1057,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   brentgoose: {
     id: 'brentgoose',
+    gait: 'bird',
     displayName: 'Brent Goose',
     biome: 'coast',
     spawnWeight: 4,
@@ -1043,6 +1074,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   turnstone: {
     id: 'turnstone',
+    gait: 'bird',
     displayName: 'Turnstone',
     biome: 'coast',
     spawnWeight: 5,
@@ -1059,6 +1091,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   herringgull: {
     id: 'herringgull',
+    gait: 'bird',
     displayName: 'Herring Gull',
     biome: 'coast',
     spawnWeight: 4,
@@ -1075,6 +1108,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   },
   greyseal: {
     id: 'greyseal',
+    gait: 'walk',
     displayName: 'Grey Seal',
     biome: 'coast',
     // The new APEX catch (0.12, the hardest of all): a large, wary, offshore hunter.
@@ -1779,6 +1813,51 @@ export const CHARACTER_JUICE = {
   idleAmplitude: 0.018, // world units
   idleFreqHz: 0.4, // a breath ~every 2.5 s
 } as const;
+
+/**
+ * CJ2 — the ANIMAL gait profiles (one per GaitKind). The renderer plays the procedural
+ * gait for each animal from its `gait` tag (SWIM overrides when inWater). Same pure
+ * bob/squash/lean math as the player (CHARACTER_JUICE is the 'walk' player profile),
+ * with per-archetype CONSERVATIVE magnitudes — err SUBTLE (the HOP is the rubbery-risk).
+ * Amplitudes are absolute world units, tuned for the ~0.45u animals. Each effect a knob.
+ */
+export const GAIT_PROFILES: Record<GaitKind, {
+  kind: GaitKind;
+  strideRate: number;
+  walkSpeedRef: number;
+  bobAmplitude: number;
+  squashAmplitude: number;
+  leanMaxRad: number;
+  leanSpringRate: number;
+  idleAmplitude: number;
+  idleFreqHz: number;
+  fleeStrideMult: number;
+  fleeBobMult: number;
+}> = {
+  /** WALK / scuttle — a low, quick, steady bob (hedgehog, mouse, badger, roe deer…). */
+  walk: {
+    kind: 'walk', strideRate: 11, walkSpeedRef: 1.4, bobAmplitude: 0.022, squashAmplitude: 0.05,
+    leanMaxRad: 0.08, leanSpringRate: 9, idleAmplitude: 0.01, idleFreqHz: 0.5, fleeStrideMult: 1.4, fleeBobMult: 1.4,
+  },
+  /** HOP — an arc'd bound with a pause between hops; squash on land, stretch at apex
+   *  (rabbit, hare, frog, red squirrel). ⚠️ the biggest motion — keep it a GENTLE arc. */
+  hop: {
+    kind: 'hop', strideRate: 7, walkSpeedRef: 1.4, bobAmplitude: 0.06, squashAmplitude: 0.1,
+    leanMaxRad: 0.05, leanSpringRate: 10, idleAmplitude: 0.009, idleFreqHz: 0.5, fleeStrideMult: 1.4, fleeBobMult: 1.25,
+  },
+  /** BIRD — mostly still with a small, quick alert bob; quick darts on the move
+   *  (kingfisher, wagtail, robin…). Minimal squash. */
+  bird: {
+    kind: 'bird', strideRate: 14, walkSpeedRef: 1.4, bobAmplitude: 0.016, squashAmplitude: 0.02,
+    leanMaxRad: 0.05, leanSpringRate: 12, idleAmplitude: 0.007, idleFreqHz: 1.6, fleeStrideMult: 1.6, fleeBobMult: 1.4,
+  },
+  /** SWIM — a smooth, low glide (no real vertical bob, no squash) when an animal is in
+   *  water (otter, water vole, mallard…). A runtime override of the land gait. */
+  swim: {
+    kind: 'swim', strideRate: 6, walkSpeedRef: 1.0, bobAmplitude: 0.01, squashAmplitude: 0,
+    leanMaxRad: 0.05, leanSpringRate: 8, idleAmplitude: 0.006, idleFreqHz: 0.4, fleeStrideMult: 1.3, fleeBobMult: 1.2,
+  },
+};
 
 /**
  * Shared quadruped proportions, as RATIOS of a species' `size`, so every animal
