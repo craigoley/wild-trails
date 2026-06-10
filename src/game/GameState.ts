@@ -136,6 +136,10 @@ export interface GameState {
    *  can evaluate catch-in-biome / catch-in-timephase requirements. */
   lastCaughtBiome: BiomeId | null;
   lastCaughtPhase: DayPhase | null;
+  /** The bait that was ACTIVE on the catch (or null bait-less) — one-shot, alongside the
+   *  other lastCaught* context. Lets the boundary's mission engine evaluate multi-condition
+   *  research challenges that require a diet bait (§4.4). Captured BEFORE the lure is cleared. */
+  lastCaughtBait: BaitId | null;
   /** A lingering result flash (caught/escaped), or null. */
   resultFlash: ResultFlash | null;
   // --- Targeting (PR #5.1 — "who am I catching") ---------------------------
@@ -207,6 +211,7 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
     lastCaughtSpecies: null,
     lastCaughtBiome: null,
     lastCaughtPhase: null,
+    lastCaughtBait: null,
     resultFlash: null,
     targetIndex: -1,
     catchArmed: false,
@@ -247,6 +252,7 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
   game.lastCaughtSpecies = null;
   game.lastCaughtBiome = null;
   game.lastCaughtPhase = null;
+  game.lastCaughtBait = null;
   game.baitJustDeployed = false;
   game.baitDeployFailed = false;
   game.timeSec += dt;
@@ -523,6 +529,10 @@ function resolveOutcome(game: GameState, outcome: 'caught' | 'escaped'): void {
     game.lastCaughtSpecies = enc.species;
     game.lastCaughtBiome = game.currentBiome;
     game.lastCaughtPhase = game.dayPhase;
+    // ⚠️ Capture the ACTIVE bait BEFORE clearActiveBait below — so the catch event carries
+    // the bait that was live AT catch time (§4.4 multi-condition challenges). Ordering is
+    // load-bearing (a clear-first refactor would silently null this); pinned in a test.
+    game.lastCaughtBait = game.bait.activeType;
     // Bait scarcity (§12): a catch NO LONGER refills bait — it grants CREDITS (at the
     // boundary, 1a's creditsForCatch) + journal/mission progress. Bait is shop-only
     // now and can run out; easy animals stay catchable bait-less (the anti-lockout
