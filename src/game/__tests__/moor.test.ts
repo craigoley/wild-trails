@@ -90,7 +90,7 @@ describe('Moor — ⚠️ the BRANCH (additive: the existing linear arms are UNC
     expect(BIOME_SET_UNLOCK.meadow).toEqual(['woodland']);
     expect(BIOME_SET_UNLOCK.woodland).toEqual(['wetland', 'pineforest']); // §4.2 — the pine fork (Wetland arm unchanged)
     expect(BIOME_SET_UNLOCK.wetland).toEqual(['highlands']);
-    expect(BIOME_SET_UNLOCK.riverbank).toEqual(['coast']);
+    expect(BIOME_SET_UNLOCK.riverbank).toEqual(['coast', 'cave']); // §4.2 — the cave fork (Coast arm unchanged)
   });
 
   it('unlockLines is REGRESSION-free: the existing chain still emits exactly one line per gating set', () => {

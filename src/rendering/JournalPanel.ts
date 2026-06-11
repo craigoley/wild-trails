@@ -19,6 +19,7 @@ import { unlockedResearchLayers } from '../game/Research';
 import { thrivingForBiome, thrivingWord } from '../game/Thriving';
 import {
   ACTIVITY_LABEL,
+  CAVE_ACTIVITY_LABEL,
   BAIT_DISPLAY,
   BIOMES,
   PANEL_LABELS,
@@ -156,7 +157,7 @@ export class JournalPanel {
       `<div class="card-facts">` +
       `<span>Diet: ${BAIT_DISPLAY[def.bait].label}</span>` +
       `<span>Habitat: ${BIOMES[def.biome].displayName}</span>` +
-      `<span>${ACTIVITY_LABEL[def.activityWindow]}</span>` +
+      `<span>${def.biome === 'cave' ? CAVE_ACTIVITY_LABEL : ACTIVITY_LABEL[def.activityWindow]}</span>` +
       `</div>` +
       `<div class="card-section"><span class="card-label">Behaviour</span>${info.behaviour}</div>` +
       `<div class="card-section card-funfact"><span class="card-label">Did you know</span>${def.profile}</div>` +

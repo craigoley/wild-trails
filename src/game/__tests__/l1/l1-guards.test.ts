@@ -10,6 +10,7 @@ import {
   completeCoastGate,
   completeMoorGate,
   completePineforestGate,
+  completeCaveGate,
   catchRemainingSpecies,
 } from './harness';
 import { createJournal } from '../../../state/Journal';
@@ -120,7 +121,13 @@ describe('L1 Guard 3 — progression-to-win (the unlock chain + the win fires)',
     expect(j.unlockedBiomes).not.toContain('pineforest');
     completePineforestGate(j);
     expect(j.unlockedBiomes).toContain('pineforest');
-    // Fill the dex (every roster, incl. the Moor five + the Pine five) -> the win fires. WIN REACHABLE
+    // §4.2 — the CAVE (the always-dark biome) forks off the RIVERBANK set (the 2nd arm beside the
+    // Coast — the river goes underground), behind its OWN species+bait gate (research-dipper-insects).
+    // Additive: the Riverbank→Coast arm opened long ago; the cave's own gate opens it now.
+    expect(j.unlockedBiomes).not.toContain('cave');
+    completeCaveGate(j);
+    expect(j.unlockedBiomes).toContain('cave');
+    // Fill the dex (every roster, incl. the Pine five + the Cave five) -> the win fires. WIN REACHABLE
     // through every research-gated biome (the cardinal anti-wall pin: no impossible state).
     catchRemainingSpecies(j);
     expect(SPECIES_ORDER.every((id) => j.species[id])).toBe(true);

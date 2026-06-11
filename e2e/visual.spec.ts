@@ -30,6 +30,9 @@ const scenes = [
   // A NEW additive baseline (seeded after Craig approves the dense look). ⚠️ The GLOBAL entities-on-top
   // change may also shift the existing baselines — re-run the visual project, regen only what diffs.
   { name: 'pine-forest', query: `?seed=${SEED}&freeze=1&unlock=all&at=0,80` },
+  // §4.2 — the always-dark CAVE: a near-black ground with the lights UNCHANGED (lit entities pop). A new
+  // additive baseline (seeded after Craig approves the dark look). Eyeball: does the player/animals read?
+  { name: 'cave-dark', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,80` },
 ];
 
 for (const scene of scenes) {
