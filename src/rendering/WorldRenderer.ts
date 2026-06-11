@@ -22,6 +22,8 @@ import {
   CylinderGeometry,
   GridHelper,
   Group,
+  InstancedMesh,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
@@ -32,8 +34,10 @@ import type { World } from '../game/World';
 import { walledEdges } from './lockedRegions';
 import {
   BIOME_RENDER,
+  BIOMES,
   HIDING_RENDER,
   FERN_RENDER,
+  PINE_RENDER,
   REED_RENDER,
   ROCK_RENDER,
   SIGN_RENDER,
@@ -96,10 +100,11 @@ export class WorldRenderer {
   constructor(scene: Scene, world: World) {
     this.group.add(this.dynamic);
 
-    // Static props — built ONCE (unlock-independent): water, cover, signs, grid.
+    // Static props — built ONCE (unlock-independent): water, cover, signs, grid, the pine scatter.
     for (const w of world.water) this.addWater(w);
     for (const spot of world.hidingSpots) this.addCover(spot);
     this.addTrackSigns();
+    this.addPineForest(); // §4.2 — the dense pine scatter (instanced; the locked fog veils it until open)
     this.addGrid(world);
 
     // The locked-region visuals — built from the current unlock state, and
@@ -248,6 +253,61 @@ export class WorldRenderer {
     disc.rotation.x = -Math.PI / 2; // lay it flat on the ground plane
     disc.position.set(w.x, WATER_RENDER.y, w.y);
     this.group.add(disc);
+  }
+
+  /** §4.2 — the PINE FOREST scatter: a deterministic jittered grid of zero-asset pines (a thin trunk
+   *  + a canopy cone) across the Pine cell, with a CLEARING kept at the centre (the play space), built
+   *  as TWO InstancedMeshes → ~2 draw calls for the whole forest (mobile-safe; matrices set once, no
+   *  per-frame cost). Static like cover; the locked fog veils it until the forest opens. ⚠️ ATMOSPHERE
+   *  ONLY — not cover, not collision; the sim never sees it. Entities draw OVER it (the legibility fix),
+   *  so a pine can never hide a catch. Deterministic (a sin-hash, no RNG) → the L2 capture is stable. */
+  private addPineForest(): void {
+    const P = PINE_RENDER;
+    const r = BIOMES.pineforest.bounds;
+    const cx = (r.minX + r.maxX) / 2;
+    const cz = (r.minY + r.maxY) / 2;
+    const w = r.maxX - r.minX;
+    const d = r.maxY - r.minY;
+    const hash = (a: number, b: number): number => {
+      const s = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
+      return s - Math.floor(s);
+    };
+    // Collect the kept placements on a jittered grid, skipping the central clearing.
+    const trees: { x: number; z: number; h: number }[] = [];
+    for (let gx = 0; gx < P.gridN; gx++) {
+      for (let gz = 0; gz < P.gridN; gz++) {
+        const x = r.minX + ((gx + 0.5 + (hash(gx + 1, gz + 1) - 0.5) * P.jitter) / P.gridN) * w;
+        const z = r.minY + ((gz + 0.5 + (hash(gx + 7, gz + 3) - 0.5) * P.jitter) / P.gridN) * d;
+        if (Math.hypot(x - cx, z - cz) < P.clearingRadius) continue; // keep the play centre clear
+        trees.push({ x, z, h: P.minHeight + hash(gx + 11, gz + 13) * (P.maxHeight - P.minHeight) });
+      }
+    }
+    const n = trees.length;
+    if (n === 0) return;
+
+    // Unit-height geometries, scaled per instance → two draw calls for the grove.
+    const trunkGeo = new CylinderGeometry(P.trunkRadius, P.trunkRadius, 1, 5);
+    const canopyGeo = new ConeGeometry(P.canopyRadius, 1, 6);
+    const trunkMat = new MeshStandardMaterial({ color: P.trunkColor, roughness: 1 });
+    const canopyMat = new MeshStandardMaterial({ color: P.canopyColor, roughness: 1, flatShading: true });
+    const trunks = new InstancedMesh(trunkGeo, trunkMat, n);
+    const canopies = new InstancedMesh(canopyGeo, canopyMat, n);
+    const m = new Matrix4();
+    for (let i = 0; i < n; i++) {
+      const t = trees[i];
+      const trunkH = t.h * P.trunkFraction;
+      const canopyH = t.h - trunkH;
+      m.makeScale(1, trunkH, 1);
+      m.setPosition(t.x, trunkH / 2, t.z);
+      trunks.setMatrixAt(i, m);
+      m.makeScale(1, canopyH, 1);
+      m.setPosition(t.x, trunkH + canopyH / 2, t.z);
+      canopies.setMatrixAt(i, m);
+    }
+    trunks.instanceMatrix.needsUpdate = true;
+    canopies.instanceMatrix.needsUpdate = true;
+    this.group.add(trunks);
+    this.group.add(canopies);
   }
 
   /** Build a cover prop in the shape that fits its biome (the kind dispatch). The

@@ -9,12 +9,14 @@ const line = (j: ReturnType<typeof createJournal>, biome: string) =>
   unlockLines(j).find((l) => l.setBiome === biome)!;
 
 describe('unlockLines — the set→biome-unlock legibility (pure, §17.1)', () => {
-  it('emits one line per gating set in chain order, with the right targets', () => {
+  it('emits one line per gating-set × successor in chain order (the Woodland FORKS to the Pine Forest)', () => {
     const lines = unlockLines(createJournal());
-    expect(lines.map((l) => l.setBiome)).toEqual(['meadow', 'woodland', 'wetland']);
+    // §4.2 — the Woodland now forks (Wetland + Pine Forest), so it emits TWO lines (both breadcrumbs).
+    expect(lines.map((l) => l.setBiome)).toEqual(['meadow', 'woodland', 'woodland', 'wetland']);
+    expect(lines.filter((l) => l.setBiome === 'woodland').map((l) => l.unlocks)).toEqual(['wetland', 'pineforest']);
     expect(line(createJournal(), 'meadow').unlocks).toBe('woodland');
     expect(line(createJournal(), 'meadow').unlocksName).toBe('Woodland');
-    expect(line(createJournal(), 'woodland').unlocks).toBe('wetland');
+    expect(line(createJournal(), 'woodland').unlocks).toBe('wetland'); // .find → the first (Wetland) arm
     expect(line(createJournal(), 'wetland').unlocks).toBe('highlands');
   });
 

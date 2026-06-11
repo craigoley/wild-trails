@@ -15,14 +15,16 @@ import { SPECIES, SPECIES_ORDER, BIOME_ORDER, THRIVING, type BiomeId } from '../
 const speciesIn = (b: BiomeId) => SPECIES_ORDER.filter((s) => SPECIES[s].biome === b);
 
 describe('Thriving — the derivation (caught-in-biome / total)', () => {
-  it('rises from 0 (none caught) to 1 (all caught) for a NO-PROJECT biome (woodland — the guard)', () => {
+  it('rises from 0 (none caught) to 1 (all caught) for a NO-PROJECT biome (coast — the guard)', () => {
     const j = createJournal();
-    // Woodland has NO research project -> species-catalogued is used ALONE (no division by zero).
-    expect(thrivingForBiome(j, 'woodland')).toBe(0); // nothing caught
-    const wood = speciesIn('woodland');
-    expect(wood.length).toBeGreaterThan(0);
-    wood.forEach((id, i) => recordCatch(j, id, i + 1));
-    expect(thrivingForBiome(j, 'woodland')).toBe(1); // every species -> fully thriving
+    // The Coast has NO research project mapped to it (unlock-the-coast's activity is in the Riverbank),
+    // so species-catalogued is used ALONE (no division by zero). (Woodland gained the pine unlock
+    // project — its activity is in the Woodland — so it is no longer a no-project biome.)
+    expect(thrivingForBiome(j, 'coast')).toBe(0); // nothing caught
+    const coast = speciesIn('coast');
+    expect(coast.length).toBeGreaterThan(0);
+    coast.forEach((id, i) => recordCatch(j, id, i + 1));
+    expect(thrivingForBiome(j, 'coast')).toBe(1); // every species -> fully thriving
   });
 
   it('⚠️ the GUARD: a no-project biome never divides by zero (finite, 0..1, for EVERY biome)', () => {

@@ -31,8 +31,11 @@ describe('SPECIES_INFO — every species has a full field-guide entry', () => {
     // The lines lean POSITIVE (what helps them thrive) — but written SOUL-AWARE, a genuinely
     // declining species says so (the red-listed linnet/herring gull, etc). So: MOST hopeful
     // (≥70%), not a blanket "≤2 may decline" — honest conservation status is the point.
+    // "Hopeful" includes the RECOVERY / SUCCESS register (a species back from the brink reads
+    // positive too) — added with the soul-aware conservation biomes (the marten's recovery, the
+    // red deer's success), not just the static "thriving/common".
     const positives = SPECIES_ORDER.filter((id) =>
-      /thriv|doing well|common|at home|increasing|safe/.test(SPECIES_INFO[id].status.toLowerCase()),
+      /thriv|doing well|common|at home|increasing|safe|recover|success/.test(SPECIES_INFO[id].status.toLowerCase()),
     );
     expect(positives.length).toBeGreaterThanOrEqual(Math.ceil(SPECIES_ORDER.length * 0.7)); // most read hopeful
   });

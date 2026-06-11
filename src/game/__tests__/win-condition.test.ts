@@ -97,11 +97,12 @@ describe('achievability — the win is REACHABLE with shipped content (no grind)
     // §4.4 added 3 MULTI-CONDITION research challenges (+12 each, OPTIONAL/standalone): 243 -> 279.
     // §4.2 (the Moor) added 1 more multi-condition challenge — research-ptarmigan-greens, the
     // moor's access gate (+12, OPTIONAL/standalone for the ceiling): 279 -> 291.
+    // §4.2 (the Pine Forest) added research-squirrel-seeds, its access gate (+12, OPTIONAL): 291 -> 303.
     const missionPts = MISSION_ORDER.reduce((s, id) => s + MISSIONS[id].rewardPoints, 0);
     const speciesPts = SPECIES_ORDER.length * RANK.perSpeciesFound;
     const top = RANKS[RANKS.length - 1].minPoints;
-    expect(missionPts).toBe(291); // +1 moor multi-condition challenge (only RAISES the ceiling)
-    expect(SPECIES_ORDER.length).toBe(29); // +5 Moor species — bigger roster, bigger win bar
+    expect(missionPts).toBe(303); // +1 pine multi-condition challenge (only RAISES the ceiling)
+    expect(SPECIES_ORDER.length).toBe(34); // +5 Pine species — bigger roster, bigger win bar
     expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // clears with margin
   });
 

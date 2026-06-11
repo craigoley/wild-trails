@@ -9,6 +9,7 @@ import {
   completeRiverbankGate,
   completeCoastGate,
   completeMoorGate,
+  completePineforestGate,
   catchRemainingSpecies,
 } from './harness';
 import { createJournal } from '../../../state/Journal';
@@ -113,8 +114,14 @@ describe('L1 Guard 3 — progression-to-win (the unlock chain + the win fires)',
     expect(j.unlockedBiomes).not.toContain('moor');
     completeMoorGate(j);
     expect(j.unlockedBiomes).toContain('moor');
-    // Fill the dex (every roster, incl. the Coast five + the Moor five) -> the win fires. WIN
-    // REACHABLE through every research-gated biome (the cardinal anti-wall pin: no impossible state).
+    // §4.2 — the PINE FOREST (the closed-woods biome) forks off the WOODLAND set (the 2nd arm beside
+    // the Wetland), behind its OWN multi-condition gate (research-squirrel-seeds + the woodland
+    // activity). Additive: the Woodland→Wetland arm opened long ago; the pine's own gate opens it now.
+    expect(j.unlockedBiomes).not.toContain('pineforest');
+    completePineforestGate(j);
+    expect(j.unlockedBiomes).toContain('pineforest');
+    // Fill the dex (every roster, incl. the Moor five + the Pine five) -> the win fires. WIN REACHABLE
+    // through every research-gated biome (the cardinal anti-wall pin: no impossible state).
     catchRemainingSpecies(j);
     expect(SPECIES_ORDER.every((id) => j.species[id])).toBe(true);
     expect(isGameComplete(j)).toBe(true);

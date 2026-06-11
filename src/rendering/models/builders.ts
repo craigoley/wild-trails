@@ -30,15 +30,23 @@ import {
 
 const SEG = MODEL_SEGMENTS;
 
-/** A flat-shaded standard material (the low-poly facet look). */
+/** §4.2 PINE — the LEGIBILITY render order. Entities (player + animals) draw OVER the world props
+ *  (renderOrder + depthTest:false), so a tall tree can NEVER hide what you're trying to catch — the
+ *  closed Pine Forest stays playable, and every biome reads cleaner. Structural, not tuning. */
+const ENTITY_RENDER_ORDER = 10;
+
+/** A flat-shaded standard material (the low-poly facet look). `depthTest:false` makes entities
+ *  composite over the world (paired with the high renderOrder below) — the occlusion fix. */
 function flatMat(color: number): MeshStandardMaterial {
-  return new MeshStandardMaterial({ color, roughness: 0.85, flatShading: true });
+  return new MeshStandardMaterial({ color, roughness: 0.85, flatShading: true, depthTest: false });
 }
 
-/** Add a mesh at (x, y, z) to `g`, returning it for further tweaks. */
+/** Add a mesh at (x, y, z) to `g`, returning it for further tweaks. Entity meshes get the high
+ *  render order so they draw after (over) the world. */
 function add(g: Group, geo: BufferGeometry, mat: MeshStandardMaterial, x: number, y: number, z: number): Mesh {
   const m = new Mesh(geo, mat);
   m.position.set(x, y, z);
+  m.renderOrder = ENTITY_RENDER_ORDER;
   g.add(m);
   return m;
 }

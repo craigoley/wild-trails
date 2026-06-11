@@ -85,9 +85,10 @@ describe('Moor — ⚠️ anti-lockout (the twite valve catchable bait-less; ALL
 describe('Moor — ⚠️ the BRANCH (additive: the existing linear arms are UNCHANGED)', () => {
   it('the Highlands set forks to BOTH the Riverbank AND the Moor; every OTHER link is unchanged', () => {
     expect(BIOME_SET_UNLOCK.highlands).toEqual(['riverbank', 'moor']); // the fork (order: existing arm first)
-    // The pre-existing linear chain is byte-for-byte unchanged (each a single-element successor array):
+    // The linear chain is unchanged EXCEPT the Woodland, which the Pine Forest build forks (a 2nd arm,
+    // additive — the Woodland→Wetland successor stays first). The Highlands fork (this slice) is intact.
     expect(BIOME_SET_UNLOCK.meadow).toEqual(['woodland']);
-    expect(BIOME_SET_UNLOCK.woodland).toEqual(['wetland']);
+    expect(BIOME_SET_UNLOCK.woodland).toEqual(['wetland', 'pineforest']); // §4.2 — the pine fork (Wetland arm unchanged)
     expect(BIOME_SET_UNLOCK.wetland).toEqual(['highlands']);
     expect(BIOME_SET_UNLOCK.riverbank).toEqual(['coast']);
   });
@@ -98,8 +99,15 @@ describe('Moor — ⚠️ the BRANCH (additive: the existing linear arms are UNC
     // (one line PER successor) must leave the existing single-successor chain byte-for-byte: one
     // line for each gating set (meadow/woodland/wetland), so nothing the player sees regresses.
     const lines = unlockLines(createJournal());
-    const gatingSets = lines.map((l) => l.setBiome);
-    expect(gatingSets).toEqual(missionSetBiomes()); // one line per gating set, same order — no dupes, no drops
+    // The DISTINCT gating sets are exactly missionSetBiomes(), in chain order — no sets dropped. (The
+    // Woodland now emits TWO lines — the Pine Forest fork — but that's an ADDED breadcrumb, not a drop;
+    // the moor's own fork is off the Highlands, which has no mission set, so it isn't here.)
+    const distinctSets = [...new Set(lines.map((l) => l.setBiome))];
+    expect(distinctSets).toEqual(missionSetBiomes());
+    const arms = lines.map((l) => `${l.setBiome}->${l.unlocks}`);
+    expect(arms).toContain('meadow->woodland'); // the existing arms all still emit (no regression)
+    expect(arms).toContain('woodland->wetland');
+    expect(arms).toContain('wetland->highlands');
     for (const l of lines) expect(BIOME_SET_UNLOCK[l.setBiome]).toContain(l.unlocks); // each line's target is a real successor
   });
 

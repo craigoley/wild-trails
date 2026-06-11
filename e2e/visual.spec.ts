@@ -26,6 +26,10 @@ const scenes = [
   // §4.2 — the 1st BRANCHED biome: the Moor's heather-purple ground, east of the Highlands (a new
   // frozen baseline — the world canvas grows a new cell; the existing 5 baselines are unchanged).
   { name: 'moor-heather', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,40` },
+  // §4.2 — the 1st CLOSED/dense biome: the Pine Forest's instanced pine scatter, NW of the Woodland.
+  // A NEW additive baseline (seeded after Craig approves the dense look). ⚠️ The GLOBAL entities-on-top
+  // change may also shift the existing baselines — re-run the visual project, regen only what diffs.
+  { name: 'pine-forest', query: `?seed=${SEED}&freeze=1&unlock=all&at=0,80` },
 ];
 
 for (const scene of scenes) {

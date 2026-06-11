@@ -125,6 +125,19 @@ export function completeMoorGate(j: Journal): void {
   reconcileResearchUnlocks(j);
 }
 
+/**
+ * §4.2 — unlock the PINE FOREST (the 1st CLOSED biome: the Woodland set forks to BOTH the Wetland
+ * AND the Pine Forest). Gated on a NON-FORCED MULTI-CONDITION mastery challenge by play
+ * (research-squirrel-seeds — a red squirrel over SEED bait, its real diet) + the woodland activity.
+ * The Woodland source set is already complete. cost 0 (win-required → anti-wall).
+ */
+export function completePineforestGate(j: Journal): void {
+  applyCatch(j, { species: 'redsquirrel', biome: 'woodland', phase: 'day', bait: 'seeds' } as CatchEvent);
+  startResearch(j, 'unlock-the-pineforest');
+  for (let i = 0; i < 4; i++) evaluateResearch(j, ev('redsquirrel', 'woodland', 'day')); // catch-in-woodland ×4
+  reconcileResearchUnlocks(j);
+}
+
 /** Catch the remaining roster (rabbit + the alpine three + the Riverbank four + the Coast five +
  *  the Moor five) so the dex fills for the win. rabbit@night doubles as the second night-forager
  *  challenge. */
@@ -154,4 +167,10 @@ export function catchRemainingSpecies(j: Journal): void {
   applyCatch(j, ev('redgrouse', 'moor', 'day'));
   applyCatch(j, ev('curlew', 'moor', 'day'));
   applyCatch(j, ev('reddeer', 'moor', 'day'));
+  // §4.2 — the Pine Forest roster (caught once it's unlocked; the crossbill is the bait-less valve).
+  applyCatch(j, ev('crossbill', 'pineforest', 'day'));
+  applyCatch(j, ev('coaltit', 'pineforest', 'day'));
+  applyCatch(j, ev('crestedtit', 'pineforest', 'day'));
+  applyCatch(j, ev('capercaillie', 'pineforest', 'day'));
+  applyCatch(j, ev('pinemarten', 'pineforest', 'day'));
 }
