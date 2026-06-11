@@ -3,8 +3,8 @@
  * accessible text) that shows the full Meadow roster: a CARD for each caught
  * species (confirming what play taught — diet, habitat, activity + a short "did
  * you know") with its catch count + first-caught date, and a dimmed "???"
- * SILHOUETTE for each not-yet-found species (the visible gap that pulls — §5.5).
- * A header counts "X of N found".
+ * SILHOUETTE for each not-yet-recorded species (the visible gap that pulls — §5.5).
+ * A header counts "X of N recorded" (§4.3 census reframe — a record, not a tally).
  *
  * READS the journal + the static species DATA; never mutates. Procedural,
  * zero-asset (CSS silhouettes — no image files). DOM lives here in the rendering
@@ -96,7 +96,8 @@ export class JournalPanel {
     if (sig === this.signature) return;
     this.signature = sig;
 
-    this.header.textContent = `Field Journal — ${foundCount(journal)} of ${SPECIES_ORDER.length} found`;
+    // §4.3 census reframe — "recorded" (a naturalist's record), not "found" (a collection tally).
+    this.header.textContent = `Field Journal — ${foundCount(journal)} of ${SPECIES_ORDER.length} ${PANEL_LABELS.recordedWord}`;
 
     // Grouped by biome (presentation only — groupSpeciesByBiome is pure). Each
     // biome gets a header with its found/total; undiscovered species still render
@@ -105,7 +106,14 @@ export class JournalPanel {
     for (const g of groupSpeciesByBiome(journal)) {
       const head = document.createElement('div');
       head.className = `journal-biome${g.unlocked ? '' : ' locked'}`;
-      head.textContent = `${g.displayName} — ${g.found} of ${g.total}${g.unlocked ? '' : PANEL_LABELS.lockedSuffix}`;
+      // §4.3 census reframe — a fully-studied biome reads as COMPREHENSION ("known"), not a perfect
+      // score ("5 of 5"): you've come to know the place. The count still pulls while there's a gap;
+      // a locked biome keeps its score ("· locked") — you haven't come to know it yet.
+      const known = g.unlocked && g.total > 0 && g.found === g.total;
+      const tally = known
+        ? PANEL_LABELS.biomeKnown
+        : `${g.found} of ${g.total}${g.unlocked ? '' : PANEL_LABELS.lockedSuffix}`;
+      head.textContent = `${g.displayName} — ${tally}`;
       // §4.3 TL1 — a soft qualitative "thriving" word (quiet/waking/alive/flourishing) for an
       // unlocked biome: how alive your study has made it. No number, no meter — a gentle touch.
       if (g.unlocked) {
@@ -152,7 +160,9 @@ export class JournalPanel {
       `</div>` +
       `<div class="card-section"><span class="card-label">Behaviour</span>${info.behaviour}</div>` +
       `<div class="card-section card-funfact"><span class="card-label">Did you know</span>${def.profile}</div>` +
-      `<div class="card-section card-status"><span class="card-label">Status</span>${info.status}</div>` +
+      // §4.3 census reframe — the label is a field-note observation ("In the wild"), not a system
+      // field ("Status"). The honest sentence (info.status) is UNTOUCHED — only the frame shifts.
+      `<div class="card-section card-status"><span class="card-label">${PANEL_LABELS.statusLabel}</span>${info.status}</div>` +
       // §4.1.4 R0b: the research-knowledge LAYER — a deeper note revealed once this
       // species' research project is complete (purely additive; gated on the unlock).
       (info.researchNote && unlockedResearchLayers(journal).has(id)
@@ -167,10 +177,11 @@ export class JournalPanel {
   private static silhouette(): HTMLDivElement {
     const card = document.createElement('div');
     card.className = 'journal-card journal-silhouette';
+    // §4.3 census reframe — "Not yet recorded" keeps the record vocabulary (was "Not yet found").
     card.innerHTML =
       `<div class="silhouette-shape"></div>` +
       `<div class="card-body"><div class="card-name">???</div>` +
-      `<div class="card-meta">Not yet found</div></div>`;
+      `<div class="card-meta">${PANEL_LABELS.notYetRecorded}</div></div>`;
     return card;
   }
 }

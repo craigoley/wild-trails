@@ -307,6 +307,20 @@ export const PANEL_LABELS = {
   missionsCompleted: 'Completed',
   /** Appended to a still-locked biome's Journal header ("Highlands — 0 of 3 · locked"). */
   lockedSuffix: ' · locked',
+  // §4.3 — the CENSUS REFRAME (the journal as a naturalist's record-that-matters, not a
+  // collection score). Copy + light display only; the honest `status` SENTENCES are untouched —
+  // only the FRAME around them shifts. IMPLIED meaning: the words below never state "care", they
+  // just frame the honest facts as field-work.
+  /** The journal header counter word — "X of N recorded" (was "found"; a record, not a tally). */
+  recordedWord: 'recorded',
+  /** The species-card status LABEL — a field-note observation (was "Status", a system field). The
+   *  honest sentence after it is unchanged; this just lets the fact read as a note, not a stat. */
+  statusLabel: 'In the wild',
+  /** A fully-studied biome reads as COMPREHENSION, not a perfect score — "Coast — known" replaces
+   *  "Coast — 5 of 5" once every species is recorded (you've come to KNOW the place). */
+  biomeKnown: 'known',
+  /** The undiscovered-slot line — "Not yet recorded" (was "Not yet found"; the record vocabulary). */
+  notYetRecorded: 'Not yet recorded',
 } as const;
 
 /** Copy for the §17.1 "Reach new lands" unlock-legibility block — the naturalist
