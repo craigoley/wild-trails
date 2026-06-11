@@ -42,6 +42,9 @@ export class EntityRenderer {
   /** CJ3 — the player's two leg hip-pivots (children of `player`), swung in opposition each frame. */
   private readonly playerLegL: Group;
   private readonly playerLegR: Group;
+  /** CJ3b — the player's two arm shoulder-pivots, swung CONTRALATERALLY (opposite the same-side leg). */
+  private readonly playerArmL: Group;
+  private readonly playerArmR: Group;
   /** CJ1 walk-cycle accumulators + reused transform scratch (no per-frame alloc). */
   private readonly walk: WalkState = createWalkState();
   private readonly walkOut: WalkTransform = createWalkTransform();
@@ -67,6 +70,8 @@ export class EntityRenderer {
     this.player = pm.group;
     this.playerLegL = pm.legL;
     this.playerLegR = pm.legR;
+    this.playerArmL = pm.armL;
+    this.playerArmR = pm.armR;
     scene.add(this.player);
 
     // Per-species model pools — built once, hidden until claimed.
@@ -131,6 +136,11 @@ export class EntityRenderer {
     // shared walkPhase. 0 at idle/freeze (straight legs). The pivots ride the body's bob/lean above.
     this.playerLegL.rotation.x = a.legSwing;
     this.playerLegR.rotation.x = -a.legSwing;
+    // CJ3b — swing the arms at the shoulder CONTRALATERALLY: each arm OPPOSES its same-side leg (left
+    // arm forward when the left leg is back — the natural cross-body counter-rotation). So armL gets
+    // −(legL's sign) and armR gets −(legR's sign), at the subtler arm amplitude. Same phase → synced.
+    this.playerArmL.rotation.x = -a.armSwing; // opposite legL (= +legSwing)
+    this.playerArmR.rotation.x = a.armSwing; // opposite legR (= −legSwing)
 
     // Claim a model of each active animal's species; squash the encounter target.
     for (const id of SPECIES_ORDER) this.claimed[id] = 0;

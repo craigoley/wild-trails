@@ -16,7 +16,7 @@ describe('walkCycle — pure (no three/DOM), Node-testable cosmetic math', () =>
     s.idleClock = 9.9;
     s.lean = 0.1;
     const out = stepWalkCycle(s, CJ.walkSpeedRef, 0.016, true, T());
-    expect(out).toEqual({ bobY: 0, scaleXZ: 1, scaleY: 1, leanX: 0, legSwing: 0 }); // identical to the static capsule (legs straight)
+    expect(out).toEqual({ bobY: 0, scaleXZ: 1, scaleY: 1, leanX: 0, legSwing: 0, armSwing: 0 }); // identical to the static capsule (limbs straight)
     expect(s).toEqual({ walkPhase: 0, idleClock: 0, lean: 0 });
   });
 

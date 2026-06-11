@@ -47,12 +47,15 @@ function add(g: Group, geo: BufferGeometry, mat: MeshStandardMaterial, x: number
 // Player
 // ===========================================================================
 
-/** The player model + the two leg hip-pivots the renderer swings (CJ3). The pivots are children
- *  of `group`, so they ride the body's bob/lean; the renderer just rotates them about x. */
+/** The player model + the limb pivots the renderer swings: the two leg hip-pivots (CJ3) and the two
+ *  arm shoulder-pivots (CJ3b). The pivots are children of `group`, so they ride the body's bob/lean;
+ *  the renderer just rotates them about x (legs in opposition, arms contralateral to the legs). */
 export interface PlayerModel {
   group: Group;
   legL: Group;
   legR: Group;
+  armL: Group;
+  armR: Group;
 }
 
 export function buildPlayerModel(): PlayerModel {
@@ -80,12 +83,21 @@ export function buildPlayerModel(): PlayerModel {
   // Head.
   add(g, new SphereGeometry(P.headRadius, SEG, SEG), body,
     0, P.legHeight + P.bodyHeight + P.headRadius * 0.8, 0);
-  // Arms hanging at the sides.
+  // Arms hanging at the sides. CJ3b: each arm hangs from a SHOULDER PIVOT at the body top
+  // (y = legHeight + bodyHeight), the cylinder offset DOWN by armLength/2 so the hand is at the
+  // bottom and the top at the pivot. At rotation.x = 0 this is byte-identical to the old fixed arm
+  // (centre y = top − armLength/2) — a STILL player looks exactly as before; the renderer swings it.
+  const shoulderY = P.legHeight + P.bodyHeight;
+  const armPivots: Group[] = [];
   for (const sx of [-1, 1]) {
-    add(g, new CylinderGeometry(P.armRadius, P.armRadius, P.armLength, SEG), body,
-      sx * (P.bodyRadiusTop + P.armRadius * 1.4), P.legHeight + P.bodyHeight - P.armLength / 2, 0);
+    const shoulder = new Group();
+    shoulder.position.set(sx * (P.bodyRadiusTop + P.armRadius * 1.4), shoulderY, 0);
+    add(shoulder, new CylinderGeometry(P.armRadius, P.armRadius, P.armLength, SEG), body, 0, -P.armLength / 2, 0);
+    g.add(shoulder);
+    armPivots.push(shoulder);
   }
-  return { group: g, legL, legR };
+  const [armL, armR] = armPivots; // index 0 = left (sx −1), index 1 = right (sx +1)
+  return { group: g, legL, legR, armL, armR };
 }
 
 // ===========================================================================

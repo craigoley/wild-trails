@@ -74,7 +74,7 @@ describe('CJ3 — ⚠️ idle/freeze = STILL, STRAIGHT legs (no twitch)', () => 
     s.walkPhase = 1.2; // pre-loaded motion
     const out = stepWalkCycle(s, CJ.walkSpeedRef, 0.016, true, T());
     expect(out.legSwing).toBe(0);
-    expect(out).toEqual({ bobY: 0, scaleXZ: 1, scaleY: 1, leanX: 0, legSwing: 0 });
+    expect(out).toEqual({ bobY: 0, scaleXZ: 1, scaleY: 1, leanX: 0, legSwing: 0, armSwing: 0 });
   });
 });
 

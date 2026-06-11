@@ -36,6 +36,10 @@ export interface GaitProfile {
    *  hip by ±legSwing about the lateral axis. PLAYER-only: the animal profiles set 0 (no leg
    *  articulation yet), so CJ2 is byte-identical. A gentle stride (~0.3); a high-kick is jank. */
   legSwingAmplitude: number;
+  /** CJ3b — shoulder-swing amplitude (radians) for the ARMS. Same phase as the legs, but the arm
+   *  COUNTER-swings its same-side leg (contralateral) and SUBTLER (smaller than legSwing) — a gentle
+   *  counter-balance, not a march. PLAYER-only (animals 0). */
+  armSwingAmplitude: number;
 }
 
 /** The persisted accumulators (one per entity; mutated in place — no alloc). */
@@ -57,6 +61,9 @@ export interface WalkTransform {
   /** CJ3 — the hip-swing angle (radians) for one (the "reference") leg; the opposite leg uses
    *  −legSwing. 0 at idle/freeze (still legs). The renderer applies it to the player's leg pivots. */
   legSwing: number;
+  /** CJ3b — the shoulder-swing magnitude (radians) for the arms; the renderer applies it
+   *  CONTRALATERALLY (each arm opposite its same-side leg). 0 at idle/freeze (still arms). */
+  armSwing: number;
 }
 
 export function createWalkState(): WalkState {
@@ -64,7 +71,7 @@ export function createWalkState(): WalkState {
 }
 
 export function createWalkTransform(): WalkTransform {
-  return { bobY: 0, scaleXZ: 1, scaleY: 1, leanX: 0, legSwing: 0 };
+  return { bobY: 0, scaleXZ: 1, scaleY: 1, leanX: 0, legSwing: 0, armSwing: 0 };
 }
 
 /** The CJ1 player gait — the 'walk' archetype at the CHARACTER_JUICE magnitudes. Flee
@@ -82,15 +89,17 @@ export const PLAYER_GAIT: GaitProfile = {
   fleeStrideMult: 1,
   fleeBobMult: 1,
   legSwingAmplitude: CJ.legSwingAmplitude, // CJ3 — the player's legs articulate
+  armSwingAmplitude: CJ.armSwingAmplitude, // CJ3b — …and the arms counter-swing
 };
 
-/** Reset to the neutral rest pose (bob 0, scale 1, lean 0, legs straight). */
+/** Reset to the neutral rest pose (bob 0, scale 1, lean 0, limbs straight). */
 function neutral(out: WalkTransform): WalkTransform {
   out.bobY = 0;
   out.scaleXZ = 1;
   out.scaleY = 1;
   out.leanX = 0;
   out.legSwing = 0; // CJ3 — frozen/neutral = straight legs (the L2 capture is unchanged)
+  out.armSwing = 0; // CJ3b — …and straight arms
   return out;
 }
 
@@ -178,6 +187,9 @@ export function stepGait(
   // `blend` so it crossfades out at idle (still legs at rest). The renderer applies +legSwing to one
   // leg and −legSwing to the other (opposition). 0 for the animals (legSwingAmplitude 0 → CJ2 same).
   out.legSwing = blend * profile.legSwingAmplitude * Math.cos(phi);
+  // CJ3b — the arm shoulder-swing: the SAME phase + shape, a SUBTLER amplitude. The renderer applies
+  // it CONTRALATERALLY (each arm opposite its same-side leg), so it's auto-synced to the legs/bob.
+  out.armSwing = blend * profile.armSwingAmplitude * Math.cos(phi);
   return out;
 }
 
