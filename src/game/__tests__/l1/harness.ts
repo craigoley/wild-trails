@@ -150,6 +150,19 @@ export function completeCaveGate(j: Journal): void {
   reconcileResearchUnlocks(j);
 }
 
+/**
+ * §4.2 — unlock the TIDAL/SALTMARSH (the 5th-diet biome: the Coast's first arm, a single-successor
+ * extension off the previously-terminal shore). Gated on a NON-FORCED SPECIES+BAIT mastery challenge
+ * by play (research-turnstone-insects — a turnstone over INSECT bait, its real diet; NO phase) + the
+ * coast activity. cost 0 (anti-wall).
+ */
+export function completeTidalGate(j: Journal): void {
+  applyCatch(j, { species: 'turnstone', biome: 'coast', phase: 'day', bait: 'insects' } as CatchEvent);
+  startResearch(j, 'unlock-the-tidal');
+  for (let i = 0; i < 4; i++) evaluateResearch(j, ev('linnet', 'coast', 'day')); // catch-in-coast ×4
+  reconcileResearchUnlocks(j);
+}
+
 /** Catch the remaining roster (rabbit + the alpine three + the Riverbank four + the Coast five +
  *  the Moor five) so the dex fills for the win. rabbit@night doubles as the second night-forager
  *  challenge. */
@@ -191,4 +204,10 @@ export function catchRemainingSpecies(j: Journal): void {
   applyCatch(j, ev('longearedbat', 'cave', 'day'));
   applyCatch(j, ev('horseshoebat', 'cave', 'day'));
   applyCatch(j, ev('eel', 'cave', 'day'));
+  // §4.2 — the Tidal/Saltmarsh roster (the dunlin is the bait-less valve; oystercatcher + knot bait-less too).
+  applyCatch(j, ev('dunlin', 'tidal', 'day'));
+  applyCatch(j, ev('oystercatcher', 'tidal', 'day'));
+  applyCatch(j, ev('redshank', 'tidal', 'day'));
+  applyCatch(j, ev('avocet', 'tidal', 'day'));
+  applyCatch(j, ev('knot', 'tidal', 'day'));
 }

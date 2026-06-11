@@ -81,7 +81,7 @@ export const WORLD = {
 } as const;
 
 /** The biomes in the world. `meadow` is the starting region. */
-export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave';
+export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave' | 'tidal';
 
 /** Static definition of one biome: its finite bounds, display name, adjacency
  *  in the world graph, initial unlocked state, and ground tint. */
@@ -125,7 +125,7 @@ function cell(cx: number, cy: number): Rect {
 }
 
 /** Iteration order for the biome graph (deterministic; render + lookup order). */
-export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave'];
+export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave', 'tidal'];
 
 /**
  * The THROUGH-LINE (§4.3 TL1) — the soul layer's first slice. A biome's "thriving" derives from
@@ -230,7 +230,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Coast',
     bounds: cell(PITCH, PITCH * 3), // north of the Riverbank — [20,60] x [100,140]
     unlocked: false,
-    adjacent: ['riverbank'],
+    adjacent: ['riverbank', 'tidal'], // §4.2 — the estuary/saltmarsh abuts the shore to the east
     tier: 5,
     prereq: 'riverbank', // gated by research-mouse-dusk + the unlock-the-coast project
     color: 0xc9b489, // sand / shingle
@@ -277,6 +277,20 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     tier: 5, // off the Riverbank (like the Coast), the wary/rare cave fauna
     prereq: 'riverbank',
     color: 0x141a1e, // near-black cool slate — the always-dark underground
+  },
+  // §4.2 — TIDAL / SALTMARSH / ESTUARY: the 5th-DIET biome (shellfish — the oystercatcher comes home).
+  // A water-heavy brackish marsh E of the Coast [60,100]x[100,140] — the Coast's first arm (a single-
+  // successor extension off the previously-terminal shore; the world widens NE). Reuses the #55 tidal
+  // pools. Tier 6 (past the tier-5 Coast). A muted olive-mud saltmarsh palette.
+  tidal: {
+    id: 'tidal',
+    displayName: 'Saltmarsh',
+    bounds: cell(PITCH * 2, PITCH * 3), // east of the Coast — [60,100] x [100,140]
+    unlocked: false,
+    adjacent: ['coast'],
+    tier: 6,
+    prereq: 'coast',
+    color: 0x5e6850, // muted olive-mud — brackish saltmarsh / mudflat
   },
 };
 
@@ -450,11 +464,17 @@ export type SpeciesId =
   | 'daubentonbat'
   | 'longearedbat'
   | 'horseshoebat'
-  | 'eel';
+  | 'eel'
+  // Tidal/Saltmarsh (§4.2, the 5th SHELLFISH diet — honest estuary waders; the oystercatcher home).
+  | 'dunlin'
+  | 'oystercatcher'
+  | 'redshank'
+  | 'avocet'
+  | 'knot';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
-export type Tier = 1 | 2 | 3 | 4 | 5;
+export type Tier = 1 | 2 | 3 | 4 | 5 | 6; // §4.2 — Tidal sits past the tier-5 Coast (shakeCountForTier clamps)
 
 /** CJ2 gait archetypes — the procedural locomotion the renderer plays per species.
  *  WALK (low quick scuttle), HOP (arc'd bound + land-squash), BIRD (mostly still + quick
@@ -465,7 +485,7 @@ export type GaitKind = 'walk' | 'hop' | 'bird' | 'swim';
 /** Bait types = animal diets. The right bait for a species' diet calms it and
  *  lures it closer; the wrong bait does nothing (the diet-learning mechanic).
  *  `fish` (§4.1.5) is the 4th diet — RESEARCH-GATED (the kingfisher + otter eat it). */
-export type BaitId = 'seeds' | 'greens' | 'insects' | 'fish';
+export type BaitId = 'seeds' | 'greens' | 'insects' | 'fish' | 'shellfish';
 
 /**
  * Static definition of one species. The two axes the design keeps INDEPENDENT:
@@ -557,6 +577,12 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'longearedbat',
   'horseshoebat',
   'eel',
+  // Tidal/Saltmarsh (§4.2 — the 5th SHELLFISH diet).
+  'dunlin',
+  'oystercatcher',
+  'redshank',
+  'avocet',
+  'knot',
 ];
 
 /**
@@ -861,6 +887,42 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'Born in the far-off Sargasso Sea, it drifts thousands of miles to our rivers and caves, then one day slips back across the whole Atlantic to spawn and die — no one has ever seen it breed.',
     status: '⚠️ Critically endangered — the European eel has crashed by over 90%, and its long secret journey makes it desperately hard to protect.',
+  },
+  // Tidal/Saltmarsh (§4.2) — HONEST status; the real estuary-wader stakes (declines) + the avocet recovery.
+  dunlin: {
+    fieldNote:
+      'The commonest small wader of the mud — the dunlin probes the wet flats for tiny worms and insects by day, in restless feeding flocks. Watch the tideline.',
+    behaviour:
+      'A sparrow-sized wader with a slightly down-curved bill; great flocks wheel low over the estuary as one, flashing dark-then-pale, a black belly-patch in summer.',
+    status: 'Common on the winter mud, but declining as a British breeder where the wet uplands and marshes it nests on are drained.',
+  },
+  oystercatcher: {
+    fieldNote:
+      'The pied “sea-pie” — the oystercatcher hammers and prises open cockles and mussels with its stout orange bill by day. The bird of the cockle beds, home at last.',
+    behaviour:
+      'Boldly black-and-white with a long carrot-orange bill and a loud piping “kleep”; it learns either to hammer shells open or to stab them, a skill passed from parent to chick.',
+    status: 'Amber-listed and in recent decline — fewer cockle beds and disturbed shores have pushed our noisy familiar shorebird down.',
+  },
+  redshank: {
+    fieldNote:
+      'The sentinel of the marsh — the redshank picks worms and small creatures from the saltmarsh creeks by day on its bright orange-red legs. The first to cry the alarm.',
+    behaviour:
+      'It springs up calling shrilly at any intruder (why wildfowlers cursed it as “the warden of the marsh”), flashing white wing-bars as it goes.',
+    status: 'Declining fast — the redshank is losing ground as saltmarsh is squeezed between the sea-wall and the rising tide.',
+  },
+  avocet: {
+    fieldNote:
+      'The elegant up-curved bill — the avocet sweeps its slender bill side-to-side through the shallow brackish water, sifting tiny shrimps and insects by day.',
+    behaviour:
+      'Striking black-and-white with long blue-grey legs; it sweeps the water like a scythe and fiercely mobs anything that nears its nest on the open mud.',
+    status: 'A conservation success — extinct as a British breeder, the avocet returned by itself and recovered so well it became the RSPB’s own emblem.',
+  },
+  knot: {
+    fieldNote:
+      'The smoke over the mudflats — the knot probes the estuary mud for tiny shellfish and molluscs by day, in flocks tens of thousands strong. The shore’s great spectacle.',
+    behaviour:
+      'A dumpy grey wader that gathers in vast tight flocks, wheeling and twisting as one smoke-like cloud over the falling tide; it flies from the high Arctic to winter here.',
+    status: '⚠️ Near-threatened and declining — the knot depends on a handful of estuaries, so the loss of any one of them hits the whole flyway.',
   },
 };
 
@@ -1611,6 +1673,96 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     // §55 reuse: the eel slips INTO the underground pool to escape — the dip-net's cave moment.
     fleesToWater: true,
   },
+  // --- Tidal/Saltmarsh (§4.2) — the 5th SHELLFISH diet; honest estuary waders. All gait BIRD. ---
+  // ⚠️ Shellfish ONLY on the true mollusc-eaters (oystercatcher, knot); the worm/invert-eaters stay
+  // 'insects'. ZERO existing species re-pinned. The waders fly to flee (no fleesToWater). Tier 6.
+  dunlin: {
+    id: 'dunlin',
+    gait: 'bird',
+    displayName: 'Dunlin',
+    biome: 'tidal',
+    // The Tidal VALVE (0.5): a small, common wader — catchable bait-less (anti-lockout).
+    spawnWeight: 6,
+    baseFleeSpeed: 3.0,
+    detectionRadius: 2.8,
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.5,
+    bait: 'insects',
+    color: 0x8a7a68,
+    size: 0.24,
+    profile:
+      'The commonest small wader of the mud, probing the wet flats for worms and insects in restless flocks. Common in winter, but declining where its wet nesting grounds are drained.',
+  },
+  oystercatcher: {
+    id: 'oystercatcher',
+    gait: 'bird',
+    displayName: 'Oystercatcher',
+    biome: 'tidal',
+    spawnWeight: 5,
+    baseFleeSpeed: 3.4,
+    detectionRadius: 3.2,
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.4,
+    bait: 'shellfish', // §4.2 — its real diet, home at last: cockles + mussels
+    color: 0x2a2a2e, // pied black-and-white (the orange bill is the model accent)
+    size: 0.36,
+    profile:
+      'The pied “sea-pie”, hammering open cockles and mussels with its stout orange bill — the bird of the cockle beds, home at last. Amber-listed and in recent decline.',
+  },
+  redshank: {
+    id: 'redshank',
+    gait: 'bird',
+    displayName: 'Redshank',
+    biome: 'tidal',
+    spawnWeight: 5,
+    baseFleeSpeed: 3.6,
+    detectionRadius: 3.6, // "the sentinel of the marsh" — quick to alarm
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.36,
+    bait: 'insects', // worms + small inverts of the marsh creeks (NOT shellfish — honest)
+    color: 0x7a6a52,
+    size: 0.3,
+    profile:
+      'The sentinel of the marsh, picking worms from the saltmarsh creeks on bright orange-red legs — the first to cry the alarm. Declining fast as saltmarsh is squeezed.',
+  },
+  avocet: {
+    id: 'avocet',
+    gait: 'bird',
+    displayName: 'Pied Avocet',
+    biome: 'tidal',
+    spawnWeight: 4,
+    baseFleeSpeed: 3.8,
+    detectionRadius: 3.8,
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.28,
+    bait: 'insects', // sweeps tiny shrimps + inverts (NOT shellfish — honest)
+    color: 0xe6e8ec,
+    size: 0.36,
+    profile:
+      'The elegant up-curved bill, sweeping the shallows for tiny shrimps and insects on long blue-grey legs. A conservation success — back from British extinction, the RSPB’s emblem.',
+  },
+  knot: {
+    id: 'knot',
+    gait: 'bird',
+    displayName: 'Knot',
+    biome: 'tidal',
+    // The Tidal APEX (0.2): a wary mudflat shellfish-feeder of the great flocks.
+    spawnWeight: 3,
+    baseFleeSpeed: 3.9,
+    detectionRadius: 4.0,
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.2,
+    bait: 'shellfish', // §4.2 — tiny shellfish + molluscs of the mudflats
+    color: 0x9a958a,
+    size: 0.3,
+    profile:
+      'The smoke over the mudflats — a grey wader in flocks tens of thousands strong, probing for tiny shellfish. ⚠️ Near-threatened; it depends on a handful of estuaries, so losing one hits all.',
+  },
 };
 
 // ===========================================================================
@@ -1737,6 +1889,9 @@ export const HIDING_SPOTS: readonly HidingSpotDef[] = [
   // grey rock on the near-black ground reads cave + keeps good contrast. Clear of the NE pool.
   { biome: 'cave', x: 72, y: 74, radius: 2.2, kind: 'rocks' },
   { biome: 'cave', x: 78, y: 92, radius: 2.0, kind: 'rocks' },
+  // Tidal/Saltmarsh (§4.2) — saltmarsh grass tussocks (reuses the meadow grass render). Clear of the pools.
+  { biome: 'tidal', x: 72, y: 110, radius: 2.2, kind: 'grass' },
+  { biome: 'tidal', x: 90, y: 128, radius: 2.0, kind: 'grass' },
 ];
 
 /** The portable HIDE (Nets & Gear slice C) — naturalist gear you DEPLOY at your
@@ -1785,6 +1940,11 @@ export const WATER: readonly WaterDef[] = [
   // Cave (§4.2) — an underground POOL (the eel's home; reuses the #55 disc verbatim — barrier/slide/
   // flee). Tucked in the cell's NE so the SW stays dry to roam; the eel flees INTO it (fleesToWater).
   { biome: 'cave', x: 88, y: 90, radius: 5 },
+  // Tidal/Saltmarsh (§4.2) — brackish tidal pools + mudflat channels (the #55 discs reused as scattered
+  // pools; barrier/slide/flee). Sited E/N so the SW mud stays dry to roam; the waders work the edges.
+  { biome: 'tidal', x: 88, y: 112, radius: 5 },
+  { biome: 'tidal', x: 92, y: 128, radius: 5 },
+  { biome: 'tidal', x: 74, y: 132, radius: 4 },
 ];
 
 /** Frog flee-to-water steering (slice W): how strongly a fleeing frog's heading is
@@ -1900,6 +2060,7 @@ export const SUPPLY_POSTS: readonly SupplyPostDef[] = [
   { biome: 'moor', x: 80, y: 28, radius: 2.5 }, // on the open heather, clear of the grass tussocks
   { biome: 'pineforest', x: 0, y: 72, radius: 2.5 }, // in a forest clearing, clear of the bracken
   { biome: 'cave', x: 70, y: 84, radius: 2.5 }, // a dry cavern floor, clear of the pool + the stalagmites
+  { biome: 'tidal', x: 68, y: 122, radius: 2.5 }, // on a dry marsh hummock, clear of the tidal pools
 ];
 
 /** Closing the Field Supply steps the player OUT the door (−y), this far PAST the
@@ -2005,11 +2166,11 @@ export const STARTER_TOOL: ToolId = 'net';
 /** Bait deltas — the diet-learning lure. Correct bait (matches a species' diet)
  *  calms it toward the catch ceiling AND lures it to APPROACH; wrong bait does
  *  nothing. Bait is a consumable with an in-memory count. */
-export const BAIT_ORDER: readonly BaitId[] = ['seeds', 'greens', 'insects', 'fish'];
+export const BAIT_ORDER: readonly BaitId[] = ['seeds', 'greens', 'insects', 'fish', 'shellfish'];
 
 /** Baits that are RESEARCH-GATED (§4.1.5): they start at 0 (locked) and become buyable only
  *  once their unlocking research completes. The 3 original diets are always stocked. */
-export const RESEARCH_GATED_BAITS: readonly BaitId[] = ['fish'];
+export const RESEARCH_GATED_BAITS: readonly BaitId[] = ['fish', 'shellfish']; // §4.2 — shellfish gated, never required (anti-lockout)
 
 /** Starting count for a bait: the 3 original diets start stocked; a research-gated bait
  *  (fish) starts at 0 — you don't begin with bait you can't use until you've studied it. */
@@ -2018,7 +2179,7 @@ export function startingBaitCount(id: BaitId): number {
 }
 
 /** The procedural diet-icon glyph a bait chip draws (CSS shapes, zero assets). */
-export type BaitIconKind = 'seeds' | 'leaf' | 'insect' | 'fish';
+export type BaitIconKind = 'seeds' | 'leaf' | 'insect' | 'fish' | 'shell';
 
 /** Tray DISPLAY metadata per bait — a short label + which procedural icon to
  *  draw. Diet legibility (§5): the icon teaches "what this bait IS". */
@@ -2027,6 +2188,7 @@ export const BAIT_DISPLAY: Record<BaitId, { label: string; icon: BaitIconKind }>
   greens: { label: 'Greens', icon: 'leaf' },
   insects: { label: 'Insects', icon: 'insect' },
   fish: { label: 'Fish', icon: 'fish' },
+  shellfish: { label: 'Shellfish', icon: 'shell' }, // §4.2 — the 5th diet (the oystercatcher's cockles/mussels)
 };
 
 export const BAIT = {
@@ -2729,6 +2891,38 @@ export const SPECIES_MODEL: Record<
     tailLengthR: 1.6, // a long serpentine tail-body
     tailRadiusR: 0.22,
   },
+  // Tidal/Saltmarsh (§4.2) — five waders (the BIRD build; the oystercatcher's long orange bill via the
+  // beak; the avocet's up-curve via a long beak too). Long-legged shore birds, distinct bill lengths.
+  dunlin: {
+    kind: 'bird',
+    accent: 0x3a3026, // dark belly-patch
+    beakLengthR: 0.5, // a slightly long probing bill
+    crestHeightR: 0.1,
+  },
+  oystercatcher: {
+    kind: 'bird',
+    accent: 0xff7a1a, // the carrot-orange bill (the signature)
+    beakLengthR: 0.9, // the long stout bill
+    crestHeightR: 0.1,
+  },
+  redshank: {
+    kind: 'bird',
+    accent: 0xd64a3a, // the orange-red legs/bill
+    beakLengthR: 0.7,
+    crestHeightR: 0.1,
+  },
+  avocet: {
+    kind: 'bird',
+    accent: 0x1a1a20, // black cap/wing markings on white
+    beakLengthR: 0.95, // the long up-curved bill (read as a long beak)
+    crestHeightR: 0.1,
+  },
+  knot: {
+    kind: 'bird',
+    accent: 0xb05a3a, // rusty breeding tone
+    beakLengthR: 0.6,
+    crestHeightR: 0.1,
+  },
 } as const;
 
 // ===========================================================================
@@ -2822,6 +3016,8 @@ export const MISSION_ORDER: readonly string[] = [
   'research-squirrel-seeds',
   // §4.2 — the CAVE's by-PLAY mastery gate (the always-dark biome; a species+bait challenge, no phase).
   'research-dipper-insects',
+  // §4.2 — the TIDAL's by-PLAY mastery gate (the 5th-diet biome; a species+bait challenge, no phase).
+  'research-turnstone-insects',
 ];
 
 /**
@@ -3094,6 +3290,22 @@ export const MISSIONS: Record<string, MissionDef> = {
     standalone: true,
     hint: 'Not quite — set out INSECT bait for the river’s underwater walker, the caddis larvae it truly takes.',
   },
+  // §4.2 — the TIDAL/SALTMARSH multi-condition mastery gate (the #92 unblock). SPECIES + BAIT, no phase.
+  // The ACTIVITY is in the prereq COAST → the #37 breadcrumb, never a wall. NON-FORCED via BAIT: the
+  // turnstone is catchable bait-less, so requiring its REAL diet (insects — it levers inverts from under
+  // weed and stones) is a deliberate field-craft choice (#48 inverse). unlock-the-tidal wraps it (R2).
+  'research-turnstone-insects': {
+    id: 'research-turnstone-insects',
+    biome: 'coast',
+    title: 'Research: The Stone-Turner',
+    description:
+      'A stout little shore wader that flips over seaweed and stones for the invertebrates beneath by day. Identify it from your field guide, then prove you know its table: catch one over INSECT bait.',
+    requirement: { kind: 'research', species: 'turnstone', bait: 'insects', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not quite — set out INSECT bait for the shore’s stone-turner, the small creatures it levers from under the weed.',
+  },
 };
 
 /** Completing ALL of a biome's missions unlocks the mapped biome (lateral reward
@@ -3107,6 +3319,7 @@ export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, readonly BiomeId[]>> = {
   wetland: ['highlands'],
   highlands: ['riverbank', 'moor'], // §4.2 — the 1st BRANCH: the Highlands set unlocks BOTH
   riverbank: ['coast', 'cave'], // §4.2 — the Riverbank forks: the sea (Coast) AND underground (Cave)
+  coast: ['tidal'], // §4.2 — the Coast's first arm: the estuary/saltmarsh (a single-successor extension)
 };
 
 /** §4.1c ESCALATING knowledge gates: in ADDITION to the catch-set, a biome's unlock
@@ -3281,6 +3494,19 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     activityRequirement: { kind: 'catch-in-biome', biome: 'riverbank', count: 4 },
     reward: { kind: 'bait-access', bait: 'fish' },
   },
+  // §4.2 — the SHELLFISH diet (the 5th), research-gated like fish (bait-access). OPTIONAL convenience —
+  // shellfish bait is NEVER required (the oystercatcher + knot are catchable bait-less), so it carries a
+  // credit COST (a sink), NO knowledgeRequirement (not core-progression). Completing it stocks shellfish
+  // bait in the Field Supply. The exact study-aquatic-life pattern.
+  'study-the-shellfish-eaters': {
+    id: 'study-the-shellfish-eaters',
+    area: 'tidal',
+    name: 'The Shellfish Eaters',
+    blurb: 'Study the estuary’s shellfish-feeders until you can match their diet — then the Field Supply stocks shellfish bait.',
+    cost: 15,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'tidal', count: 4 },
+    reward: { kind: 'bait-access', bait: 'shellfish' },
+  },
   // §4.2 — COAST access (R2's pattern again). cost 0 (Coast's species are win-required -> anti-
   // wall). knowledgeRequirement = research-mouse-dusk (a NON-FORCED dusk catch, by play —
   // double-enforced with the isUnlockGateMet re-check). The activity is riverbank study.
@@ -3340,6 +3566,20 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     knowledgeRequirement: 'research-dipper-insects', // by PLAY only — the non-forced species+bait catch
     reward: { kind: 'biome-access', biome: 'cave' },
   },
+  // §4.2 — TIDAL/SALTMARSH access (R2's pattern), the COAST's first arm (a single-successor extension —
+  // the estuary east of the shore). cost 0 (the Tidal species are win-required → anti-wall).
+  // knowledgeRequirement = research-turnstone-insects, a NON-FORCED species+bait challenge (#92) —
+  // double-enforced with isUnlockGateMet. The activity is coast study (you're there by now).
+  'unlock-the-tidal': {
+    id: 'unlock-the-tidal',
+    area: 'tidal',
+    name: 'Saltmarsh Access',
+    blurb: 'Follow the shore east to where the river meets the sea, learn the turnstone’s table, and the saltmarsh opens.',
+    cost: 0,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'coast', count: 4 },
+    knowledgeRequirement: 'research-turnstone-insects', // by PLAY only — the non-forced species+bait catch
+    reward: { kind: 'biome-access', biome: 'tidal' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
@@ -3355,6 +3595,8 @@ export const RESEARCH_ORDER: readonly string[] = [
   'unlock-the-moor', // §4.2 — the 1st BRANCHED biome (off the Highlands set, beside the Riverbank)
   'unlock-the-pineforest', // §4.2 — the closed-woods biome (a 2nd arm off the Woodland set)
   'unlock-the-cave', // §4.2 — the always-dark biome (a 2nd arm off the Riverbank set)
+  'study-the-shellfish-eaters', // §4.2 — the 5th-diet bait (OPTIONAL sink, never required)
+  'unlock-the-tidal', // §4.2 — the saltmarsh/estuary (the Coast's first arm)
 ];
 
 // ===========================================================================

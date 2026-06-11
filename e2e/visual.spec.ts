@@ -33,6 +33,9 @@ const scenes = [
   // §4.2 — the always-dark CAVE: a near-black ground with the lights UNCHANGED (lit entities pop). A new
   // additive baseline (seeded after Craig approves the dark look). Eyeball: does the player/animals read?
   { name: 'cave-dark', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,80` },
+  // §4.2 — the TIDAL/SALTMARSH: the olive-mud estuary E of the Coast (the brackish tidal pools). A new
+  // additive baseline (seeded after Craig approves the marsh look).
+  { name: 'tidal-saltmarsh', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,120` },
 ];
 
 for (const scene of scenes) {

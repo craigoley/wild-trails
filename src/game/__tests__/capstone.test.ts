@@ -10,6 +10,7 @@ import {
   completeMoorGate,
   completePineforestGate,
   completeCaveGate,
+  completeTidalGate,
   catchRemainingSpecies,
 } from './l1/harness';
 import { createJournal } from '../../state/Journal';
@@ -39,6 +40,7 @@ function realisticWin() {
   completeMoorGate(j);
   completePineforestGate(j);
   completeCaveGate(j);
+  completeTidalGate(j);
   catchRemainingSpecies(j);
   return j;
 }
