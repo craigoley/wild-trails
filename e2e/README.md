@@ -24,13 +24,24 @@ the page loads, the canvas mounts + **renders (not blank)** via a screenshot-siz
 toggles). Run locally: `npm run test:e2e`.
 
 ### Visual regression — `visual.spec.ts` (container-only, nightly, `e2e-visual.yml`)
-Screenshot diffs of three **deterministic** scenes:
+Screenshot diffs of **deterministic** scenes — one per biome (the world's 10) plus two staged
+mechanic views. Every biome is under the gate, so a future visual change to any of them flags:
 
 | scene | URL | what it guards |
 |---|---|---|
 | `meadow-day-start` | `?seed=7&freeze=1` | the default view + HUD layout |
 | `wetland-water-pond` | `?seed=7&freeze=1&unlock=all&at=33,8` | the #55 water render |
 | `meadow-cover-hide` | `?seed=7&freeze=1&hide=1` | the #53 cover + deployed-hide footprint |
+| `riverbank-river` | `?seed=7&freeze=1&unlock=all&at=40,80` | the riverbank water band |
+| `coast-shore` | `?seed=7&freeze=1&unlock=all&at=40,114` | the coast + the outer-edge sea |
+| `moor-heather` | `?seed=7&freeze=1&unlock=all&at=80,40` | the moor's heather-purple ground |
+| `pine-forest` | `?seed=7&freeze=1&unlock=all&at=0,80` | the dense instanced pines + entities-on-top |
+| `cave-dark` | `?seed=7&freeze=1&unlock=all&at=80,80` | the dark cave ground + lit entities |
+| `tidal-saltmarsh` | `?seed=7&freeze=1&unlock=all&at=80,120` | the olive-mud estuary + tidal pools |
+
+> ⚠️ The global **entities-on-top** change (`depthTest:false`, Pine #109) makes the player/animals
+> composite over the props — so an existing baseline may shift when it's reseeded. That's the
+> *intended* change; confirm any diff is it (not a regression) before locking the new baseline.
 
 **Determinism** comes from the L2 hooks (render layer only — `src/testHooks.ts`; `src/game/`
 stays pure): `?seed=N` pins the sim seed, `?freeze=1` pauses it at the initial state (so the
