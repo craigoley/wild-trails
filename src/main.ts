@@ -207,16 +207,17 @@ const shopPanel = new ShopPanel(app, persist, (toolId) => {
 let shopWasOpen = false;
 const exitOut = { x: 0, y: 0 }; // reused — no per-frame alloc in the loop
 const baitUnlocked = (id: BaitId): boolean => isBaitUnlocked(journal, id);
-// The "Field Guide Complete" win screen (Plan #10). maybeFireWin fires it ONCE —
-// when the win condition is first met (the persisted `won` flag guards re-firing)
-// — then dismissing it returns to free-roam. Checked at boot (so a save that
-// completed pre-#10 gets its celebration) and after each catch/mission update.
+// The §4.3 capstone win screen (Plan #10). maybeFireWin fires it ONCE — when the
+// win condition is first met (the persisted `won` flag guards re-firing) — then
+// dismissing it returns to free-roam. Checked at boot (so a save that completed
+// pre-#10 gets its celebration) and after each catch/mission update. ⚠️ The TRIGGER
+// (shouldCelebrateWin) is unchanged by the capstone — only the framing shifted.
 const winScreen = new WinScreen(app);
 const maybeFireWin = (): void => {
   if (shouldCelebrateWin(journal)) {
     journal.won = true;
     persist();
-    winScreen.show(journal);
+    winScreen.show();
   }
 };
 maybeFireWin(); // boot check (a pre-#10 completed save earns its celebration now)

@@ -513,7 +513,9 @@ body.modal-open .touch-stick-thumb {
   cursor: pointer;
 }
 
-/* --- Win screen — "Field Guide Complete" (Plan #10) -------------------- */
+/* --- Win screen — §4.3 capstone: "the world is known, and it flourishes" -------------------- */
+/* §4.3 CAPSTONE — REVEAL the living world. NOT an opaque certificate veil: a GENTLE wash so the warm,
+ * still-breathing world (TL1/TL2/CJ) shows through and carries the moment; the words float over it. */
 .win-overlay {
   position: fixed;
   inset: 0;
@@ -521,54 +523,43 @@ body.modal-open .touch-stick-thumb {
   display: none; /* flex when open */
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, rgba(20, 44, 26, 0.92), rgba(6, 14, 8, 0.96));
+  background: rgba(8, 18, 10, 0.28); /* a gentle wash — the world is clearly visible behind it */
   pointer-events: auto;
   padding: 16px;
 }
+/* No card — just a centred container. A soft radial halo gives the words legibility over any biome
+ * without a framed certificate (a whisper of backing, not a panel). */
 .win-panel {
   position: relative;
-  width: min(540px, 94vw);
+  width: min(560px, 94vw);
   max-height: 88vh;
   overflow-y: auto;
   touch-action: pan-y;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   text-align: center;
-  background: rgba(16, 30, 20, 0.98);
-  border: 2px solid rgba(157, 240, 168, 0.55);
-  border-radius: 16px;
-  box-shadow: 0 0 36px rgba(109, 255, 155, 0.28);
-  padding: 26px 22px 24px;
-  color: rgba(255, 255, 255, 0.92);
-}
-.win-title {
-  font-size: 25px;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  color: #aeffc4;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
-  margin-bottom: 16px;
+  background: radial-gradient(ellipse at center, rgba(6, 14, 8, 0.5), rgba(6, 14, 8, 0) 72%);
+  padding: 40px 24px;
+  color: rgba(255, 255, 255, 0.94);
 }
 .win-body {
   display: grid;
-  gap: 8px;
+  gap: 18px;
 }
-.win-stat {
-  font-size: 14.5px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
-}
-.win-blurb {
-  margin-top: 12px;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.82);
+/* The statement — quiet but present, warm over the world, with a soft shadow for legibility. */
+.win-lead {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  color: rgba(244, 250, 240, 0.97);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.85), 0 0 28px rgba(0, 0, 0, 0.55);
 }
 .win-freeroam {
-  margin-top: 10px;
   font-size: 13px;
-  line-height: 1.45;
-  color: rgba(157, 240, 168, 0.92);
+  line-height: 1.5;
+  color: rgba(190, 235, 200, 0.9);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
 }
 
 /* --- Missions + rank overlay ------------------------------------------- */
