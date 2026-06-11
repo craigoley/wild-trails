@@ -1,18 +1,17 @@
 /**
- * The "Field Guide Complete" win screen (Plan #10) — the §14 completion payoff.
- * A warm naturalist's certificate (species discovered, biomes explored, the
- * Field-Researcher title), NOT a high-score. It's a CLOSEABLE overlay (the shared
- * dismiss helper) — dismissing it returns to free-roam; nothing resets. Fired ONCE
- * by the boundary (a persisted `won` flag guards re-firing).
+ * §4.3 CAPSTONE — the win, reframed. NOT a certificate/scorecard ("caught them all") but the
+ * through-line's quiet summit: the census's biome `known · flourishing` read scaled to the WHOLE
+ * WORLD. The presentation REVEALS the living world (a gentle wash, no opaque card — see style.css)
+ * with one quiet line over it; the warm, still-breathing world (TL1/TL2/CJ) IS the statement. A
+ * CLOSEABLE overlay — dismissing it returns to free-roam; nothing resets. Fired ONCE by the boundary
+ * (the persisted `won` flag), at the UNCHANGED win condition (only the meaning shifts, not the moment).
  *
- * READS the journal; never mutates. DOM lives here in the rendering layer.
- * Zero-asset (a CSS flourish + a unicode glyph).
+ * READS the journal; never mutates. DOM lives here in the rendering layer. Zero-asset. "and it
+ * flourishes" is honest, not asserted — `worldThriving()` at a real completion lands in the
+ * `flourishing` band (pinned in Thriving's tests).
  */
 
-import type { Journal } from '../state/Journal';
-import { currentRank } from '../game/Missions';
-import { foundCount } from '../state/Journal';
-import { BIOMES, SPECIES_ORDER, WIN, type BiomeId } from '../utils/constants';
+import { WIN } from '../utils/constants';
 import { addOverlayDismiss } from './overlayDismiss';
 
 export class WinScreen {
@@ -29,11 +28,7 @@ export class WinScreen {
     panel.className = 'win-panel';
     this.root.appendChild(panel);
 
-    const title = document.createElement('div');
-    title.className = 'win-title';
-    title.textContent = WIN.title;
-    panel.appendChild(title);
-
+    // No title bar, no scorecard — just the quiet statement over the revealed living world.
     this.body = document.createElement('div');
     this.body.className = 'win-body';
     panel.appendChild(this.body);
@@ -52,23 +47,14 @@ export class WinScreen {
     return this.open;
   }
 
-  /** Build the certificate summary from the completed journal, then show it. */
-  show(journal: Journal): void {
-    const biomes = [...journal.unlockedBiomes];
-    if (!biomes.includes('meadow')) biomes.unshift('meadow'); // always-open home
-    const names = biomes.map((b) => BIOMES[b as BiomeId]?.displayName ?? b).join(' · ');
-
+  /** Show the capstone — the quiet statement over the revealed living world. The scorecard is gone;
+   *  the living world (behind the gentle wash) carries it. "and it flourishes" is honest by the win
+   *  condition (every creature recorded → worldThriving in the flourishing band, pinned). */
+  show(): void {
     this.body.replaceChildren();
-    this.body.appendChild(this.stat(`${foundCount(journal)} of ${SPECIES_ORDER.length} creatures catalogued`));
-    this.body.appendChild(this.stat(`Regions explored: ${names}`));
-    this.body.appendChild(this.stat(`Rank: ${currentRank(journal).name}`));
-    this.body.appendChild(this.line('win-blurb', WIN.blurb));
+    this.body.appendChild(this.line('win-lead', WIN.lead));
     this.body.appendChild(this.line('win-freeroam', WIN.freeRoam));
     this.setOpen(true);
-  }
-
-  private stat(text: string): HTMLDivElement {
-    return this.line('win-stat', text);
   }
 
   private line(cls: string, text: string): HTMLDivElement {

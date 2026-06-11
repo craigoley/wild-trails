@@ -2988,13 +2988,24 @@ export const RANKS: readonly RankDef[] = [
   { name: 'Field Researcher', minPoints: 120 },
 ];
 
-/** The "Field Guide Complete" win screen copy (Plan #10). The tone is a naturalist
- *  finishing their guide — warm, calm, no high-score energy (§14.2). */
+/** The win screen copy (§4.3 capstone — the through-line's summit; Plan #10). The tone is the
+ *  census voice arrived: a living world come to know + flourishing — warm, quiet, no high-score. */
 export const WIN = {
-  title: '🌿 Field Guide Complete',
-  /** Warm summary line. */
-  blurb: 'Every creature catalogued, every region explored, every study finished — your field guide is full.',
-  /** The free-roam invitation: an OPTION, never a pressure; progress never resets. */
+  // §4.3 CAPSTONE — the through-line arrived: the census's biome `known · flourishing` read, scaled to
+  // the WHOLE WORLD, at the win. The lead line IS the statement; the living world (revealed behind it)
+  // does the rest. ⚠️ Implied/minimal — NEVER "you saved/restored the world" (the flourishing is the
+  // world's own; the knowing is yours — parallel facts, never causal). The scorecard (count/regions/
+  // rank/"complete"/"full") is dropped: it was the collection residue this reframe retires. "and it
+  // flourishes" is HONEST, not asserted — worldThriving() at a real completion lands in the
+  // `flourishing` band (pinned).
+  /** The whole statement, one breath (V1, line A — Craig's pick). */
+  lead: 'The world is known, and it flourishes.',
+  // ── Device-dial alternates (trivial swaps — Craig picks the cadence/level in situ): ──
+  // Line B (two-beat) → render these two instead of `lead`:
+  //   'The world is known.'  /  'And it flourishes.'
+  // V2 (+ one census-voice record line, if V1 feels too bare) → add below the lead:
+  //   'Every creature recorded; every place, come to know.'
+  /** The free-roam invitation: an OPTION, never a pressure; progress never resets. (Unchanged.) */
   freeRoam: 'The wild keeps turning. Roam on whenever you like — nothing here ever resets.',
 } as const;
 

@@ -61,3 +61,23 @@ export function thrivingWord(t: number): string {
   for (const band of THRIVING.bands) if (t >= band.min) word = band.word;
   return word;
 }
+
+/**
+ * §4.3 capstone — the WHOLE WORLD's thriving (0..1): the mean of `thrivingForBiome` over the biomes
+ * the player has reached (the always-open Meadow + every unlocked biome). The world-level scale of
+ * the census's biome `known · flourishing` read. PURE (a fold over existing per-biome thriving) —
+ * the win screen reads it so "and it flourishes" is HONEST: at a real completion (every species
+ * recorded across every reached biome) the mean lands in the `flourishing` band — earned, not
+ * asserted. Empty/edge → 0 (never divides by zero).
+ */
+export function worldThriving(journal: Journal): number {
+  let sum = 0;
+  let n = 0;
+  for (const b of BIOME_ORDER) {
+    if (b === 'meadow' || journal.unlockedBiomes.includes(b)) {
+      sum += thrivingForBiome(journal, b);
+      n += 1;
+    }
+  }
+  return n === 0 ? 0 : sum / n;
+}
