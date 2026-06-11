@@ -39,6 +39,9 @@ import { clamp, lerp } from '../utils/math';
 
 export class EntityRenderer {
   private readonly player: Group;
+  /** CJ3 — the player's two leg hip-pivots (children of `player`), swung in opposition each frame. */
+  private readonly playerLegL: Group;
+  private readonly playerLegR: Group;
   /** CJ1 walk-cycle accumulators + reused transform scratch (no per-frame alloc). */
   private readonly walk: WalkState = createWalkState();
   private readonly walkOut: WalkTransform = createWalkTransform();
@@ -60,7 +63,10 @@ export class EntityRenderer {
   private readonly hideMarker: Mesh;
 
   constructor(scene: Scene) {
-    this.player = buildPlayerModel();
+    const pm = buildPlayerModel();
+    this.player = pm.group;
+    this.playerLegL = pm.legL;
+    this.playerLegR = pm.legR;
     scene.add(this.player);
 
     // Per-species model pools — built once, hidden until claimed.
@@ -121,6 +127,10 @@ export class EntityRenderer {
     this.player.scale.set(a.scaleXZ, a.scaleY, a.scaleXZ);
     EntityRenderer.faceTravel(this.player, p.facingX, p.facingY); // yaw (rotation.y)
     this.player.rotation.x = a.leanX; // lean (forward pitch) composes with the facing yaw
+    // CJ3 — swing the legs at the hip in OPPOSITION (one fore, one aft), synced to the bob via the
+    // shared walkPhase. 0 at idle/freeze (straight legs). The pivots ride the body's bob/lean above.
+    this.playerLegL.rotation.x = a.legSwing;
+    this.playerLegR.rotation.x = -a.legSwing;
 
     // Claim a model of each active animal's species; squash the encounter target.
     for (const id of SPECIES_ORDER) this.claimed[id] = 0;

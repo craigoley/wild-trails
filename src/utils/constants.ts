@@ -1989,6 +1989,10 @@ export const CHARACTER_JUICE = {
   /** IDLE — a slow breathing bob at rest (alive, not frozen), crossfaded out as you walk. */
   idleAmplitude: 0.018, // world units
   idleFreqHz: 0.4, // a breath ~every 2.5 s
+  /** CJ3 — LEG hip-swing amplitude, radians. Each leg rotates ±this at the hip on the walk phase
+   *  (in opposition), crossfading in with speed. ~0.3 rad (~17°) is a gentle stride; a high-kick
+   *  (≳0.6) is the jank to avoid. The foot's fore/aft travel ≈ legHeight·sin(A). Dial on device. */
+  legSwingAmplitude: 0.3,
 } as const;
 
 /**
@@ -2016,29 +2020,34 @@ export const GAIT_PROFILES: Record<GaitKind, {
   idleFreqHz: number;
   fleeStrideMult: number;
   fleeBobMult: number;
+  legSwingAmplitude: number; // CJ3 — 0 for animals (player-only leg articulation)
 }> = {
   /** WALK / scuttle — a low, quick, steady bob (hedgehog, mouse, badger, roe deer…). */
   walk: {
     kind: 'walk', strideRate: 5, walkSpeedRef: 1.4, bobAmplitude: 0.022, squashAmplitude: 0.05,
     leanMaxRad: 0.08, leanSpringRate: 9, idleAmplitude: 0.01, idleFreqHz: 0.5, fleeStrideMult: 1.4, fleeBobMult: 1.4,
+    legSwingAmplitude: 0, // CJ3 is PLAYER-only — no animal leg articulation (CJ2 byte-identical)
   },
   /** HOP — an arc'd bound with a pause between hops; squash on land, stretch at apex
    *  (rabbit, hare, frog, red squirrel). ⚠️ the biggest motion — keep it a GENTLE arc. */
   hop: {
     kind: 'hop', strideRate: 7, walkSpeedRef: 1.4, bobAmplitude: 0.06, squashAmplitude: 0.1,
     leanMaxRad: 0.05, leanSpringRate: 10, idleAmplitude: 0.009, idleFreqHz: 0.5, fleeStrideMult: 1.4, fleeBobMult: 1.25,
+    legSwingAmplitude: 0,
   },
   /** BIRD — mostly still with a small, quick alert bob; quick darts on the move
    *  (kingfisher, wagtail, robin…). Minimal squash. */
   bird: {
     kind: 'bird', strideRate: 6, walkSpeedRef: 1.4, bobAmplitude: 0.016, squashAmplitude: 0.02,
     leanMaxRad: 0.05, leanSpringRate: 12, idleAmplitude: 0.007, idleFreqHz: 1.6, fleeStrideMult: 1.6, fleeBobMult: 1.4,
+    legSwingAmplitude: 0,
   },
   /** SWIM — a smooth, low glide (no real vertical bob, no squash) when an animal is in
    *  water (otter, water vole, mallard…). A runtime override of the land gait. */
   swim: {
     kind: 'swim', strideRate: 6, walkSpeedRef: 1.0, bobAmplitude: 0.01, squashAmplitude: 0,
     leanMaxRad: 0.05, leanSpringRate: 8, idleAmplitude: 0.006, idleFreqHz: 0.4, fleeStrideMult: 1.3, fleeBobMult: 1.2,
+    legSwingAmplitude: 0,
   },
 };
 

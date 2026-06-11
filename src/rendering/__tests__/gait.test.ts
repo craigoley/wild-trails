@@ -34,6 +34,7 @@ function cj1Ref(s: WalkState, speed: number, dt: number, frozen: boolean, out: W
   out.scaleY = 1 - sQ * Math.cos(2 * s.walkPhase);
   out.scaleXZ = 1 / Math.sqrt(out.scaleY);
   out.leanX = s.lean;
+  out.legSwing = blend * CJ.legSwingAmplitude * Math.cos(s.walkPhase); // CJ3 — additive hip-swing
   return out;
 }
 
@@ -111,7 +112,7 @@ describe('⚠️ FREEZE → NEUTRAL for every gait (the L2 baselines stay put)',
     for (const p of [PLAYER_GAIT, ...Object.values(GAIT_PROFILES)]) {
       const s: WalkState = { walkPhase: 2, idleClock: 5, lean: 0.1 };
       const out = stepGait(s, p.walkSpeedRef, p, 0.016, true, true, T());
-      expect(out).toEqual({ bobY: 0, scaleXZ: 1, scaleY: 1, leanX: 0 });
+      expect(out).toEqual({ bobY: 0, scaleXZ: 1, scaleY: 1, leanX: 0, legSwing: 0 }); // CJ3 — straight legs frozen
       expect(s).toEqual({ walkPhase: 0, idleClock: 0, lean: 0 });
     }
   });

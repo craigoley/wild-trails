@@ -47,17 +47,33 @@ function add(g: Group, geo: BufferGeometry, mat: MeshStandardMaterial, x: number
 // Player
 // ===========================================================================
 
-export function buildPlayerModel(): Group {
+/** The player model + the two leg hip-pivots the renderer swings (CJ3). The pivots are children
+ *  of `group`, so they ride the body's bob/lean; the renderer just rotates them about x. */
+export interface PlayerModel {
+  group: Group;
+  legL: Group;
+  legR: Group;
+}
+
+export function buildPlayerModel(): PlayerModel {
   const P = PLAYER_MODEL;
   const g = new Group();
   const body = flatMat(P.color);
   const accent = flatMat(P.accent);
 
-  // Legs (accent = boots), from the ground up.
+  // Legs (accent = boots). CJ3: each leg hangs from a HIP PIVOT at y = legHeight, the cylinder
+  // offset DOWN by legHeight/2 so its foot is at y = 0 and its top at the pivot. At rotation.x = 0
+  // this is byte-identical to the old fixed leg (centre y = legHeight/2) — so a STILL player looks
+  // exactly as before (the L2 baselines don't move); the renderer swings the pivot to walk.
+  const legPivots: Group[] = [];
   for (const sx of [-1, 1]) {
-    add(g, new CylinderGeometry(P.legRadius, P.legRadius, P.legHeight, SEG), accent,
-      sx * P.legSpread, P.legHeight / 2, 0);
+    const hip = new Group();
+    hip.position.set(sx * P.legSpread, P.legHeight, 0);
+    add(hip, new CylinderGeometry(P.legRadius, P.legRadius, P.legHeight, SEG), accent, 0, -P.legHeight / 2, 0);
+    g.add(hip);
+    legPivots.push(hip);
   }
+  const [legL, legR] = legPivots; // index 0 = left (sx −1), index 1 = right (sx +1)
   // Tapered torso.
   add(g, new CylinderGeometry(P.bodyRadiusTop, P.bodyRadiusBottom, P.bodyHeight, SEG), body,
     0, P.legHeight + P.bodyHeight / 2, 0);
@@ -69,7 +85,7 @@ export function buildPlayerModel(): Group {
     add(g, new CylinderGeometry(P.armRadius, P.armRadius, P.armLength, SEG), body,
       sx * (P.bodyRadiusTop + P.armRadius * 1.4), P.legHeight + P.bodyHeight - P.armLength / 2, 0);
   }
-  return g;
+  return { group: g, legL, legR };
 }
 
 // ===========================================================================

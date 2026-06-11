@@ -32,6 +32,10 @@ export interface GaitProfile {
   /** Multipliers applied while FLEEING (cadence + bob) — a more urgent gait. */
   fleeStrideMult: number;
   fleeBobMult: number;
+  /** CJ3 — hip-swing amplitude (radians) for ARTICULATED legs. The renderer rotates each leg's
+   *  hip by ±legSwing about the lateral axis. PLAYER-only: the animal profiles set 0 (no leg
+   *  articulation yet), so CJ2 is byte-identical. A gentle stride (~0.3); a high-kick is jank. */
+  legSwingAmplitude: number;
 }
 
 /** The persisted accumulators (one per entity; mutated in place — no alloc). */
@@ -50,6 +54,9 @@ export interface WalkTransform {
   scaleXZ: number;
   scaleY: number;
   leanX: number;
+  /** CJ3 — the hip-swing angle (radians) for one (the "reference") leg; the opposite leg uses
+   *  −legSwing. 0 at idle/freeze (still legs). The renderer applies it to the player's leg pivots. */
+  legSwing: number;
 }
 
 export function createWalkState(): WalkState {
@@ -57,7 +64,7 @@ export function createWalkState(): WalkState {
 }
 
 export function createWalkTransform(): WalkTransform {
-  return { bobY: 0, scaleXZ: 1, scaleY: 1, leanX: 0 };
+  return { bobY: 0, scaleXZ: 1, scaleY: 1, leanX: 0, legSwing: 0 };
 }
 
 /** The CJ1 player gait — the 'walk' archetype at the CHARACTER_JUICE magnitudes. Flee
@@ -74,14 +81,16 @@ export const PLAYER_GAIT: GaitProfile = {
   idleFreqHz: CJ.idleFreqHz,
   fleeStrideMult: 1,
   fleeBobMult: 1,
+  legSwingAmplitude: CJ.legSwingAmplitude, // CJ3 — the player's legs articulate
 };
 
-/** Reset to the neutral rest pose (bob 0, scale 1, lean 0). */
+/** Reset to the neutral rest pose (bob 0, scale 1, lean 0, legs straight). */
 function neutral(out: WalkTransform): WalkTransform {
   out.bobY = 0;
   out.scaleXZ = 1;
   out.scaleY = 1;
   out.leanX = 0;
+  out.legSwing = 0; // CJ3 — frozen/neutral = straight legs (the L2 capture is unchanged)
   return out;
 }
 
@@ -162,6 +171,13 @@ export function stepGait(
   out.bobY = blend * moveBob + (1 - blend) * idleBob;
   out.scaleXZ = 1 / Math.sqrt(out.scaleY); // VOLUME-PRESERVING (scaleY · scaleXZ² = 1)
   out.leanX = state.lean;
+
+  // CJ3 — the FK leg hip-swing. Reuses THIS SAME walkPhase, so it's synced to the bob with no
+  // second phase: cos(φ) puts the legs at their fore/aft EXTREME exactly at the bob's low (the
+  // footfall / double-support, body lowest) and VERTICAL at the bob's high (mid-stance). Scaled by
+  // `blend` so it crossfades out at idle (still legs at rest). The renderer applies +legSwing to one
+  // leg and −legSwing to the other (opposition). 0 for the animals (legSwingAmplitude 0 → CJ2 same).
+  out.legSwing = blend * profile.legSwingAmplitude * Math.cos(phi);
   return out;
 }
 
