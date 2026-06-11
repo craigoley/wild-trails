@@ -43,7 +43,7 @@ describe('Fish diet — a 4th diet; the catch formula + the match are untouched'
 describe('Fish diet — ⚠️ ZERO re-pins (every shipped diet was already correct)', () => {
   it('the fish-eaters are kingfisher + otter (Riverbank) + herring gull + grey seal (Coast); shipped diets unchanged', () => {
     const fishEaters = SPECIES_ORDER.filter((id) => SPECIES[id].bait === 'fish').sort();
-    expect(fishEaters).toEqual(['greyseal', 'herringgull', 'kingfisher', 'otter']);
+    expect(fishEaters).toEqual(['eel', 'greyseal', 'herringgull', 'kingfisher', 'otter']); // + the §4.2 Cave eel
     // the species fish would be WRONG for keep their correct diets:
     expect(SPECIES.mallard.bait).toBe('greens'); // dabbles for plants — not a fish-diver
     expect(SPECIES.dipper.bait).toBe('insects'); // eats aquatic insect LARVAE — not fish

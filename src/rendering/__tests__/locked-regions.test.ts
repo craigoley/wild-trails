@@ -33,6 +33,7 @@ describe('lockedRegions — the walled-edge set (the bug fix, at the logic seam)
     unlockBiome(w, 'coast'); // §4.2 — and the 6th (Coast)
     unlockBiome(w, 'moor'); // §4.2 — and the 7th (Moor, the 1st branched biome)
     unlockBiome(w, 'pineforest'); // §4.2 — and the 8th (Pine Forest, the closed-woods branch off the Woodland)
+    unlockBiome(w, 'cave'); // §4.2 — and the 9th (Cave, the always-dark branch off the Riverbank)
     expect(walledEdges(w)).toHaveLength(0);
   });
 
@@ -48,8 +49,8 @@ describe('lockedRegions — the walled-edge set (the bug fix, at the logic seam)
 describe('lockedRegions — the dim/fog (locked-biome) set', () => {
   it('shrinks as biomes unlock', () => {
     const w = createWorld();
-    expect([...lockedBiomes(w)].sort()).toEqual(['coast', 'highlands', 'moor', 'pineforest', 'riverbank', 'wetland', 'woodland']);
+    expect([...lockedBiomes(w)].sort()).toEqual(['cave', 'coast', 'highlands', 'moor', 'pineforest', 'riverbank', 'wetland', 'woodland']);
     unlockBiome(w, 'woodland');
-    expect([...lockedBiomes(w)].sort()).toEqual(['coast', 'highlands', 'moor', 'pineforest', 'riverbank', 'wetland']); // Woodland un-fogged
+    expect([...lockedBiomes(w)].sort()).toEqual(['cave', 'coast', 'highlands', 'moor', 'pineforest', 'riverbank', 'wetland']); // Woodland un-fogged
   });
 });

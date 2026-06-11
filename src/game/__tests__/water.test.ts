@@ -125,7 +125,7 @@ describe('W #3 — isInWater + the per-animal inWater flag (the B1 hook)', () =>
 
 describe('W #4 — frog flees TO water; mallard (+ all others) flee straight away', () => {
   it('only the frog + the water vole + the otter have fleesToWater (the water-dive species)', () => {
-    const divers = new Set(['frog', 'watervole', 'otter', 'greyseal']); // + the §4.2 Coast grey seal
+    const divers = new Set(['frog', 'watervole', 'otter', 'greyseal', 'eel']); // + the Coast grey seal + the Cave eel
     for (const id of SPECIES_ORDER) {
       // The dip-net call-back: these three leap/slip INTO the water. Every other species
       // flees straight away (the anti-lockout bound).

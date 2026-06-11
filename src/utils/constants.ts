@@ -81,7 +81,7 @@ export const WORLD = {
 } as const;
 
 /** The biomes in the world. `meadow` is the starting region. */
-export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest';
+export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave';
 
 /** Static definition of one biome: its finite bounds, display name, adjacency
  *  in the world graph, initial unlocked state, and ground tint. */
@@ -125,7 +125,7 @@ function cell(cx: number, cy: number): Rect {
 }
 
 /** Iteration order for the biome graph (deterministic; render + lookup order). */
-export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest'];
+export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave'];
 
 /**
  * The THROUGH-LINE (§4.3 TL1) — the soul layer's first slice. A biome's "thriving" derives from
@@ -215,7 +215,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Riverbank',
     bounds: cell(PITCH, PITCH * 2), // north of the Highlands — [20,60] x [60,100]
     unlocked: false,
-    adjacent: ['highlands', 'coast', 'pineforest'], // §4.2 — the pine forest abuts it to the west
+    adjacent: ['highlands', 'coast', 'pineforest', 'cave'], // §4.2 — the pine forest (W) + the cave (E, the river goes underground)
     tier: 4,
     prereq: 'highlands', // the Highlands set + the R2 wrap precede it; its own gate is research-rabbit-dawn
     color: 0x35756b,
@@ -244,7 +244,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Moor',
     bounds: cell(PITCH * 2, PITCH), // east of the Highlands — [60,100] x [20,60]
     unlocked: false,
-    adjacent: ['highlands'],
+    adjacent: ['highlands', 'cave'], // §4.2 — the cave system abuts the moor to the north
     tier: 4, // a parallel arm off the Highlands (like the Riverbank)
     prereq: 'highlands',
     color: 0x6a4f72, // heather purple
@@ -262,6 +262,21 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     tier: 2, // a parallel arm off the Woodland (like the Wetland)
     prereq: 'woodland',
     color: 0x1b3a2e, // deep boreal needle-green
+  },
+  // §4.2 — CAVE / UNDERGROUND: the always-dark biome. The river vanishes underground into a cave
+  // system, E of the Riverbank [60,100]x[60,100], N of the Moor. ⚠️ The TWIST is DATA: its species use
+  // the EXISTING activityWindow:'any' (active every phase — cave-dwellers ignore the surface cycle);
+  // the cave does NOT touch the clock. DARK via the GROUND COLOUR (a near-black slate) with the lights
+  // UNCHANGED — lit entities POP against it. An underground POOL (#55 water) is the eel's home.
+  cave: {
+    id: 'cave',
+    displayName: 'Cave',
+    bounds: cell(PITCH * 2, PITCH * 2), // east of the Riverbank — [60,100] x [60,100]
+    unlocked: false,
+    adjacent: ['riverbank', 'moor'],
+    tier: 5, // off the Riverbank (like the Coast), the wary/rare cave fauna
+    prereq: 'riverbank',
+    color: 0x141a1e, // near-black cool slate — the always-dark underground
   },
 };
 
@@ -303,6 +318,12 @@ export const ACTIVITY_LABEL: Record<ActivityWindow, string> = {
   dusk: 'Active at dusk',
   night: 'Active at night',
 };
+
+/** §4.2 — the CAVE species are `'any'`-window like the meadow round-the-clock foragers, but for a
+ *  different reason: the cave is ALWAYS dark, a place OUTSIDE the surface cycle. The journal card
+ *  shows this teaching label for cave species (NOT the generic "all day", which would mislead — they
+ *  keep no day or night). Cosmetic display only; the gameplay flag is the same `'any'`. */
+export const CAVE_ACTIVITY_LABEL = 'Active in the dark, round the clock';
 
 /** Display for the HUD time-of-day indicator: a short label + a zero-asset
  *  unicode glyph per phase (so a kid instantly reads "it's dusk"). */
@@ -423,7 +444,13 @@ export type SpeciesId =
   | 'coaltit'
   | 'crestedtit'
   | 'capercaillie'
-  | 'pinemarten';
+  | 'pinemarten'
+  // Cave (§4.2, the always-dark biome — bats + the underground eel; activityWindow:'any').
+  | 'pipistrelle'
+  | 'daubentonbat'
+  | 'longearedbat'
+  | 'horseshoebat'
+  | 'eel';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -524,6 +551,12 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'crestedtit',
   'capercaillie',
   'pinemarten',
+  // Cave (§4.2 — the always-dark biome).
+  'pipistrelle',
+  'daubentonbat',
+  'longearedbat',
+  'horseshoebat',
+  'eel',
 ];
 
 /**
@@ -790,6 +823,44 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'Lithe and chestnut-brown with a cream throat-bib, it dens in old trees and is an agile climber; berries are a real staple of its varied diet.',
     status: 'A genuine recovery — protected at last, the pine marten is spreading back through the forests after a century of persecution.',
+  },
+  // Cave (§4.2) — the always-dark biome; HONEST status, the real underground stakes. In the cave's
+  // endless dark these creatures keep no surface hours — they are abroad at any time (a place OUTSIDE
+  // the day's cycle).
+  pipistrelle: {
+    fieldNote:
+      'A tiny bat of the cave roosts — the pipistrelle flits after midges and gnats in the dark, at any hour. The endless underground night keeps it on no surface clock.',
+    behaviour:
+      'Small enough to fit in a matchbox, it hunts on fast, jerky wingbeats, catching hundreds of insects an hour by echolocation — a stream of clicks too high for us to hear.',
+    status: 'Doing well — the common pipistrelle is our most numerous bat, at home in caves, roofs and trees alike.',
+  },
+  daubentonbat: {
+    fieldNote:
+      'The water bat — Daubenton’s bat trawls insects from just above the underground pool, scooping them off the surface with its feet and tail. Abroad at any hour in the dark.',
+    behaviour:
+      'It skims low and level over still water like a tiny hovercraft, gaffing mayflies and midges off the surface; it roosts in caves and under bridges.',
+    status: 'Stable and widespread — Daubenton’s bat does well wherever clean water and roost caves meet.',
+  },
+  longearedbat: {
+    fieldNote:
+      'The whispering bat — the brown long-eared bat gleans moths and insects straight off the cave walls and leaves, its enormous ears drinking the faintest sound. Active any hour.',
+    behaviour:
+      'Its ears are nearly as long as its body (curled away at rest); it flies slow and hovering, listening for the rustle of prey rather than shouting echolocation.',
+    status: 'Widespread but sensitive — the long-eared bat needs undisturbed roosts, and it suffers where old caves and buildings are lost.',
+  },
+  horseshoebat: {
+    fieldNote:
+      'The hanging sentinel — the greater horseshoe bat roosts wrapped in its wings in the deep cave, hawking beetles and moths in the dark. It keeps no day or night.',
+    behaviour:
+      'It echolocates through its strange horseshoe-shaped nose-leaf and hangs in the open (not crammed in crevices); a few warm caves hold almost the whole population.',
+    status: '⚠️ Rare and strictly protected — the greater horseshoe has lost most of its British range, hanging on in a handful of southwestern caves. A real stake.',
+  },
+  eel: {
+    fieldNote:
+      'A mystery of the dark water — the European eel hunts the underground pool for small fish and creatures at any hour, a serpentine shadow in the black.',
+    behaviour:
+      'Born in the far-off Sargasso Sea, it drifts thousands of miles to our rivers and caves, then one day slips back across the whole Atlantic to spawn and die — no one has ever seen it breed.',
+    status: '⚠️ Critically endangered — the European eel has crashed by over 90%, and its long secret journey makes it desperately hard to protect.',
   },
 };
 
@@ -1446,6 +1517,100 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     profile:
       'A lithe, cat-sized climber of the pines, chestnut-brown with a cream throat-bib — berries are a real staple of its varied diet. A genuine recovery, spreading back at last.',
   },
+  // --- Cave (§4.2) — the always-dark biome; 4 bats (insects) + the underground eel (fish). ---
+  // ⚠️ THE TWIST IS DATA: every cave species is activityWindow:'any' (active at EVERY phase — the
+  // existing mouse/rabbit flag; cave-dwellers ignore the surface cycle). The cave does NOT touch the
+  // clock — a cave catch carries the REAL surface phase (no trivialization). Gaits: bats = bird, eel = walk.
+  pipistrelle: {
+    id: 'pipistrelle',
+    gait: 'bird',
+    displayName: 'Common Pipistrelle',
+    biome: 'cave',
+    // The Cave VALVE (0.5): a tiny, common bat — catchable bait-less (anti-lockout).
+    spawnWeight: 6,
+    baseFleeSpeed: 3.2,
+    detectionRadius: 2.8,
+    activityWindow: 'any', // ⚠️ the twist — always active in the endless dark
+    tier: 5,
+    baseCatchRate: 0.5,
+    bait: 'insects',
+    color: 0x4a3a2e,
+    size: 0.22,
+    profile:
+      'Our smallest, commonest bat — it flits after midges on fast jerky wingbeats, catching hundreds an hour by echolocation. In the cave’s dark it keeps no surface hours.',
+  },
+  daubentonbat: {
+    id: 'daubentonbat',
+    gait: 'bird',
+    displayName: 'Daubenton’s Bat',
+    biome: 'cave',
+    spawnWeight: 5,
+    baseFleeSpeed: 3.4,
+    detectionRadius: 3.0,
+    activityWindow: 'any',
+    tier: 5,
+    baseCatchRate: 0.42,
+    bait: 'insects',
+    color: 0x6a5a48,
+    size: 0.24,
+    profile:
+      'The “water bat” — it skims low over the underground pool like a tiny hovercraft, gaffing insects off the surface with its feet and tail. Abroad at any hour in the dark.',
+  },
+  longearedbat: {
+    id: 'longearedbat',
+    gait: 'bird',
+    displayName: 'Brown Long-eared Bat',
+    biome: 'cave',
+    spawnWeight: 4,
+    baseFleeSpeed: 3.2,
+    detectionRadius: 3.2,
+    activityWindow: 'any',
+    tier: 5,
+    baseCatchRate: 0.36,
+    bait: 'insects',
+    color: 0x7a6a55,
+    size: 0.26,
+    profile:
+      'The “whispering bat” — its ears are nearly as long as its body, drinking the faintest rustle as it gleans moths straight off the cave walls. Sensitive to any disturbance.',
+  },
+  horseshoebat: {
+    id: 'horseshoebat',
+    gait: 'bird',
+    displayName: 'Greater Horseshoe Bat',
+    biome: 'cave',
+    // A HERO — hard (0.24): rare, strictly protected.
+    spawnWeight: 3,
+    baseFleeSpeed: 3.6,
+    detectionRadius: 3.6,
+    activityWindow: 'any',
+    tier: 5,
+    baseCatchRate: 0.24,
+    bait: 'insects',
+    color: 0x8a7560,
+    size: 0.3,
+    profile:
+      'A big bat that hangs wrapped in its wings in the deep cave, echolocating through a strange horseshoe-shaped nose. ⚠️ Rare and strictly protected — a few caves hold almost all of them.',
+  },
+  eel: {
+    id: 'eel',
+    gait: 'walk',
+    displayName: 'European Eel',
+    biome: 'cave',
+    // The Cave APEX (0.16): a serpentine hunter of the dark pool — the 2nd hero.
+    spawnWeight: 2,
+    baseFleeSpeed: 3.8,
+    detectionRadius: 3.8,
+    activityWindow: 'any',
+    tier: 5,
+    baseCatchRate: 0.16,
+    bait: 'fish',
+    color: 0x2e3a30,
+    size: 0.42,
+    profile:
+      'A serpentine shadow of the dark pool, born in the far Sargasso Sea and drifting thousands of miles to get here. ⚠️ Critically endangered — crashed by over 90%, and almost impossible to study.',
+    // §55 reuse: the eel slips INTO the underground pool to escape — the dip-net's cave moment.
+    fleesToWater: true,
+  },
 };
 
 // ===========================================================================
@@ -1568,6 +1733,10 @@ export const HIDING_SPOTS: readonly HidingSpotDef[] = [
   // SEPARATE visual scatter (atmosphere); the cover is the usual LOW spots, so the stealth is unchanged.
   { biome: 'pineforest', x: -10, y: 72, radius: 2.2, kind: 'ferns' },
   { biome: 'pineforest', x: 10, y: 90, radius: 2.0, kind: 'ferns' },
+  // Cave (§4.2) — rocks read as stalagmites/boulders in the dark (reuses the highlands 'rocks' kind);
+  // grey rock on the near-black ground reads cave + keeps good contrast. Clear of the NE pool.
+  { biome: 'cave', x: 72, y: 74, radius: 2.2, kind: 'rocks' },
+  { biome: 'cave', x: 78, y: 92, radius: 2.0, kind: 'rocks' },
 ];
 
 /** The portable HIDE (Nets & Gear slice C) — naturalist gear you DEPLOY at your
@@ -1613,6 +1782,9 @@ export const WATER: readonly WaterDef[] = [
   { biome: 'coast', x: 28, y: 132, radius: 9 },
   { biome: 'coast', x: 40, y: 132, radius: 9 },
   { biome: 'coast', x: 52, y: 132, radius: 9 },
+  // Cave (§4.2) — an underground POOL (the eel's home; reuses the #55 disc verbatim — barrier/slide/
+  // flee). Tucked in the cell's NE so the SW stays dry to roam; the eel flees INTO it (fleesToWater).
+  { biome: 'cave', x: 88, y: 90, radius: 5 },
 ];
 
 /** Frog flee-to-water steering (slice W): how strongly a fleeing frog's heading is
@@ -1727,6 +1899,7 @@ export const SUPPLY_POSTS: readonly SupplyPostDef[] = [
   { biome: 'coast', x: 40, y: 106, radius: 2.5 }, // on the beach, clear of the sea + the marram
   { biome: 'moor', x: 80, y: 28, radius: 2.5 }, // on the open heather, clear of the grass tussocks
   { biome: 'pineforest', x: 0, y: 72, radius: 2.5 }, // in a forest clearing, clear of the bracken
+  { biome: 'cave', x: 70, y: 84, radius: 2.5 }, // a dry cavern floor, clear of the pool + the stalagmites
 ];
 
 /** Closing the Field Supply steps the player OUT the door (−y), this far PAST the
@@ -2522,6 +2695,40 @@ export const SPECIES_MODEL: Record<
     tailLengthR: 1.2,
     tailRadiusR: 0.2,
   },
+  // Cave (§4.2) — four bats (the BIRD build, dark; the long-eared bat's tall ears via the crest) +
+  // the eel (the low MOUSE build, like the otter — a long serpentine body + a long tail, no real ears).
+  pipistrelle: {
+    kind: 'bird',
+    accent: 0x2e2620, // dark membrane wings
+    beakLengthR: 0.2,
+    crestHeightR: 0.12,
+  },
+  daubentonbat: {
+    kind: 'bird',
+    accent: 0xc8bca8, // pale belly (the water bat)
+    beakLengthR: 0.2,
+    crestHeightR: 0.12,
+  },
+  longearedbat: {
+    kind: 'bird',
+    accent: 0x3a3026,
+    beakLengthR: 0.2,
+    crestHeightR: 0.7, // the enormous ears (read as a tall crest)
+  },
+  horseshoebat: {
+    kind: 'bird',
+    accent: 0x5a4a3a,
+    beakLengthR: 0.2,
+    crestHeightR: 0.2,
+  },
+  eel: {
+    kind: 'mouse',
+    accent: 0x9aa890, // pale underside
+    earHeightR: 0.08, // ~no ears — a smooth serpentine head
+    earRadiusR: 0.08,
+    tailLengthR: 1.6, // a long serpentine tail-body
+    tailRadiusR: 0.22,
+  },
 } as const;
 
 // ===========================================================================
@@ -2613,6 +2820,8 @@ export const MISSION_ORDER: readonly string[] = [
   'research-ptarmigan-greens',
   // §4.2 — the PINE FOREST's by-PLAY mastery gate (a 2nd branch off the Woodland, the closed-woods biome).
   'research-squirrel-seeds',
+  // §4.2 — the CAVE's by-PLAY mastery gate (the always-dark biome; a species+bait challenge, no phase).
+  'research-dipper-insects',
 ];
 
 /**
@@ -2868,6 +3077,23 @@ export const MISSIONS: Record<string, MissionDef> = {
     standalone: true,
     hint: 'Not quite — set out SEED bait for the russet woodland climber, the cones and nuts it truly hoards.',
   },
+  // §4.2 — the CAVE's multi-condition mastery gate (the #92 unblock). ⚠️ SPECIES + BAIT, NEVER phase
+  // (the cave's "always dark" must never appear to interact with a phase requirement). The ACTIVITY is
+  // in the prereq RIVERBANK → the #37 breadcrumb, never a wall. NON-FORCED via BAIT: the dipper is
+  // catchable bait-less, so requiring its REAL diet (insects — it prises caddis larvae from the bed)
+  // is a deliberate field-craft choice (#48 inverse). The unlock-the-cave project wraps it (R2).
+  'research-dipper-insects': {
+    id: 'research-dipper-insects',
+    biome: 'riverbank',
+    title: 'Research: The Underwater Walker',
+    description:
+      'A plump white-bibbed bird of fast rivers that walks UNDERWATER for its food by day. Identify it from your field guide, then prove you know its table: catch one over INSECT bait.',
+    requirement: { kind: 'research', species: 'dipper', bait: 'insects', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not quite — set out INSECT bait for the river’s underwater walker, the caddis larvae it truly takes.',
+  },
 };
 
 /** Completing ALL of a biome's missions unlocks the mapped biome (lateral reward
@@ -2880,7 +3106,7 @@ export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, readonly BiomeId[]>> = {
   woodland: ['wetland', 'pineforest'], // §4.2 — the BRANCH: the Woodland set unlocks BOTH (pine is research-gated)
   wetland: ['highlands'],
   highlands: ['riverbank', 'moor'], // §4.2 — the 1st BRANCH: the Highlands set unlocks BOTH
-  riverbank: ['coast'], // §4.2 — the Riverbank precedes the Coast gate (the river meets the sea)
+  riverbank: ['coast', 'cave'], // §4.2 — the Riverbank forks: the sea (Coast) AND underground (Cave)
 };
 
 /** §4.1c ESCALATING knowledge gates: in ADDITION to the catch-set, a biome's unlock
@@ -3099,6 +3325,21 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     knowledgeRequirement: 'research-squirrel-seeds', // by PLAY only — the non-forced multi-condition catch
     reward: { kind: 'biome-access', biome: 'pineforest' },
   },
+  // §4.2 — CAVE access (R2's pattern), a 2nd arm off the RIVERBANK set (BIOME_SET_UNLOCK.riverbank
+  // forks to BOTH the Coast AND the Cave — the river goes underground). cost 0 (the Cave species are
+  // win-required → zero wall risk). knowledgeRequirement = research-dipper-insects, a NON-FORCED
+  // SPECIES+BAIT mastery challenge (#92, no phase) — double-enforced with isUnlockGateMet. The activity
+  // is riverbank study (you're there by now).
+  'unlock-the-cave': {
+    id: 'unlock-the-cave',
+    area: 'cave',
+    name: 'Cave Access',
+    blurb: 'Follow the river to where it vanishes underground, learn the dipper’s table, and the cave opens.',
+    cost: 0,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'riverbank', count: 4 },
+    knowledgeRequirement: 'research-dipper-insects', // by PLAY only — the non-forced species+bait catch
+    reward: { kind: 'biome-access', biome: 'cave' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
@@ -3113,6 +3354,7 @@ export const RESEARCH_ORDER: readonly string[] = [
   'unlock-the-coast',
   'unlock-the-moor', // §4.2 — the 1st BRANCHED biome (off the Highlands set, beside the Riverbank)
   'unlock-the-pineforest', // §4.2 — the closed-woods biome (a 2nd arm off the Woodland set)
+  'unlock-the-cave', // §4.2 — the always-dark biome (a 2nd arm off the Riverbank set)
 ];
 
 // ===========================================================================

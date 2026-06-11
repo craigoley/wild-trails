@@ -138,6 +138,18 @@ export function completePineforestGate(j: Journal): void {
   reconcileResearchUnlocks(j);
 }
 
+/**
+ * §4.2 — unlock the CAVE (the always-dark biome: the Riverbank set forks to BOTH the Coast AND the
+ * Cave). Gated on a NON-FORCED SPECIES+BAIT mastery challenge by play (research-dipper-insects — a
+ * dipper over INSECT bait, its real diet; NO phase) + the riverbank activity. cost 0 (anti-wall).
+ */
+export function completeCaveGate(j: Journal): void {
+  applyCatch(j, { species: 'dipper', biome: 'riverbank', phase: 'day', bait: 'insects' } as CatchEvent);
+  startResearch(j, 'unlock-the-cave');
+  for (let i = 0; i < 4; i++) evaluateResearch(j, ev('reedbunting', 'riverbank', 'day')); // catch-in-riverbank ×4
+  reconcileResearchUnlocks(j);
+}
+
 /** Catch the remaining roster (rabbit + the alpine three + the Riverbank four + the Coast five +
  *  the Moor five) so the dex fills for the win. rabbit@night doubles as the second night-forager
  *  challenge. */
@@ -173,4 +185,10 @@ export function catchRemainingSpecies(j: Journal): void {
   applyCatch(j, ev('crestedtit', 'pineforest', 'day'));
   applyCatch(j, ev('capercaillie', 'pineforest', 'day'));
   applyCatch(j, ev('pinemarten', 'pineforest', 'day'));
+  // §4.2 — the Cave roster (always-dark 'any'-window species; the pipistrelle is the bait-less valve).
+  applyCatch(j, ev('pipistrelle', 'cave', 'day'));
+  applyCatch(j, ev('daubentonbat', 'cave', 'day'));
+  applyCatch(j, ev('longearedbat', 'cave', 'day'));
+  applyCatch(j, ev('horseshoebat', 'cave', 'day'));
+  applyCatch(j, ev('eel', 'cave', 'day'));
 }
