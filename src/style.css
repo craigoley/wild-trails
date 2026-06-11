@@ -1036,12 +1036,14 @@ body.modal-open .touch-stick-thumb {
   text-transform: uppercase;
   color: rgba(180, 230, 190, 0.7);
 }
-/* Status reads HOPEFUL — a warm, living green, never a grim warning. */
+/* §4.3 census reframe — status reads in calm PARCHMENT (field-notebook ink), neither hopeful-green
+ * nor grim-red. Neutral lets the honest fact stand on its own: "Declining" reads honestly-concerning,
+ * "recovering" honestly-hopeful — the SENTENCE carries the weight, not the colour. */
 .card-status {
-  color: rgba(174, 255, 196, 0.85);
+  color: rgba(236, 224, 198, 0.9);
 }
 .card-status .card-label {
-  color: rgba(109, 255, 155, 0.6);
+  color: rgba(230, 210, 165, 0.7);
 }
 .card-meta {
   margin-top: 6px;
