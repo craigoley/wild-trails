@@ -81,7 +81,7 @@ export const WORLD = {
 } as const;
 
 /** The biomes in the world. `meadow` is the starting region. */
-export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor';
+export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest';
 
 /** Static definition of one biome: its finite bounds, display name, adjacency
  *  in the world graph, initial unlocked state, and ground tint. */
@@ -125,7 +125,7 @@ function cell(cx: number, cy: number): Rect {
 }
 
 /** Iteration order for the biome graph (deterministic; render + lookup order). */
-export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor'];
+export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest'];
 
 /**
  * The THROUGH-LINE (§4.3 TL1) — the soul layer's first slice. A biome's "thriving" derives from
@@ -178,7 +178,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Woodland',
     bounds: cell(0, PITCH),
     unlocked: false,
-    adjacent: ['meadow', 'highlands'],
+    adjacent: ['meadow', 'highlands', 'pineforest'], // §4.2 — the BRANCH: forks N into the pine forest
     tier: 1,
     prereq: 'meadow', // the Meadow set unlocks the Woodland (gentle gate)
     color: 0x244f2c,
@@ -215,7 +215,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Riverbank',
     bounds: cell(PITCH, PITCH * 2), // north of the Highlands — [20,60] x [60,100]
     unlocked: false,
-    adjacent: ['highlands', 'coast'],
+    adjacent: ['highlands', 'coast', 'pineforest'], // §4.2 — the pine forest abuts it to the west
     tier: 4,
     prereq: 'highlands', // the Highlands set + the R2 wrap precede it; its own gate is research-rabbit-dawn
     color: 0x35756b,
@@ -248,6 +248,20 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     tier: 4, // a parallel arm off the Highlands (like the Riverbank)
     prereq: 'highlands',
     color: 0x6a4f72, // heather purple
+  },
+  // §4.2 — PINE FOREST / BOREAL: the 1st CLOSED/dense biome (everything else is open ground) + the
+  // 1st TALL geometry (an instanced pine scatter). A 2nd arm off the Woodland (the broadleaf wood
+  // deepens into the old Caledonian pine forest), NW at [-20,20]x[60,100] — edge-adjacent to the
+  // Woodland (S) and the Riverbank (E). Gated by the Woodland set + a multi-condition challenge.
+  pineforest: {
+    id: 'pineforest',
+    displayName: 'Pine Forest',
+    bounds: cell(0, PITCH * 2), // north of the Woodland — [-20,20] x [60,100]
+    unlocked: false,
+    adjacent: ['woodland', 'riverbank'],
+    tier: 2, // a parallel arm off the Woodland (like the Wetland)
+    prereq: 'woodland',
+    color: 0x1b3a2e, // deep boreal needle-green
   },
 };
 
@@ -403,7 +417,13 @@ export type SpeciesId =
   | 'stonechat'
   | 'redgrouse'
   | 'curlew'
-  | 'reddeer';
+  | 'reddeer'
+  // Pine Forest (§4.2, the 1st CLOSED/dense biome — Caledonian pinewood; the conservation stakes).
+  | 'crossbill'
+  | 'coaltit'
+  | 'crestedtit'
+  | 'capercaillie'
+  | 'pinemarten';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -498,6 +518,12 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'redgrouse',
   'curlew',
   'reddeer',
+  // Pine Forest (§4.2 — the 1st closed/dense biome).
+  'crossbill',
+  'coaltit',
+  'crestedtit',
+  'capercaillie',
+  'pinemarten',
 ];
 
 /**
@@ -728,6 +754,42 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'It moves in wary herds and freezes at the faintest scent before flowing away over the slope; the autumn stag roars across the glen and carries great branching antlers.',
     status: 'A success with caveats — red deer have recovered so well that in places there are now too many for the hill to bear.',
+  },
+  // Pine Forest (§4.2) — the Caledonian pinewood; HONEST status, the real boreal-forest stakes.
+  crossbill: {
+    fieldNote:
+      'A chunky finch of the pine tops — the crossbill prises seeds from conifer cones by day with its crossed bill. Listen for the “chip-chip” of a feeding flock overhead.',
+    behaviour:
+      'Its uniquely crossed mandibles lever the cone scales apart; the male is brick-red, the female olive-green, and they wander the forest wherever the cones are ripe.',
+    status: 'The Scottish crossbill is Britain’s ONLY endemic bird — found nowhere else on Earth, tied entirely to the old pinewoods.',
+  },
+  coaltit: {
+    fieldNote:
+      'A tiny restless tit of the conifers — the coal tit takes seeds and insects from the pine needles by day, often hanging upside-down at the twig-tips.',
+    behaviour:
+      'The smallest of our tits, with a black cap and a white nape-patch; it hoards seeds in bark crevices and flits ceaselessly through the canopy.',
+    status: 'Doing well — the coal tit is a common, adaptable bird at home in conifer woods across the country.',
+  },
+  crestedtit: {
+    fieldNote:
+      'A pinewood specialist — the crested tit gleans insects and spiders from the old pines by day, working the trunks and the mossy boughs.',
+    behaviour:
+      'It wears a small speckled crest and trills a soft purring call; it nests in rotten pine stumps, so it needs old, untidy forest to thrive.',
+    status: 'Restricted and special — in Britain the crested tit lives ONLY in the Caledonian pinewoods of the Scottish Highlands.',
+  },
+  capercaillie: {
+    fieldNote:
+      'The giant of the forest — the capercaillie crops pine shoots and blaeberry on the woodland floor by day. A turkey-sized grouse, the soul of the old pinewood.',
+    behaviour:
+      'The huge black male fans his tail and gurgles a strange clicking song at his spring lek; he can burst up through the canopy on thunderous wings.',
+    status: '⚠️ On the brink in Scotland — fewer than a thousand birds remain, and the capercaillie could be lost from Britain a second time. The pinewood’s biggest stake.',
+  },
+  pinemarten: {
+    fieldNote:
+      'A cat-sized climber of the pines — the pine marten hunts through the canopy and takes berries from the forest floor by day. Look for it bounding between the trunks.',
+    behaviour:
+      'Lithe and chestnut-brown with a cream throat-bib, it dens in old trees and is an agile climber; berries are a real staple of its varied diet.',
+    status: 'A genuine recovery — protected at last, the pine marten is spreading back through the forests after a century of persecution.',
   },
 };
 
@@ -1293,6 +1355,97 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     profile:
       'The monarch of the moor, grazing the open hill in wary herds and flowing away at the faintest scent. The autumn stag roars across the glen under great branching antlers.',
   },
+  // --- Pine Forest (§4.2) — the 1st CLOSED/dense biome; Caledonian pinewood, the conservation stakes. ---
+  // A dry forest → NO water. The dense PINES are VISUAL atmosphere (not cover, not collision); cover is
+  // the usual low spots. CJ2 gaits by tag: four BIRDs + the marten's WALK. Catch-band 0.18–0.55.
+  crossbill: {
+    id: 'crossbill',
+    gait: 'bird',
+    displayName: 'Scottish Crossbill',
+    biome: 'pineforest',
+    // The Pine VALVE (0.55): a calm seed-eater of the cones — catchable bait-less (anti-lockout).
+    spawnWeight: 6,
+    baseFleeSpeed: 2.8,
+    detectionRadius: 2.6,
+    activityWindow: 'day',
+    tier: 2,
+    baseCatchRate: 0.55,
+    bait: 'seeds',
+    color: 0xb5432e, // the brick-red male
+    size: 0.3,
+    profile:
+      'A chunky finch that levers conifer seeds from cones with its uniquely crossed bill. Britain’s ONLY endemic bird — the Scottish crossbill lives nowhere else on Earth.',
+  },
+  coaltit: {
+    id: 'coaltit',
+    gait: 'bird',
+    displayName: 'Coal Tit',
+    biome: 'pineforest',
+    spawnWeight: 6,
+    baseFleeSpeed: 3.2,
+    detectionRadius: 2.8,
+    activityWindow: 'day',
+    tier: 2,
+    baseCatchRate: 0.5,
+    bait: 'seeds',
+    color: 0x5a5048, // dark cap, buff body
+    size: 0.24,
+    profile:
+      'The smallest of our tits — a restless conifer specialist with a black cap and a white nape-patch, hoarding seeds in the bark. Common and at home across our pinewoods.',
+  },
+  crestedtit: {
+    id: 'crestedtit',
+    gait: 'bird',
+    displayName: 'Crested Tit',
+    biome: 'pineforest',
+    spawnWeight: 5,
+    baseFleeSpeed: 3.4,
+    detectionRadius: 3.0,
+    activityWindow: 'day',
+    tier: 2,
+    baseCatchRate: 0.42,
+    bait: 'insects',
+    color: 0x8a7a5a,
+    size: 0.25,
+    profile:
+      'A pinewood specialist with a small speckled crest, gleaning insects from the old pines and nesting in rotten stumps. In Britain it lives ONLY in the Caledonian forest.',
+  },
+  capercaillie: {
+    id: 'capercaillie',
+    gait: 'bird',
+    displayName: 'Capercaillie',
+    biome: 'pineforest',
+    // The hero — hard (0.24): a huge wary grouse, the soul of the pinewood.
+    spawnWeight: 3,
+    baseFleeSpeed: 3.8,
+    detectionRadius: 3.8,
+    activityWindow: 'day',
+    tier: 3,
+    baseCatchRate: 0.24,
+    bait: 'greens',
+    color: 0x2c2c33, // the great black male
+    size: 0.52,
+    profile:
+      'A turkey-sized grouse that crops pine shoots and blaeberry on the forest floor. ⚠️ On the brink in Scotland — fewer than a thousand remain; it could be lost a second time.',
+  },
+  pinemarten: {
+    id: 'pinemarten',
+    gait: 'walk',
+    displayName: 'Pine Marten',
+    biome: 'pineforest',
+    // The Pine APEX (0.18): a wary, agile climber — berries lure it down to the floor.
+    spawnWeight: 2,
+    baseFleeSpeed: 4.6,
+    detectionRadius: 4.4,
+    activityWindow: 'day',
+    tier: 3,
+    baseCatchRate: 0.18,
+    bait: 'greens', // berries are a real staple of its diet
+    color: 0x6a4427, // chestnut-brown, cream bib
+    size: 0.46,
+    profile:
+      'A lithe, cat-sized climber of the pines, chestnut-brown with a cream throat-bib — berries are a real staple of its varied diet. A genuine recovery, spreading back at last.',
+  },
 };
 
 // ===========================================================================
@@ -1411,6 +1564,10 @@ export const HIDING_SPOTS: readonly HidingSpotDef[] = [
   // on the moor) and DRY (no water — no dip-net here). Reuses the meadow grass render.
   { biome: 'moor', x: 72, y: 34, radius: 2.2, kind: 'grass' },
   { biome: 'moor', x: 90, y: 48, radius: 2.0, kind: 'grass' },
+  // Pine Forest (§4.2) — forest-floor bracken (reuses the woodland fern render). The TALL pines are a
+  // SEPARATE visual scatter (atmosphere); the cover is the usual LOW spots, so the stealth is unchanged.
+  { biome: 'pineforest', x: -10, y: 72, radius: 2.2, kind: 'ferns' },
+  { biome: 'pineforest', x: 10, y: 90, radius: 2.0, kind: 'ferns' },
 ];
 
 /** The portable HIDE (Nets & Gear slice C) — naturalist gear you DEPLOY at your
@@ -1522,6 +1679,34 @@ export const ROCK_RENDER = {
   color: 0x8a8f97,
 } as const;
 
+/**
+ * §4.2 PINE FOREST — the dense-canopy SCATTER (the 1st tall geometry). A biome-wide grove of
+ * zero-asset procedural pines (a thin trunk cylinder + a conical canopy), placed on a deterministic
+ * jittered grid (no RNG → L2-stable), built ONCE as two INSTANCED meshes (~2 draw calls for the whole
+ * forest). ⚠️ VISUAL ATMOSPHERE ONLY — NOT cover, NOT collision; the sim never sees the trees.
+ * Legibility: entities draw OVER the trees (ENTITY_RENDER_ORDER), so a pine can never hide a catch.
+ */
+export const PINE_RENDER = {
+  /** Candidate grid resolution across the cell (gridN² candidates, minus the clearing → ~trees). */
+  gridN: 8,
+  /** Per-candidate positional jitter as a fraction of a grid cell (deterministic hash, not RNG). */
+  jitter: 0.42,
+  /** A CLEARING at the cell centre (radius, world units) kept tree-free — the play space + the supply
+   *  post sit here; density rises toward the edges (the trees FRAME, never COVER, the gameplay). */
+  clearingRadius: 6.0,
+  /** MODEST height band (world units) — ~1.5–2× the ~1.1u player: a canopy band ABOVE the entities,
+   *  a *suggestion* of density, not photoreal 15 m conifers (which would bury the play). */
+  minHeight: 1.6,
+  maxHeight: 2.4,
+  /** Trunk: a thin cylinder; height is this fraction of the total, the canopy takes the rest. */
+  trunkRadius: 0.08,
+  trunkFraction: 0.32,
+  trunkColor: 0x4a3525, // bark brown
+  /** Canopy: a single tall cone (the conifer silhouette), this fraction of the trunk-top radius. */
+  canopyRadius: 0.62,
+  canopyColor: 0x223f2c, // deep needle-green (a touch lighter than the ground so it reads)
+} as const;
+
 /** A Field Supply post — a walk-in building (§12 1b-revise). One per biome; it only
  *  exists (renders + opens) once the biome is unlocked. Walking into `radius`
  *  (a proximity zone, NOT a wall — no collision) opens the Field Supply panel. */
@@ -1541,6 +1726,7 @@ export const SUPPLY_POSTS: readonly SupplyPostDef[] = [
   { biome: 'riverbank', x: 52, y: 66, radius: 2.5 }, // clear of the river band + the reeds
   { biome: 'coast', x: 40, y: 106, radius: 2.5 }, // on the beach, clear of the sea + the marram
   { biome: 'moor', x: 80, y: 28, radius: 2.5 }, // on the open heather, clear of the grass tussocks
+  { biome: 'pineforest', x: 0, y: 72, radius: 2.5 }, // in a forest clearing, clear of the bracken
 ];
 
 /** Closing the Field Supply steps the player OUT the door (−y), this far PAST the
@@ -2302,6 +2488,40 @@ export const SPECIES_MODEL: Record<
     earRadiusR: 0.16,
     tailRadiusR: 0.16,
   },
+  // Pine Forest (§4.2) — four pinewood BIRDs (the crested tit's signature crest) + the pine marten
+  // (the low MOUSE build, like the otter — long body + a long bushy tail; the agile climber's read).
+  crossbill: {
+    kind: 'bird',
+    accent: 0xe0d2a8, // pale underparts
+    beakLengthR: 0.35,
+    crestHeightR: 0.15,
+  },
+  coaltit: {
+    kind: 'bird',
+    accent: 0xf0f0ee, // the white nape-patch
+    beakLengthR: 0.3,
+    crestHeightR: 0.1,
+  },
+  crestedtit: {
+    kind: 'bird',
+    accent: 0xece4d4,
+    beakLengthR: 0.3,
+    crestHeightR: 0.55, // the signature crest
+  },
+  capercaillie: {
+    kind: 'bird',
+    accent: 0x6a3a2a, // rufous wing / red brow-wattle
+    beakLengthR: 0.35,
+    crestHeightR: 0.2,
+  },
+  pinemarten: {
+    kind: 'mouse',
+    accent: 0xe8d8b0, // the cream throat-bib
+    earHeightR: 0.3,
+    earRadiusR: 0.16,
+    tailLengthR: 1.2,
+    tailRadiusR: 0.2,
+  },
 } as const;
 
 // ===========================================================================
@@ -2391,6 +2611,8 @@ export const MISSION_ORDER: readonly string[] = [
   'research-otter-fish',
   // §4.2 — the MOOR's by-PLAY mastery gate (the 1st BRANCHED biome's multi-condition challenge).
   'research-ptarmigan-greens',
+  // §4.2 — the PINE FOREST's by-PLAY mastery gate (a 2nd branch off the Woodland, the closed-woods biome).
+  'research-squirrel-seeds',
 ];
 
 /**
@@ -2628,6 +2850,24 @@ export const MISSIONS: Record<string, MissionDef> = {
     standalone: true,
     hint: 'Not quite — set out GREENS bait for the high-tops grazer, the heather shoots it truly crops.',
   },
+  // §4.2 — the PINE FOREST's multi-condition mastery gate (the #92 unblock). The ACTIVITY is in the
+  // WOODLAND (the prereq, an already-accessed biome) → the #37 breadcrumb, never a wall. NON-FORCED via
+  // BAIT: the red squirrel is catchable bait-less in normal play, so requiring its REAL diet (seeds —
+  // it hoards cones and nuts) is a deliberate field-craft choice that teaches the squirrel's table
+  // (#48 inverse: normal Woodland play never forces a seed-baited squirrel). A 2-condition challenge
+  // (species + bait); the unlock-the-pineforest project wraps it (R2), double-enforced by isUnlockGateMet.
+  'research-squirrel-seeds': {
+    id: 'research-squirrel-seeds',
+    biome: 'woodland',
+    title: 'Research: The Cone-Hoarder',
+    description:
+      'A russet climber of the woods, hoarding seeds and cones by day. Identify it from your field guide, then prove you know its table: catch one over SEED bait.',
+    requirement: { kind: 'research', species: 'redsquirrel', bait: 'seeds', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not quite — set out SEED bait for the russet woodland climber, the cones and nuts it truly hoards.',
+  },
 };
 
 /** Completing ALL of a biome's missions unlocks the mapped biome (lateral reward
@@ -2637,7 +2877,7 @@ export const MISSIONS: Record<string, MissionDef> = {
 // BOTH the Riverbank and the Moor. Every consumer iterates the array.
 export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, readonly BiomeId[]>> = {
   meadow: ['woodland'],
-  woodland: ['wetland'],
+  woodland: ['wetland', 'pineforest'], // §4.2 — the BRANCH: the Woodland set unlocks BOTH (pine is research-gated)
   wetland: ['highlands'],
   highlands: ['riverbank', 'moor'], // §4.2 — the 1st BRANCH: the Highlands set unlocks BOTH
   riverbank: ['coast'], // §4.2 — the Riverbank precedes the Coast gate (the river meets the sea)
@@ -2844,6 +3084,21 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     knowledgeRequirement: 'research-ptarmigan-greens', // by PLAY only — the non-forced multi-condition catch
     reward: { kind: 'biome-access', biome: 'moor' },
   },
+  // §4.2 — PINE FOREST access (R2's pattern), a 2nd arm off the WOODLAND set (BIOME_SET_UNLOCK.woodland
+  // forks to BOTH the Wetland AND the Pine Forest). cost 0 (the Pine species are win-required → zero
+  // wall risk). knowledgeRequirement = research-squirrel-seeds, a NON-FORCED multi-condition mastery
+  // challenge (#92) — double-enforced with the isUnlockGateMet re-check (the Woodland set). The
+  // activity is woodland study (you're there early, having branched off the broadleaf wood).
+  'unlock-the-pineforest': {
+    id: 'unlock-the-pineforest',
+    area: 'pineforest',
+    name: 'Pine Forest Access',
+    blurb: 'Press deeper than the broadleaf wood, learn the squirrel’s table, and the old pine forest opens.',
+    cost: 0,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'woodland', count: 4 },
+    knowledgeRequirement: 'research-squirrel-seeds', // by PLAY only — the non-forced multi-condition catch
+    reward: { kind: 'biome-access', biome: 'pineforest' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
@@ -2857,6 +3112,7 @@ export const RESEARCH_ORDER: readonly string[] = [
   'study-aquatic-life',
   'unlock-the-coast',
   'unlock-the-moor', // §4.2 — the 1st BRANCHED biome (off the Highlands set, beside the Riverbank)
+  'unlock-the-pineforest', // §4.2 — the closed-woods biome (a 2nd arm off the Woodland set)
 ];
 
 // ===========================================================================
