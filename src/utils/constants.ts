@@ -1967,11 +1967,16 @@ export const PLAYER_MODEL = {
  */
 export const CHARACTER_JUICE = {
   /** Radians of walk cycle per WORLD-UNIT walked (the stride cadence; distance-driven, so
-   *  the bob tracks pace and stops dead when not moving). */
-  strideRate: 9.0,
+   *  the bob tracks pace and stops dead when not moving). The bob uses cos(2·phase), so the
+   *  vertical frequency is speed·strideRate/π Hz. ⚠️ FIXED (#101): was 9.0, which at the real
+   *  maxSpeed (6) gave ~17 Hz — a violent VIBRATION, not a footfall. 1.5 → ~2.9 Hz at top speed
+   *  (the natural-walk band). A feel value — dial on device. */
+  strideRate: 1.5,
   /** Speed (u/s) at/above which the walk is "full" — the lean cap + the idle↔walk crossfade
-   *  reference (≈ the player's max speed). */
-  walkSpeedRef: 2.2,
+   *  reference. ⚠️ FIXED (#101): now = the REAL maxSpeed (was a stale 2.2 while maxSpeed is 6 —
+   *  so the bob/lean/blend ramp now share ONE speed scale; the gait reaches "full" exactly at top
+   *  speed, in sync, instead of slamming to full at 2.2). DRY-bound so it can never drift again. */
+  walkSpeedRef: TUNING.maxSpeed,
   /** BOB — a small vertical rise/fall per footfall (two dips per cycle). */
   bobAmplitude: 0.045, // world units (~4% of the ~1.1u character height)
   /** SQUASH & STRETCH — VOLUME-PRESERVING (scaleY then scaleXZ = 1/√scaleY). VERY subtle
@@ -1992,6 +1997,12 @@ export const CHARACTER_JUICE = {
  * bob/squash/lean math as the player (CHARACTER_JUICE is the 'walk' player profile),
  * with per-archetype CONSERVATIVE magnitudes — err SUBTLE (the HOP is the rubbery-risk).
  * Amplitudes are absolute world units, tuned for the ~0.45u animals. Each effect a knob.
+ *
+ * ⚠️ strideRate FIXED (#101): the same too-high-rate bug as CJ1. The bob is speed·strideRate/π Hz
+ * (walk/bird; hop/swim are once-per-cycle, /2π). At wanderSpeed (1.2) the OLD walk (11) buzzed at
+ * ~4.2 Hz and bird (14) at ~5.4 Hz (worse when fleeing). Now walk 5 / bird 6 → ~1.9 / ~2.3 Hz at
+ * wander — the natural band, in step with the player. hop (7) + swim (6) are once-per-cycle and were
+ * already gentle (~1.3 / ~1.2 Hz), left as-is. Feel values — dial on device.
  */
 export const GAIT_PROFILES: Record<GaitKind, {
   kind: GaitKind;
@@ -2008,7 +2019,7 @@ export const GAIT_PROFILES: Record<GaitKind, {
 }> = {
   /** WALK / scuttle — a low, quick, steady bob (hedgehog, mouse, badger, roe deer…). */
   walk: {
-    kind: 'walk', strideRate: 11, walkSpeedRef: 1.4, bobAmplitude: 0.022, squashAmplitude: 0.05,
+    kind: 'walk', strideRate: 5, walkSpeedRef: 1.4, bobAmplitude: 0.022, squashAmplitude: 0.05,
     leanMaxRad: 0.08, leanSpringRate: 9, idleAmplitude: 0.01, idleFreqHz: 0.5, fleeStrideMult: 1.4, fleeBobMult: 1.4,
   },
   /** HOP — an arc'd bound with a pause between hops; squash on land, stretch at apex
@@ -2020,7 +2031,7 @@ export const GAIT_PROFILES: Record<GaitKind, {
   /** BIRD — mostly still with a small, quick alert bob; quick darts on the move
    *  (kingfisher, wagtail, robin…). Minimal squash. */
   bird: {
-    kind: 'bird', strideRate: 14, walkSpeedRef: 1.4, bobAmplitude: 0.016, squashAmplitude: 0.02,
+    kind: 'bird', strideRate: 6, walkSpeedRef: 1.4, bobAmplitude: 0.016, squashAmplitude: 0.02,
     leanMaxRad: 0.05, leanSpringRate: 12, idleAmplitude: 0.007, idleFreqHz: 1.6, fleeStrideMult: 1.6, fleeBobMult: 1.4,
   },
   /** SWIM — a smooth, low glide (no real vertical bob, no squash) when an animal is in
