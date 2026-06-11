@@ -110,7 +110,7 @@ describe('Highlands content — tier-4 difficulty + the alpine roster', () => {
       expect(SPECIES[id].biome).toBe('highlands');
       expect(SPECIES[id].baseFleeSpeed).toBeLessThan(TUNING.maxSpeed); // catchable on foot
     }
-    expect(SPECIES_ORDER.length).toBe(39); // +5 Cave species (§4.2, the always-dark biome)
+    expect(SPECIES_ORDER.length).toBe(44); // +5 Cave species (§4.2, the always-dark biome)
   });
 });
 
