@@ -11,6 +11,7 @@
  */
 
 import {
+  BoxGeometry,
   CapsuleGeometry,
   ConeGeometry,
   CylinderGeometry,
@@ -69,42 +70,67 @@ export interface PlayerModel {
 export function buildPlayerModel(): PlayerModel {
   const P = PLAYER_MODEL;
   const g = new Group();
-  const body = flatMat(P.color);
-  const accent = flatMat(P.accent);
+  // §character — the field-clothes palette (replacing the flat amber): a khaki-olive shirt (torso +
+  // sleeves), a tan-stone trouser, a neutral-tan head. The earthy brown stays the strap/boot accent.
+  const shirt = flatMat(P.shirt);
+  const skin = flatMat(P.skin);
+  const trousers = flatMat(P.trousers);
 
-  // Legs (accent = boots). CJ3: each leg hangs from a HIP PIVOT at y = legHeight, the cylinder
+  // Legs (trousers). CJ3: each leg hangs from a HIP PIVOT at y = legHeight, the cylinder
   // offset DOWN by legHeight/2 so its foot is at y = 0 and its top at the pivot. At rotation.x = 0
-  // this is byte-identical to the old fixed leg (centre y = legHeight/2) — so a STILL player looks
-  // exactly as before (the L2 baselines don't move); the renderer swings the pivot to walk.
+  // this is byte-identical to the old fixed leg (centre y = legHeight/2) — so a STILL player's POSE
+  // is exactly as before (only the colour changed); the renderer swings the pivot to walk.
   const legPivots: Group[] = [];
   for (const sx of [-1, 1]) {
     const hip = new Group();
     hip.position.set(sx * P.legSpread, P.legHeight, 0);
-    add(hip, new CylinderGeometry(P.legRadius, P.legRadius, P.legHeight, SEG), accent, 0, -P.legHeight / 2, 0);
+    add(hip, new CylinderGeometry(P.legRadius, P.legRadius, P.legHeight, SEG), trousers, 0, -P.legHeight / 2, 0);
     g.add(hip);
     legPivots.push(hip);
   }
   const [legL, legR] = legPivots; // index 0 = left (sx −1), index 1 = right (sx +1)
-  // Tapered torso.
-  add(g, new CylinderGeometry(P.bodyRadiusTop, P.bodyRadiusBottom, P.bodyHeight, SEG), body,
+  // Tapered torso (shirt).
+  add(g, new CylinderGeometry(P.bodyRadiusTop, P.bodyRadiusBottom, P.bodyHeight, SEG), shirt,
     0, P.legHeight + P.bodyHeight / 2, 0);
-  // Head.
-  add(g, new SphereGeometry(P.headRadius, SEG, SEG), body,
-    0, P.legHeight + P.bodyHeight + P.headRadius * 0.8, 0);
-  // Arms hanging at the sides. CJ3b: each arm hangs from a SHOULDER PIVOT at the body top
-  // (y = legHeight + bodyHeight), the cylinder offset DOWN by armLength/2 so the hand is at the
-  // bottom and the top at the pivot. At rotation.x = 0 this is byte-identical to the old fixed arm
-  // (centre y = top − armLength/2) — a STILL player looks exactly as before; the renderer swings it.
+  // Head (skin). headY is reused below to seat the hat.
+  const headY = P.legHeight + P.bodyHeight + P.headRadius * 0.8;
+  add(g, new SphereGeometry(P.headRadius, SEG, SEG), skin, 0, headY, 0);
+  // Arms hanging at the sides (shirt sleeves). CJ3b: each arm hangs from a SHOULDER PIVOT at the body
+  // top (y = legHeight + bodyHeight), the cylinder offset DOWN by armLength/2 so the hand is at the
+  // bottom and the top at the pivot. At rotation.x = 0 this is byte-identical to the old fixed arm —
+  // a STILL player's POSE is unchanged; the renderer swings it.
   const shoulderY = P.legHeight + P.bodyHeight;
   const armPivots: Group[] = [];
   for (const sx of [-1, 1]) {
     const shoulder = new Group();
     shoulder.position.set(sx * (P.bodyRadiusTop + P.armRadius * 1.4), shoulderY, 0);
-    add(shoulder, new CylinderGeometry(P.armRadius, P.armRadius, P.armLength, SEG), body, 0, -P.armLength / 2, 0);
+    add(shoulder, new CylinderGeometry(P.armRadius, P.armRadius, P.armLength, SEG), shirt, 0, -P.armLength / 2, 0);
     g.add(shoulder);
     armPivots.push(shoulder);
   }
   const [armL, armR] = armPivots; // index 0 = left (sx −1), index 1 = right (sx +1)
+
+  // ⚠️ §character — THE FIELD KIT. Every piece parents to `g` (the ROOT group), exactly like the
+  // head/torso meshes above — NOT to a leg/arm pivot. So the kit rides the CJ1 bob/lean/squash as ONE
+  // with the body and CANNOT mis-swing (a limb's swing never reaches it). Built once; no per-frame work.
+  const K = P.kit;
+  const hatMat = flatMat(K.hatColor);
+  const packMat = flatMat(K.packColor);
+  const strapMat = flatMat(K.strapColor);
+  // The wide-brim hat: a thin brim disc high on the head + a low crown above it (the bush-hat read).
+  const brimY = headY + P.headRadius * K.brimRaiseR;
+  add(g, new CylinderGeometry(P.headRadius * K.brimRadiusR, P.headRadius * K.brimRadiusR, K.brimThickness, SEG),
+    hatMat, 0, brimY, 0);
+  add(g, new CylinderGeometry(P.headRadius * K.crownTopRadiusR, P.headRadius * K.crownBottomRadiusR, K.crownHeight, SEG),
+    hatMat, 0, brimY + K.crownHeight / 2, 0);
+  // The backpack: a rounded box on the UPPER BACK (−z, behind the torso), seated on the upper body.
+  add(g, new BoxGeometry(K.packWidth, K.packHeight, K.packDepth), packMat,
+    0, P.legHeight + P.bodyHeight * K.packRaiseR, -(P.bodyRadiusTop + K.packDepth / 2));
+  // Two shoulder straps over the front (+z) — thin vertical cylinders that tie the pack on.
+  for (const sx of [-1, 1]) {
+    add(g, new CylinderGeometry(K.strapRadius, K.strapRadius, K.strapLength, SEG), strapMat,
+      sx * K.strapSpread, shoulderY - K.strapLength / 2, P.bodyRadiusTop + K.strapRadius);
+  }
   return { group: g, legL, legR, armL, armR };
 }
 
