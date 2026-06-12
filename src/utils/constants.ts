@@ -2647,8 +2647,6 @@ export const PLAYER_MODEL = {
   skin: 0xc8a06e,
   /** Legs (field trousers) — tan-stone. */
   trousers: 0x9a8a66,
-  /** Boots / strap accent (kept the earthy brown). */
-  accent: 0x6b4a24,
   legHeight: 0.34,
   legRadius: 0.075,
   legSpread: 0.12,
