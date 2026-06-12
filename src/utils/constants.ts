@@ -2641,8 +2641,9 @@ export const MODEL_SEGMENTS = 8;
  * walk stays byte-identical (legHeight is the one walk-coupled dim; it does NOT move).
  */
 export const PLAYER_MODEL = {
-  /** Torso (field shirt/jacket) — khaki-olive. The body material. */
-  shirt: 0x7d7a4e,
+  /** Torso (field shirt/jacket) — a warm khaki (playtest #2: nudged warmer/browner so the torso reads
+   *  against the green meadow instead of blending into it). The body material. */
+  shirt: 0x877247,
   /** Head (skin) — a neutral tan; abstract, no facial features (wrong for the low-poly read). */
   skin: 0xc8a06e,
   /** Legs (field trousers) — tan-stone. */
@@ -2669,16 +2670,16 @@ export const PLAYER_MODEL = {
    * the body and CANNOT mis-swing (it is never on a limb pivot). Render-only; built once.
    */
   kit: {
-    /** The wide-brim field/bush hat — a brim disc + a domed crown, seated HIGH on the head so the face
-     *  shows BELOW the brim (a person in a hat, not a mushroom). ⚠️ Tuned on device (playtest #1: the
-     *  1.9× brim was an umbrella ~2× the body width that swallowed the head — narrowed + raised). */
-    hatColor: 0x8a7d52, // olive-tan
+    /** The wide-brim field/bush hat — a brim disc + a rounded DOME crown, seated HIGH on the head so the
+     *  face shows BELOW the brim (a person in a hat, not a mushroom). ⚠️ Tuned on device: playtest #1
+     *  narrowed + raised the umbrella brim; playtest #2 DARKENED the hat (it was too close to the skin
+     *  tone — they blended into a brown blob) and DOMED the crown (a rounded bush-hat, not a flat bucket). */
+    hatColor: 0x6f5f3a, // a dark olive-khaki — distinct from the light skin + pops against the green ground
     brimRadiusR: 1.45, // × headRadius — wider than the head (the brim read) but NOT an umbrella over the body
     brimThickness: 0.035,
     brimRaiseR: 0.78, // × headRadius above the head centre — the brim rides HIGH on the crown so the face shows below
-    crownTopRadiusR: 0.7, // × headRadius — a domed (tapered) crown, not a flat bucket
-    crownBottomRadiusR: 0.95, // × headRadius — meets the head just inside the brim
-    crownHeight: 0.17,
+    crownRadiusR: 0.92, // × headRadius — the dome radius (meets the head just inside the brim)
+    crownDomeFlatten: 0.82, // y-scale on the crown sphere — a LOW rounded dome (a bush-hat crown, not a ball)
     /** The backpack — a rounded box on the upper back (−z, behind the torso). */
     packColor: 0x5c4a2e, // canvas brown / dark khaki
     packWidth: 0.22,
