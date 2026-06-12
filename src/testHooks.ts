@@ -14,7 +14,7 @@
 
 import { unlockBiome } from './game/World';
 import { deployHide } from './game/Hide';
-import { BIOME_ORDER } from './utils/constants';
+import { BIOME_ORDER, type Season } from './utils/constants';
 import type { GameState } from './game/GameState';
 
 function params(): URLSearchParams {
@@ -33,6 +33,14 @@ export function readTestSeed(): number | null {
   if (p === null) return null;
   const n = Number(p);
   return Number.isFinite(n) ? n >>> 0 : null;
+}
+
+/** §4.6 D1a — ?season=spring|summer|autumn|winter pins the season for a deterministic capture
+ *  (seasonal looks otherwise depend on the real DATE → the visual gate would false-diff by when it
+ *  runs). The boundary uses `readTestSeason() ?? seasonOf(new Date())`. Null (no param) in normal play. */
+export function readTestSeason(): Season | null {
+  const p = params().get('season');
+  return p === 'spring' || p === 'summer' || p === 'autumn' || p === 'winter' ? p : null;
 }
 
 /** Apply the L2 deterministic-scene setup. No-op unless ?seed= is present (test mode). */

@@ -15,31 +15,35 @@ import { test, expect } from '@playwright/test';
  *  - meadow + cover + a hide    (#53 cover + the deployed-hide footprint)
  */
 const SEED = 7;
+// ⚠️ §4.6 D1a — every scene PINS `&season=summer` so the capture is DATE-INDEPENDENT (a seasonal look
+// otherwise varies by when the gate runs). Summer is the IDENTITY grade (no tint, no sat change), so the
+// existing baselines DO NOT MOVE — these stay byte-for-byte as before. The seasonal looks are guarded by
+// the new 4-season meadow set below (spring/autumn/winter; summer ≈ meadow-day-start).
 const scenes = [
-  { name: 'meadow-day-start', query: `?seed=${SEED}&freeze=1` },
-  { name: 'wetland-water-pond', query: `?seed=${SEED}&freeze=1&unlock=all&at=33,8` },
-  { name: 'meadow-cover-hide', query: `?seed=${SEED}&freeze=1&hide=1` },
+  { name: 'meadow-day-start', query: `?seed=${SEED}&freeze=1&season=summer` },
+  { name: 'wetland-water-pond', query: `?seed=${SEED}&freeze=1&unlock=all&at=33,8&season=summer` },
+  { name: 'meadow-cover-hide', query: `?seed=${SEED}&freeze=1&hide=1&season=summer` },
   // §4.2 — the first new biome: the Riverbank river reach (the reused #55 water as a band).
-  { name: 'riverbank-river', query: `?seed=${SEED}&freeze=1&unlock=all&at=40,80` },
+  { name: 'riverbank-river', query: `?seed=${SEED}&freeze=1&unlock=all&at=40,80&season=summer` },
   // §4.2 — the 2nd new biome: the Coast shore + the large outer-edge SEA (the player on the beach).
-  { name: 'coast-shore', query: `?seed=${SEED}&freeze=1&unlock=all&at=40,114` },
-  // §4.2 — the 1st BRANCHED biome: the Moor's heather-purple ground, east of the Highlands (a new
-  // frozen baseline — the world canvas grows a new cell; the existing 5 baselines are unchanged).
-  { name: 'moor-heather', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,40` },
+  { name: 'coast-shore', query: `?seed=${SEED}&freeze=1&unlock=all&at=40,114&season=summer` },
+  // §4.2 — the 1st BRANCHED biome: the Moor's heather-purple ground, east of the Highlands.
+  { name: 'moor-heather', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,40&season=summer` },
   // §4.2 — the 1st CLOSED/dense biome: the Pine Forest's instanced pine scatter, NW of the Woodland.
-  // A NEW additive baseline (seeded after Craig approves the dense look). ⚠️ The GLOBAL entities-on-top
-  // change may also shift the existing baselines — re-run the visual project, regen only what diffs.
-  { name: 'pine-forest', query: `?seed=${SEED}&freeze=1&unlock=all&at=0,80` },
-  // §4.2 — the always-dark CAVE: a near-black ground with the lights UNCHANGED (lit entities pop). A new
-  // additive baseline (seeded after Craig approves the dark look). Eyeball: does the player/animals read?
-  { name: 'cave-dark', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,80` },
-  // §4.2 — the TIDAL/SALTMARSH: the olive-mud estuary E of the Coast (the brackish tidal pools). A new
-  // additive baseline (seeded after Craig approves the marsh look).
-  { name: 'tidal-saltmarsh', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,120` },
-  // §4.2 — the ALPINE/MONTANE SUMMIT: the bare cold-grey scree E of the Moor (the single boulder, the
-  // exposed difficulty-ceiling biome). A new additive baseline (seeded after Craig approves the summit
-  // look). Eyeball: does it read as the bare rocky top — distinct from the Moor's heather-purple?
-  { name: 'alpine-summit', query: `?seed=${SEED}&freeze=1&unlock=all&at=120,40` },
+  { name: 'pine-forest', query: `?seed=${SEED}&freeze=1&unlock=all&at=0,80&season=summer` },
+  // §4.2 — the always-dark CAVE: a near-black ground with the lights UNCHANGED (lit entities pop).
+  { name: 'cave-dark', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,80&season=summer` },
+  // §4.2 — the TIDAL/SALTMARSH: the olive-mud estuary E of the Coast (the brackish tidal pools).
+  { name: 'tidal-saltmarsh', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,120&season=summer` },
+  // §4.2 — the ALPINE/MONTANE SUMMIT: the bare cold-grey scree E of the Moor (the single boulder).
+  { name: 'alpine-summit', query: `?seed=${SEED}&freeze=1&unlock=all&at=120,40&season=summer` },
+  // §4.6 D1a — the 4-SEASON meadow set: the seasonal re-grade on ONE representative scene (the meadow,
+  // same seed/freeze as meadow-day-start). Summer ≈ meadow-day-start (identity), so these THREE are the
+  // additive seasonal baselines (seeded after Craig approves the look). Eyeball: does each read as its
+  // season — the fresh spring, the gold autumn, the cool/snowy winter — composed with the thriving grade?
+  { name: 'meadow-spring', query: `?seed=${SEED}&freeze=1&season=spring` },
+  { name: 'meadow-autumn', query: `?seed=${SEED}&freeze=1&season=autumn` },
+  { name: 'meadow-winter', query: `?seed=${SEED}&freeze=1&season=winter` },
 ];
 
 for (const scene of scenes) {
