@@ -12,6 +12,7 @@ import {
   completePineforestGate,
   completeCaveGate,
   completeTidalGate,
+  completeAlpineGate,
   catchRemainingSpecies,
 } from './harness';
 import { createJournal } from '../../../state/Journal';
@@ -134,7 +135,13 @@ describe('L1 Guard 3 — progression-to-win (the unlock chain + the win fires)',
     expect(j.unlockedBiomes).not.toContain('tidal');
     completeTidalGate(j);
     expect(j.unlockedBiomes).toContain('tidal');
-    // Fill the dex (every roster, incl. the Cave five + the Tidal five) -> the win fires. WIN REACHABLE
+    // §4.2 — the ALPINE/MONTANE SUMMIT (the difficulty-ceiling biome) is the MOOR's first arm (a
+    // single-successor extension off the previously-terminal heather), behind its OWN species+bait gate
+    // (research-grouse-greens). Additive: the Moor's prior terminus behaviour is unchanged.
+    expect(j.unlockedBiomes).not.toContain('alpine');
+    completeAlpineGate(j);
+    expect(j.unlockedBiomes).toContain('alpine');
+    // Fill the dex (every roster, incl. the Tidal five + the Alpine five) -> the win fires. WIN REACHABLE
     // through every research-gated biome (the cardinal anti-wall pin: no impossible state).
     catchRemainingSpecies(j);
     expect(SPECIES_ORDER.every((id) => j.species[id])).toBe(true);

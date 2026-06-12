@@ -163,6 +163,19 @@ export function completeTidalGate(j: Journal): void {
   reconcileResearchUnlocks(j);
 }
 
+/**
+ * §4.2 — unlock the ALPINE/MONTANE SUMMIT (the difficulty-ceiling biome: the Moor's first arm, a
+ * single-successor extension off the previously-terminal heather). Gated on a NON-FORCED SPECIES+BAIT
+ * mastery challenge by play (research-grouse-greens — a red grouse over GREENS bait, its real diet; NO
+ * phase) + the moor activity. cost 0 (anti-wall). The climb reads Highlands → Moor → Alpine summit.
+ */
+export function completeAlpineGate(j: Journal): void {
+  applyCatch(j, { species: 'redgrouse', biome: 'moor', phase: 'day', bait: 'greens' } as CatchEvent);
+  startResearch(j, 'unlock-the-alpine');
+  for (let i = 0; i < 4; i++) evaluateResearch(j, ev('twite', 'moor', 'day')); // catch-in-moor ×4
+  reconcileResearchUnlocks(j);
+}
+
 /** Catch the remaining roster (rabbit + the alpine three + the Riverbank four + the Coast five +
  *  the Moor five) so the dex fills for the win. rabbit@night doubles as the second night-forager
  *  challenge. */
@@ -210,4 +223,11 @@ export function catchRemainingSpecies(j: Journal): void {
   applyCatch(j, ev('redshank', 'tidal', 'day'));
   applyCatch(j, ev('avocet', 'tidal', 'day'));
   applyCatch(j, ev('knot', 'tidal', 'day'));
+  // §4.2 — the Alpine/Montane roster (the tame snow bunting is the bait-less valve; the ring ouzel apex
+  // is hard-not-impossible — caught here proves the win-path extends through the difficulty ceiling).
+  applyCatch(j, ev('snowbunting', 'alpine', 'day'));
+  applyCatch(j, ev('meadowpipit', 'alpine', 'day'));
+  applyCatch(j, ev('wheatear', 'alpine', 'day'));
+  applyCatch(j, ev('goldenplover', 'alpine', 'day'));
+  applyCatch(j, ev('ringouzel', 'alpine', 'day'));
 }

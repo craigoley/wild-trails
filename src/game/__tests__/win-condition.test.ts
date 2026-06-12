@@ -100,11 +100,12 @@ describe('achievability — the win is REACHABLE with shipped content (no grind)
     // §4.2 (the Pine Forest) added research-squirrel-seeds, its access gate (+12, OPTIONAL): 291 -> 303.
     // §4.2 (the Cave) added research-dipper-insects, its access gate (+12, OPTIONAL): 303 -> 315.
     // §4.2 (the Tidal) added research-turnstone-insects, its access gate (+12, OPTIONAL): 315 -> 327.
+    // §4.2 (the Alpine) added research-grouse-greens, its access gate (+12, OPTIONAL): 327 -> 339.
     const missionPts = MISSION_ORDER.reduce((s, id) => s + MISSIONS[id].rewardPoints, 0);
     const speciesPts = SPECIES_ORDER.length * RANK.perSpeciesFound;
     const top = RANKS[RANKS.length - 1].minPoints;
-    expect(missionPts).toBe(327); // +1 tidal multi-condition challenge (only RAISES the ceiling)
-    expect(SPECIES_ORDER.length).toBe(44); // +5 Tidal species — bigger roster, bigger win bar
+    expect(missionPts).toBe(339); // +1 alpine multi-condition challenge (only RAISES the ceiling)
+    expect(SPECIES_ORDER.length).toBe(49); // +5 Alpine species — bigger roster, bigger win bar
     expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // clears with margin
   });
 

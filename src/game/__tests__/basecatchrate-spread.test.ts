@@ -19,9 +19,11 @@ describe('baseCatchRate spread (Plan #12 rebalance)', () => {
   it('keeps the hardest species catchable (> 0, not clamped to uncatchable)', () => {
     const min = Math.min(...SPECIES_ORDER.map((id) => SPECIES[id].baseCatchRate));
     expect(min).toBeGreaterThan(0);
-    // Highlands content: the alpine Dotterel (0.12, tier 4) is the new floor, below
-    // the Wetland frog (0.20).
-    expect(SPECIES.dotterel.baseCatchRate).toBe(min);
+    // §4.2 Alpine content: the apex Ring Ouzel (0.10) is the new GLOBAL floor — the
+    // difficulty CEILING — below the highlands Dotterel (0.12). Still > 0: hard with
+    // mastery (the throwing-net + the one boulder + a calm point-blank), never a wall.
+    expect(SPECIES.ringouzel.baseCatchRate).toBe(min);
+    expect(SPECIES.ringouzel.baseCatchRate).toBeLessThan(SPECIES.dotterel.baseCatchRate); // the new ceiling sits below the old
   });
 
   it('lands the new spread values (the rebalance, reviewable as data)', () => {
