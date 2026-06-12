@@ -2656,6 +2656,11 @@ export const PLAYER_MODEL = {
   bodyRadiusTop: 0.12,
   bodyRadiusBottom: 0.17,
   headRadius: 0.17,
+  /** How far the head centre sits above the shoulder line, × headRadius. ⚠️ Walk-SAFE (the head never
+   *  feeds walkCycle — only legHeight does). Playtest #1: 0.8 sank the head INTO the shoulders (no neck,
+   *  it merged with the torso and read badly under the hat); 1.0 seats the head ball cleanly on the
+   *  shoulders (its base at the torso top) so it reads as a head wearing a hat. */
+  headSeatR: 1.0,
   armLength: 0.4,
   armRadius: 0.05,
   /**
@@ -2664,14 +2669,16 @@ export const PLAYER_MODEL = {
    * the body and CANNOT mis-swing (it is never on a limb pivot). Render-only; built once.
    */
   kit: {
-    /** The wide-brim field/bush hat — a thin brim disc + a low crown, on the head's top. */
+    /** The wide-brim field/bush hat — a brim disc + a domed crown, seated HIGH on the head so the face
+     *  shows BELOW the brim (a person in a hat, not a mushroom). ⚠️ Tuned on device (playtest #1: the
+     *  1.9× brim was an umbrella ~2× the body width that swallowed the head — narrowed + raised). */
     hatColor: 0x8a7d52, // olive-tan
-    brimRadiusR: 1.9, // × headRadius — clearly wider than the head (the signature explorer silhouette)
-    brimThickness: 0.03,
-    brimRaiseR: 0.55, // × headRadius above the head centre — the brim sits high on the crown
-    crownTopRadiusR: 0.95, // × headRadius
-    crownBottomRadiusR: 1.05, // × headRadius
-    crownHeight: 0.16,
+    brimRadiusR: 1.45, // × headRadius — wider than the head (the brim read) but NOT an umbrella over the body
+    brimThickness: 0.035,
+    brimRaiseR: 0.78, // × headRadius above the head centre — the brim rides HIGH on the crown so the face shows below
+    crownTopRadiusR: 0.7, // × headRadius — a domed (tapered) crown, not a flat bucket
+    crownBottomRadiusR: 0.95, // × headRadius — meets the head just inside the brim
+    crownHeight: 0.17,
     /** The backpack — a rounded box on the upper back (−z, behind the torso). */
     packColor: 0x5c4a2e, // canvas brown / dark khaki
     packWidth: 0.22,

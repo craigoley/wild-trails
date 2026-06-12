@@ -40,7 +40,7 @@ describe('§character — the kit parents to the ROOT GROUP (the anti-mis-swing 
 
   it('the hat sits ON the head — its brim + crown are direct children of g, above the head', () => {
     const pm = buildPlayerModel();
-    const headY = PLAYER_MODEL.legHeight + PLAYER_MODEL.bodyHeight + PLAYER_MODEL.headRadius * 0.8;
+    const headY = PLAYER_MODEL.legHeight + PLAYER_MODEL.bodyHeight + PLAYER_MODEL.headRadius * PLAYER_MODEL.headSeatR;
     // The kit meshes added directly to g, sitting above the head centre (the brim + the crown).
     const aboveHead = meshes(pm.group).filter((m) => m.position.y >= headY + PLAYER_MODEL.headRadius * 0.4);
     expect(aboveHead.length).toBeGreaterThanOrEqual(2); // brim + crown
@@ -65,12 +65,13 @@ describe('§character — the earthy field palette replaces the flat amber (no p
     }
   });
 
-  it('⚠️ the walk-coupled proportions are UNCHANGED (kit-only — the tuned CJ walk stays byte-identical)', () => {
-    // legHeight is THE one dim the walk reads (visible stride = legHeight·sin(legSwing)); it must not
-    // move. The rest of the silhouette dims are pinned too so a careless retune can't drift the figure.
-    expect(PLAYER_MODEL.legHeight).toBe(0.34); // ⚠️ the walk-coupled dim — never change it kit-only
-    expect(PLAYER_MODEL.bodyHeight).toBe(0.46);
-    expect(PLAYER_MODEL.headRadius).toBe(0.17);
-    expect(PLAYER_MODEL.bodyRadiusBottom).toBe(0.17); // no proportion tweak in this slice
+  it('⚠️ the WALK-COUPLED proportion is UNCHANGED (the tuned CJ walk stays byte-identical)', () => {
+    // legHeight is THE one dim the walk reads (visible stride = legHeight·sin(legSwing)); it must NEVER
+    // move (that would re-tune the gait). The playtest head-seat lift (headSeatR) is WALK-SAFE — the
+    // head never feeds walkCycle — so the walk is untouched while the head reads better.
+    expect(PLAYER_MODEL.legHeight).toBe(0.34); // ⚠️ the walk-coupled dim — never change it
+    expect(PLAYER_MODEL.bodyHeight).toBe(0.46); // body height unchanged
+    expect(PLAYER_MODEL.headRadius).toBe(0.17); // head SIZE unchanged (only its seat height lifted)
+    expect(PLAYER_MODEL.headSeatR).toBeGreaterThan(0.8); // the head lifted off the shoulders (playtest #1)
   });
 });

@@ -92,8 +92,9 @@ export function buildPlayerModel(): PlayerModel {
   // Tapered torso (shirt).
   add(g, new CylinderGeometry(P.bodyRadiusTop, P.bodyRadiusBottom, P.bodyHeight, SEG), shirt,
     0, P.legHeight + P.bodyHeight / 2, 0);
-  // Head (skin). headY is reused below to seat the hat.
-  const headY = P.legHeight + P.bodyHeight + P.headRadius * 0.8;
+  // Head (skin). headY is reused below to seat the hat. headSeatR lifts the head so it sits cleanly ON
+  // the shoulders (a head wearing a hat), not sunk into the torso.
+  const headY = P.legHeight + P.bodyHeight + P.headRadius * P.headSeatR;
   add(g, new SphereGeometry(P.headRadius, SEG, SEG), skin, 0, headY, 0);
   // Arms hanging at the sides (shirt sleeves). CJ3b: each arm hangs from a SHOULDER PIVOT at the body
   // top (y = legHeight + bodyHeight), the cylinder offset DOWN by armLength/2 so the hand is at the
