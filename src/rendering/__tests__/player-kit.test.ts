@@ -49,10 +49,10 @@ describe('§character — the kit parents to the ROOT GROUP (the anti-mis-swing 
     expect(brimR).toBeGreaterThan(PLAYER_MODEL.headRadius); // a WIDE brim, not a skullcap
   });
 
-  it('the kit ADDS meshes (hat brim + crown + pack + 2 straps) over the bare figure', () => {
+  it('the kit ADDS meshes (hat brim + crown + band + pack + 2 straps) over the bare figure', () => {
     const pm = buildPlayerModel();
-    // Bare figure direct-child meshes: torso + head = 2. The kit adds brim + crown + pack + 2 straps = 5.
-    expect(meshes(pm.group)).toHaveLength(7);
+    // Bare figure direct-child meshes: torso + head = 2. The kit adds brim + crown + band + pack + 2 straps = 6.
+    expect(meshes(pm.group)).toHaveLength(8);
   });
 });
 

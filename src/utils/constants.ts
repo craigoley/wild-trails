@@ -2680,12 +2680,17 @@ export const PLAYER_MODEL = {
     brimRaiseR: 0.78, // × headRadius above the head centre — the brim rides HIGH on the crown so the face shows below
     crownRadiusR: 0.92, // × headRadius — the dome radius (meets the head just inside the brim)
     crownDomeFlatten: 0.82, // y-scale on the crown sphere — a LOW rounded dome (a bush-hat crown, not a ball)
+    /** A hat BAND wrapping the crown base (the classic bush-hat detail; playtest #3 touch-up). */
+    bandColor: 0xa8895a, // warm tan — a focal accent against the dark hat
+    bandRadiusR: 0.96, // × headRadius — proud of the dome so the ring reads
+    bandThickness: 0.04,
+    bandRaiseR: 0.14, // × headRadius above the brim — at the crown base
     /** The backpack — a rounded box on the upper back (−z, behind the torso). */
     packColor: 0x5c4a2e, // canvas brown / dark khaki
     packWidth: 0.22,
     packHeight: 0.28,
     packDepth: 0.14,
-    packRaiseR: 0.62, // × bodyHeight above legHeight — centred on the UPPER back
+    packRaiseR: 0.78, // × bodyHeight above legHeight — raised so the pack PEEKS above the shoulders (playtest #3)
     /** Two shoulder straps over the front (+z) — thin cylinders that tie the pack on. */
     strapColor: 0x4a3a22,
     strapRadius: 0.022,

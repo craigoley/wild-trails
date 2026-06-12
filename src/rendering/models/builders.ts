@@ -126,6 +126,10 @@ export function buildPlayerModel(): PlayerModel {
   // visible upper half is the crown. Rounder + more hat-like than the old flat-topped cylinder.
   const crown = add(g, new SphereGeometry(P.headRadius * K.crownRadiusR, SEG, SEG), hatMat, 0, brimY, 0);
   crown.scale.set(1, K.crownDomeFlatten, 1);
+  // A hat band wrapping the crown base — a thin ring just above the brim (the bush-hat detail).
+  const bandMat = flatMat(K.bandColor);
+  add(g, new CylinderGeometry(P.headRadius * K.bandRadiusR, P.headRadius * K.bandRadiusR, K.bandThickness, SEG),
+    bandMat, 0, brimY + P.headRadius * K.bandRaiseR, 0);
   // The backpack: a rounded box on the UPPER BACK (−z, behind the torso), seated on the upper body.
   add(g, new BoxGeometry(K.packWidth, K.packHeight, K.packDepth), packMat,
     0, P.legHeight + P.bodyHeight * K.packRaiseR, -(P.bodyRadiusTop + K.packDepth / 2));
