@@ -2633,11 +2633,20 @@ export const MODEL_SEGMENTS = 8;
  * The PLAYER figure — an upright human-ish silhouette (legs + torso + head +
  * arms), built foot-origin (lowest point at y = 0) and facing +z. Dimensions in
  * world units; clearly taller + bipedal so it never reads as an animal.
+ *
+ * §character — the CONSERVATIONIST EXPLORER look: earthy field clothes (khaki/olive/
+ * tan, replacing the old flat amber) + the field KIT (a wide-brim hat + a backpack),
+ * the procedural zero-asset signifiers of a naturalist. ⚠️ The PROPORTIONS are
+ * UNCHANGED (the kit does the explorer read via silhouette) — so the tuned CJ1/CJ3/CJ3b
+ * walk stays byte-identical (legHeight is the one walk-coupled dim; it does NOT move).
  */
 export const PLAYER_MODEL = {
-  color: PALETTE.player,
-  /** Boots / pack accent. */
-  accent: 0x6b4a24,
+  /** Torso (field shirt/jacket) — khaki-olive. The body material. */
+  shirt: 0x7d7a4e,
+  /** Head (skin) — a neutral tan; abstract, no facial features (wrong for the low-poly read). */
+  skin: 0xc8a06e,
+  /** Legs (field trousers) — tan-stone. */
+  trousers: 0x9a8a66,
   legHeight: 0.34,
   legRadius: 0.075,
   legSpread: 0.12,
@@ -2647,6 +2656,32 @@ export const PLAYER_MODEL = {
   headRadius: 0.17,
   armLength: 0.4,
   armRadius: 0.05,
+  /**
+   * §character — the field KIT (zero-asset procedural prims). ⚠️ Each piece PARENTS TO THE ROOT
+   * GROUP `g` (exactly like the head/torso meshes), so it rides the CJ1 bob/lean/squash as ONE with
+   * the body and CANNOT mis-swing (it is never on a limb pivot). Render-only; built once.
+   */
+  kit: {
+    /** The wide-brim field/bush hat — a thin brim disc + a low crown, on the head's top. */
+    hatColor: 0x8a7d52, // olive-tan
+    brimRadiusR: 1.9, // × headRadius — clearly wider than the head (the signature explorer silhouette)
+    brimThickness: 0.03,
+    brimRaiseR: 0.55, // × headRadius above the head centre — the brim sits high on the crown
+    crownTopRadiusR: 0.95, // × headRadius
+    crownBottomRadiusR: 1.05, // × headRadius
+    crownHeight: 0.16,
+    /** The backpack — a rounded box on the upper back (−z, behind the torso). */
+    packColor: 0x5c4a2e, // canvas brown / dark khaki
+    packWidth: 0.22,
+    packHeight: 0.28,
+    packDepth: 0.14,
+    packRaiseR: 0.62, // × bodyHeight above legHeight — centred on the UPPER back
+    /** Two shoulder straps over the front (+z) — thin cylinders that tie the pack on. */
+    strapColor: 0x4a3a22,
+    strapRadius: 0.022,
+    strapLength: 0.26,
+    strapSpread: 0.07, // ± x from the centreline
+  },
 } as const;
 
 /**
