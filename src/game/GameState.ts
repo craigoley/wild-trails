@@ -381,6 +381,7 @@ export function update(game: GameState, intent: InputIntent, dt: number): void {
       game.world,
       game.currentBiome,
       game.dayPhase,
+      game.season, // §4.6 D1b — weights ABUNDANCE in the pick (never eligibility); a pure input
       game.player.x,
       game.player.y,
       game.rng,

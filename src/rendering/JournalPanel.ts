@@ -26,6 +26,7 @@ import {
   SPECIES,
   SPECIES_INFO,
   SPECIES_ORDER,
+  SEASONAL_NOTE,
 } from '../utils/constants';
 
 export class JournalPanel {
@@ -164,6 +165,11 @@ export class JournalPanel {
       // §4.3 census reframe — the label is a field-note observation ("In the wild"), not a system
       // field ("Status"). The honest sentence (info.status) is UNTOUCHED — only the frame shifts.
       `<div class="card-section card-status"><span class="card-label">${PANEL_LABELS.statusLabel}</span>${info.status}</div>` +
+      // §4.6 D1b — the honest phenology TEACHING note (only the genuinely-migratory tagged species).
+      // The abundance shifts by season but the species is never gone (the spine: "scarce, not missable").
+      (def.seasonTag
+        ? `<div class="card-section card-seasons"><span class="card-label">Through the year</span>${SEASONAL_NOTE[def.seasonTag]}</div>`
+        : '') +
       // §4.1.4 R0b: the research-knowledge LAYER — a deeper note revealed once this
       // species' research project is complete (purely additive; gated on the unlock).
       (info.researchNote && unlockedResearchLayers(journal).has(id)
