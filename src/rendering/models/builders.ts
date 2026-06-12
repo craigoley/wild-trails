@@ -92,8 +92,9 @@ export function buildPlayerModel(): PlayerModel {
   // Tapered torso (shirt).
   add(g, new CylinderGeometry(P.bodyRadiusTop, P.bodyRadiusBottom, P.bodyHeight, SEG), shirt,
     0, P.legHeight + P.bodyHeight / 2, 0);
-  // Head (skin). headY is reused below to seat the hat.
-  const headY = P.legHeight + P.bodyHeight + P.headRadius * 0.8;
+  // Head (skin). headY is reused below to seat the hat. headSeatR lifts the head so it sits cleanly ON
+  // the shoulders (a head wearing a hat), not sunk into the torso.
+  const headY = P.legHeight + P.bodyHeight + P.headRadius * P.headSeatR;
   add(g, new SphereGeometry(P.headRadius, SEG, SEG), skin, 0, headY, 0);
   // Arms hanging at the sides (shirt sleeves). CJ3b: each arm hangs from a SHOULDER PIVOT at the body
   // top (y = legHeight + bodyHeight), the cylinder offset DOWN by armLength/2 so the hand is at the
@@ -117,12 +118,18 @@ export function buildPlayerModel(): PlayerModel {
   const hatMat = flatMat(K.hatColor);
   const packMat = flatMat(K.packColor);
   const strapMat = flatMat(K.strapColor);
-  // The wide-brim hat: a thin brim disc high on the head + a low crown above it (the bush-hat read).
+  // The wide-brim hat: a thin brim disc high on the head + a rounded DOME crown on it (the bush-hat read).
   const brimY = headY + P.headRadius * K.brimRaiseR;
   add(g, new CylinderGeometry(P.headRadius * K.brimRadiusR, P.headRadius * K.brimRadiusR, K.brimThickness, SEG),
     hatMat, 0, brimY, 0);
-  add(g, new CylinderGeometry(P.headRadius * K.crownTopRadiusR, P.headRadius * K.crownBottomRadiusR, K.crownHeight, SEG),
-    hatMat, 0, brimY + K.crownHeight / 2, 0);
+  // A low dome (a flattened sphere) seated AT the brim — its lower half tucks behind the head/brim, its
+  // visible upper half is the crown. Rounder + more hat-like than the old flat-topped cylinder.
+  const crown = add(g, new SphereGeometry(P.headRadius * K.crownRadiusR, SEG, SEG), hatMat, 0, brimY, 0);
+  crown.scale.set(1, K.crownDomeFlatten, 1);
+  // A hat band wrapping the crown base — a thin ring just above the brim (the bush-hat detail).
+  const bandMat = flatMat(K.bandColor);
+  add(g, new CylinderGeometry(P.headRadius * K.bandRadiusR, P.headRadius * K.bandRadiusR, K.bandThickness, SEG),
+    bandMat, 0, brimY + P.headRadius * K.bandRaiseR, 0);
   // The backpack: a rounded box on the UPPER BACK (−z, behind the torso), seated on the upper body.
   add(g, new BoxGeometry(K.packWidth, K.packHeight, K.packDepth), packMat,
     0, P.legHeight + P.bodyHeight * K.packRaiseR, -(P.bodyRadiusTop + K.packDepth / 2));

@@ -2641,12 +2641,15 @@ export const MODEL_SEGMENTS = 8;
  * walk stays byte-identical (legHeight is the one walk-coupled dim; it does NOT move).
  */
 export const PLAYER_MODEL = {
-  /** Torso (field shirt/jacket) — khaki-olive. The body material. */
-  shirt: 0x7d7a4e,
+  /** Torso (field shirt/jacket) — a warm khaki (playtest #2: nudged warmer/browner so the torso reads
+   *  against the green meadow instead of blending into it). The body material. */
+  shirt: 0x877247,
   /** Head (skin) — a neutral tan; abstract, no facial features (wrong for the low-poly read). */
   skin: 0xc8a06e,
   /** Legs (field trousers) — tan-stone. */
   trousers: 0x9a8a66,
+  /** Boots / strap accent (kept the earthy brown). */
+  accent: 0x6b4a24,
   legHeight: 0.34,
   legRadius: 0.075,
   legSpread: 0.12,
@@ -2654,6 +2657,11 @@ export const PLAYER_MODEL = {
   bodyRadiusTop: 0.12,
   bodyRadiusBottom: 0.17,
   headRadius: 0.17,
+  /** How far the head centre sits above the shoulder line, × headRadius. ⚠️ Walk-SAFE (the head never
+   *  feeds walkCycle — only legHeight does). Playtest #1: 0.8 sank the head INTO the shoulders (no neck,
+   *  it merged with the torso and read badly under the hat); 1.0 seats the head ball cleanly on the
+   *  shoulders (its base at the torso top) so it reads as a head wearing a hat. */
+  headSeatR: 1.0,
   armLength: 0.4,
   armRadius: 0.05,
   /**
@@ -2662,20 +2670,27 @@ export const PLAYER_MODEL = {
    * the body and CANNOT mis-swing (it is never on a limb pivot). Render-only; built once.
    */
   kit: {
-    /** The wide-brim field/bush hat — a thin brim disc + a low crown, on the head's top. */
-    hatColor: 0x8a7d52, // olive-tan
-    brimRadiusR: 1.9, // × headRadius — clearly wider than the head (the signature explorer silhouette)
-    brimThickness: 0.03,
-    brimRaiseR: 0.55, // × headRadius above the head centre — the brim sits high on the crown
-    crownTopRadiusR: 0.95, // × headRadius
-    crownBottomRadiusR: 1.05, // × headRadius
-    crownHeight: 0.16,
+    /** The wide-brim field/bush hat — a brim disc + a rounded DOME crown, seated HIGH on the head so the
+     *  face shows BELOW the brim (a person in a hat, not a mushroom). ⚠️ Tuned on device: playtest #1
+     *  narrowed + raised the umbrella brim; playtest #2 DARKENED the hat (it was too close to the skin
+     *  tone — they blended into a brown blob) and DOMED the crown (a rounded bush-hat, not a flat bucket). */
+    hatColor: 0x6f5f3a, // a dark olive-khaki — distinct from the light skin + pops against the green ground
+    brimRadiusR: 1.45, // × headRadius — wider than the head (the brim read) but NOT an umbrella over the body
+    brimThickness: 0.035,
+    brimRaiseR: 0.78, // × headRadius above the head centre — the brim rides HIGH on the crown so the face shows below
+    crownRadiusR: 0.92, // × headRadius — the dome radius (meets the head just inside the brim)
+    crownDomeFlatten: 0.82, // y-scale on the crown sphere — a LOW rounded dome (a bush-hat crown, not a ball)
+    /** A hat BAND wrapping the crown base (the classic bush-hat detail; playtest #3 touch-up). */
+    bandColor: 0xa8895a, // warm tan — a focal accent against the dark hat
+    bandRadiusR: 0.96, // × headRadius — proud of the dome so the ring reads
+    bandThickness: 0.04,
+    bandRaiseR: 0.14, // × headRadius above the brim — at the crown base
     /** The backpack — a rounded box on the upper back (−z, behind the torso). */
     packColor: 0x5c4a2e, // canvas brown / dark khaki
     packWidth: 0.22,
     packHeight: 0.28,
     packDepth: 0.14,
-    packRaiseR: 0.62, // × bodyHeight above legHeight — centred on the UPPER back
+    packRaiseR: 0.78, // × bodyHeight above legHeight — raised so the pack PEEKS above the shoulders (playtest #3)
     /** Two shoulder straps over the front (+z) — thin cylinders that tie the pack on. */
     strapColor: 0x4a3a22,
     strapRadius: 0.022,
