@@ -81,7 +81,7 @@ export const WORLD = {
 } as const;
 
 /** The biomes in the world. `meadow` is the starting region. */
-export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave' | 'tidal';
+export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave' | 'tidal' | 'alpine';
 
 /** Static definition of one biome: its finite bounds, display name, adjacency
  *  in the world graph, initial unlocked state, and ground tint. */
@@ -125,7 +125,7 @@ function cell(cx: number, cy: number): Rect {
 }
 
 /** Iteration order for the biome graph (deterministic; render + lookup order). */
-export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave', 'tidal'];
+export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave', 'tidal', 'alpine'];
 
 /**
  * The THROUGH-LINE (§4.3 TL1) — the soul layer's first slice. A biome's "thriving" derives from
@@ -244,7 +244,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Moor',
     bounds: cell(PITCH * 2, PITCH), // east of the Highlands — [60,100] x [20,60]
     unlocked: false,
-    adjacent: ['highlands', 'cave'], // §4.2 — the cave system abuts the moor to the north
+    adjacent: ['highlands', 'cave', 'alpine'], // §4.2 — the cave abuts N; the alpine summit abuts E (the Moor's first arm)
     tier: 4, // a parallel arm off the Highlands (like the Riverbank)
     prereq: 'highlands',
     color: 0x6a4f72, // heather purple
@@ -291,6 +291,22 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     tier: 6,
     prereq: 'coast',
     color: 0x5e6850, // muted olive-mud — brackish saltmarsh / mudflat
+  },
+  // §4.2 — ALPINE / MONTANE SUMMIT: the difficulty CEILING (the endgame mastery biome). The bare rocky
+  // tops ABOVE the heather, E of the Moor [100,140]x[20,60] — the Moor's first arm (a single-successor
+  // extension off the previously-terminal heather; the climb reads Highlands → Moor → Alpine summit).
+  // ⚠️ TIER 5 (moor(4)+1) — NOT a Tier widen: the difficulty is the SPECIES tuning (the wariest, lowest
+  // base rates, lowest cover), never the tier number (shakeCountForTier clamps at 5). Pure data — the
+  // exposure (low cover + high wariness) IS the challenge; a TAME snow-bunting valve keeps the floor fair.
+  alpine: {
+    id: 'alpine',
+    displayName: 'Alpine Summit',
+    bounds: cell(PITCH * 3, PITCH), // east of the Moor — [100,140] x [20,60]
+    unlocked: false,
+    adjacent: ['moor'],
+    tier: 5, // moor(4)+1; the access ladder depth — NOT the catch difficulty (that's the species)
+    prereq: 'moor',
+    color: 0x8a8f96, // cold grey scree / bare rock — the exposed summit above the heather
   },
 };
 
@@ -470,7 +486,13 @@ export type SpeciesId =
   | 'oystercatcher'
   | 'redshank'
   | 'avocet'
-  | 'knot';
+  | 'knot'
+  // Alpine/Montane (§4.2, the difficulty CEILING — honest climate-pressured summit specialists, no raptor).
+  | 'snowbunting'
+  | 'meadowpipit'
+  | 'wheatear'
+  | 'goldenplover'
+  | 'ringouzel';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -583,6 +605,12 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'redshank',
   'avocet',
   'knot',
+  // Alpine/Montane (§4.2 — the difficulty CEILING).
+  'snowbunting',
+  'meadowpipit',
+  'wheatear',
+  'goldenplover',
+  'ringouzel',
 ];
 
 /**
@@ -923,6 +951,43 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'A dumpy grey wader that gathers in vast tight flocks, wheeling and twisting as one smoke-like cloud over the falling tide; it flies from the high Arctic to winter here.',
     status: '⚠️ Near-threatened and declining — the knot depends on a handful of estuaries, so the loss of any one of them hits the whole flyway.',
+  },
+  // Alpine/Montane (§4.2) — HONEST status; the real summit stakes: a fauna squeezed upward by a warming
+  // climate with NOWHERE HIGHER to go. The tame snow bunting is the floor; the wary ring ouzel the apex.
+  snowbunting: {
+    fieldNote:
+      'The snowflake of the summit — the snow bunting picks seeds from the bare scree by day, so confiding it will feed at a walker’s feet. The highest-nesting bird in Britain.',
+    behaviour:
+      'A white-winged little bunting that flickers over the boulders like blown snow; almost tame on the tops, it barely lifts as you approach — it has learned no fear up here.',
+    status: '⚠️ A tiny, vulnerable summit population — a handful of pairs cling to the very highest tops, and as the snowline retreats there is nowhere higher for them to go.',
+  },
+  meadowpipit: {
+    fieldNote:
+      'The small streaked bird of the open hill — the meadow pipit flits low over the grass and rock by day, taking insects. The background life of every summit.',
+    behaviour:
+      'A slight brown-streaked pipit that rises with a thin “seep-seep” and parachutes down in song-flight; restless, never still for long on the bare ground.',
+    status: 'Still common and widespread on the high ground — the summit’s steady background bird, though slowly declining on lower moors.',
+  },
+  wheatear: {
+    fieldNote:
+      'The bobbing white-rump of the stony tops — the northern wheatear flicks between boulders after insects by day, a long-haul migrant up from Africa for the brief hill summer.',
+    behaviour:
+      'A neat grey-and-buff chat that bounds along the ground and bobs on a rock, flashing a bright white rump as it flies; it nests deep in the scree and rabbit burrows.',
+    status: 'A widespread summer migrant of the high tops, but declining — one of the long-distance travellers being squeezed at both ends of its journey.',
+  },
+  goldenplover: {
+    fieldNote:
+      'The haunting whistle of the high plateau — the golden plover takes insects from the open tops by day, spangled gold and black, wary and far-carrying of voice.',
+    behaviour:
+      'A trim spangled plover that stands sentinel on a hummock and runs-and-stops over the bare ground; it whistles a mournful single note and slips away long before you near.',
+    status: '⚠️ Declining as a breeder — the golden plover is being pushed off the warming southern tops, its high-ground nesting squeezed upslope into ever less space.',
+  },
+  ringouzel: {
+    fieldNote:
+      'The shy “mountain blackbird” of the crags — the ring ouzel works the steep gullies for insects and berries by day, a white crescent on its breast. The wariest bird of the tops.',
+    behaviour:
+      'A dark blackbird-like thrush with a pale gorget that keeps to the broken crags, flushing far ahead with a hard “tac-tac” and a wild chattering song — gone before you close the gap.',
+    status: '⚠️ Declining sharply — the ring ouzel is a climate-and-disturbance casualty, retreating up the warming hills with the bare crags it needs running out beneath it.',
   },
 };
 
@@ -1763,6 +1828,105 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     profile:
       'The smoke over the mudflats — a grey wader in flocks tens of thousands strong, probing for tiny shellfish. ⚠️ Near-threatened; it depends on a handful of estuaries, so losing one hits all.',
   },
+  // --- Alpine/Montane (§4.2) — the difficulty CEILING. Pure DATA: difficulty = tuning EXISTING knobs
+  // (baseCatchRate / detectionRadius / baseFleeSpeed) + the biome's LOW cover (1 boulder). All gait BIRD.
+  // ⚠️ The crux: a TAME snow-bunting VALVE (lowest detectionRadius → never spooks exposed → calm → no
+  // flee penalty; high baseCatchRate → bait-less point-blank) keeps the FLOOR fair DESPITE zero cover.
+  // The wary apex (ring ouzel — highest detectionRadius, lowest baseCatchRate, still > 0) is the CEILING:
+  // hard, never a wall. NO raptor (eagle/raven = carrion/predator, no honest bait — dropped). Tier 5. ---
+  snowbunting: {
+    id: 'snowbunting',
+    gait: 'bird',
+    displayName: 'Snow Bunting',
+    biome: 'alpine',
+    // ⚠️ THE TAME VALVE (the anti-lockout floor): the LOWEST detectionRadius in the game (~2.0 — it does
+    // NOT spook even approached EXPOSED → stays calm → no flee penalty) + a HIGH baseCatchRate (0.5) →
+    // catchable BAIT-LESS, point-blank, with ZERO cover. Wariness, not cover, is the dial (pinned).
+    spawnWeight: 6,
+    baseFleeSpeed: 2.6, // it barely lifts — the confiding "snowflake"
+    detectionRadius: 2.0, // the lowest in the game — tame on the tops
+    activityWindow: 'day',
+    tier: 5,
+    baseCatchRate: 0.5,
+    bait: 'seeds',
+    color: 0xe8e8ec, // snow-white plumage (the dark wing-tips are the model accent)
+    size: 0.22,
+    profile:
+      'The snowflake of the summit, so confiding it feeds at a walker’s feet — the highest-nesting bird in Britain. ⚠️ A tiny vulnerable population with nowhere higher to go as the snowline retreats.',
+  },
+  meadowpipit: {
+    id: 'meadowpipit',
+    gait: 'bird',
+    displayName: 'Meadow Pipit',
+    biome: 'alpine',
+    spawnWeight: 6,
+    baseFleeSpeed: 3.2,
+    detectionRadius: 2.8,
+    activityWindow: 'day',
+    tier: 5,
+    baseCatchRate: 0.4,
+    bait: 'insects',
+    color: 0x9a8a6a, // streaky olive-brown
+    size: 0.2,
+    profile:
+      'The small streaked bird of the open hill, flitting low over the grass and rock for insects — the steady background life of every summit. Common, but slowly declining on the lower moors.',
+  },
+  wheatear: {
+    id: 'wheatear',
+    gait: 'bird',
+    displayName: 'Northern Wheatear',
+    biome: 'alpine',
+    spawnWeight: 5,
+    baseFleeSpeed: 3.6,
+    detectionRadius: 3.5,
+    activityWindow: 'day',
+    tier: 5,
+    baseCatchRate: 0.3,
+    bait: 'insects',
+    color: 0xa8a09a, // grey-and-buff (the white rump is the model accent)
+    size: 0.22,
+    profile:
+      'The bobbing white-rump of the stony tops, bounding between boulders after insects — a long-haul migrant up from Africa for the brief hill summer. Widespread but declining at both ends of its journey.',
+  },
+  goldenplover: {
+    id: 'goldenplover',
+    gait: 'bird',
+    displayName: 'Golden Plover',
+    biome: 'alpine',
+    // Hard (0.18): wary, far-carrying, slips away long before you near.
+    spawnWeight: 4,
+    baseFleeSpeed: 4.0,
+    detectionRadius: 4.5,
+    activityWindow: 'day',
+    tier: 5,
+    baseCatchRate: 0.18,
+    bait: 'insects',
+    color: 0x8a7a3a, // spangled gold-and-black
+    size: 0.3,
+    profile:
+      'The haunting whistle of the high plateau, spangled gold and black, standing sentinel on a hummock and slipping away before you near. ⚠️ Declining — pushed off the warming southern tops, squeezed upslope.',
+  },
+  ringouzel: {
+    id: 'ringouzel',
+    gait: 'bird',
+    displayName: 'Ring Ouzel',
+    biome: 'alpine',
+    // ⚠️ THE APEX / CEILING (0.10 — BELOW the highlands dotterel's 0.12, the genuine ceiling) + the
+    // HIGHEST detectionRadius in the game (5.5 — the wariest catch): it spooks at long range, and the
+    // biome's LOW cover means you trip the flee with nowhere to hide → it demands the throwing-net + the
+    // one boulder + patience. ⚠️ baseCatchRate > 0 — catchable WITH MASTERY (net + calm), never a wall.
+    spawnWeight: 3,
+    baseFleeSpeed: 4.4, // fast, but below maxSpeed (6) — catchable on foot with the net
+    detectionRadius: 5.5, // the wariest in the game (past the mountain hare's 5.0)
+    activityWindow: 'day',
+    tier: 5,
+    baseCatchRate: 0.1,
+    bait: 'insects',
+    color: 0x2e2e32, // sooty blackbird-dark (the white gorget crescent is the model accent)
+    size: 0.3,
+    profile:
+      'The shy “mountain blackbird” of the crags, a white crescent on its breast, flushing far ahead with a hard “tac-tac” — the wariest bird of the tops. ⚠️ Declining sharply, a climate-and-disturbance casualty.',
+  },
 };
 
 // ===========================================================================
@@ -1892,6 +2056,11 @@ export const HIDING_SPOTS: readonly HidingSpotDef[] = [
   // Tidal/Saltmarsh (§4.2) — saltmarsh grass tussocks (reuses the meadow grass render). Clear of the pools.
   { biome: 'tidal', x: 72, y: 110, radius: 2.2, kind: 'grass' },
   { biome: 'tidal', x: 90, y: 128, radius: 2.0, kind: 'grass' },
+  // Alpine/Montane (§4.2) — ⚠️ ONE sparse boulder cluster (x∈[100,140], y∈[20,60]): the LOWEST cover in
+  // the game. The exposure IS the difficulty — the open scree leaves the wary species nowhere to hide;
+  // this single 'rocks' foothold is the apex's mastery loop (close in from it, the net does the rest).
+  // The TAME snow-bunting valve needs no cover at all (wariness, not cover, is the dial). Reuses 'rocks'.
+  { biome: 'alpine', x: 120, y: 40, radius: 2.2, kind: 'rocks' },
 ];
 
 /** The portable HIDE (Nets & Gear slice C) — naturalist gear you DEPLOY at your
@@ -2061,6 +2230,7 @@ export const SUPPLY_POSTS: readonly SupplyPostDef[] = [
   { biome: 'pineforest', x: 0, y: 72, radius: 2.5 }, // in a forest clearing, clear of the bracken
   { biome: 'cave', x: 70, y: 84, radius: 2.5 }, // a dry cavern floor, clear of the pool + the stalagmites
   { biome: 'tidal', x: 68, y: 122, radius: 2.5 }, // on a dry marsh hummock, clear of the tidal pools
+  { biome: 'alpine', x: 110, y: 30, radius: 2.5 }, // on the open scree, clear of the single boulder cluster
 ];
 
 /** Closing the Field Supply steps the player OUT the door (−y), this far PAST the
@@ -2923,6 +3093,38 @@ export const SPECIES_MODEL: Record<
     beakLengthR: 0.6,
     crestHeightR: 0.1,
   },
+  // Alpine/Montane (§4.2) — five summit birds (the BIRD build; reuses the bird model — NO new render
+  // character). Short passerine bills + the plover's stubby bill; accents carry each bird's signature.
+  snowbunting: {
+    kind: 'bird',
+    accent: 0x3a3a40, // the dark wing-tips on the snow-white body
+    beakLengthR: 0.4, // a short finch/bunting bill
+    crestHeightR: 0.1,
+  },
+  meadowpipit: {
+    kind: 'bird',
+    accent: 0x4a3a28, // the dark streaking
+    beakLengthR: 0.45, // a fine pipit bill
+    crestHeightR: 0.1,
+  },
+  wheatear: {
+    kind: 'bird',
+    accent: 0xece8e2, // the bright white rump (the signature)
+    beakLengthR: 0.45,
+    crestHeightR: 0.1,
+  },
+  goldenplover: {
+    kind: 'bird',
+    accent: 0x1a1a12, // the black belly + spangling
+    beakLengthR: 0.35, // a short stubby plover bill
+    crestHeightR: 0.1,
+  },
+  ringouzel: {
+    kind: 'bird',
+    accent: 0xe8e8ec, // the white breast-crescent gorget (the signature)
+    beakLengthR: 0.5, // a thrush bill
+    crestHeightR: 0.1,
+  },
 } as const;
 
 // ===========================================================================
@@ -3018,6 +3220,8 @@ export const MISSION_ORDER: readonly string[] = [
   'research-dipper-insects',
   // §4.2 — the TIDAL's by-PLAY mastery gate (the 5th-diet biome; a species+bait challenge, no phase).
   'research-turnstone-insects',
+  // §4.2 — the ALPINE's by-PLAY mastery gate (the difficulty-ceiling biome; a species+bait challenge).
+  'research-grouse-greens',
 ];
 
 /**
@@ -3306,6 +3510,23 @@ export const MISSIONS: Record<string, MissionDef> = {
     standalone: true,
     hint: 'Not quite — set out INSECT bait for the shore’s stone-turner, the small creatures it levers from under the weed.',
   },
+  // §4.2 — the ALPINE/MONTANE multi-condition mastery gate (the #92 unblock) — the hardest endgame gate.
+  // SPECIES + BAIT, no phase. The ACTIVITY is in the prereq MOOR → the #37 breadcrumb, never a wall.
+  // NON-FORCED via BAIT: the red grouse is catchable bait-less, so requiring its REAL diet (greens — it
+  // crops young heather shoots, the bird of the managed moor) is a deliberate field-craft choice (#48
+  // inverse: normal Moor play never forces a greens-baited grouse). unlock-the-alpine wraps it (R2).
+  'research-grouse-greens': {
+    id: 'research-grouse-greens',
+    biome: 'moor',
+    title: 'Research: The Bird of the Heather',
+    description:
+      'A plump red-brown game bird that crops young heather shoots by day and is found nowhere else on Earth. Identify it from your field guide, then prove you know its table: catch one over GREENS bait.',
+    requirement: { kind: 'research', species: 'redgrouse', bait: 'greens', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not quite — set out GREENS bait for the moor’s heather bird, the young shoots it truly crops.',
+  },
 };
 
 /** Completing ALL of a biome's missions unlocks the mapped biome (lateral reward
@@ -3320,6 +3541,7 @@ export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, readonly BiomeId[]>> = {
   highlands: ['riverbank', 'moor'], // §4.2 — the 1st BRANCH: the Highlands set unlocks BOTH
   riverbank: ['coast', 'cave'], // §4.2 — the Riverbank forks: the sea (Coast) AND underground (Cave)
   coast: ['tidal'], // §4.2 — the Coast's first arm: the estuary/saltmarsh (a single-successor extension)
+  moor: ['alpine'], // §4.2 — the Moor's first arm: the alpine summit (a single-successor extension; was a terminus)
 };
 
 /** §4.1c ESCALATING knowledge gates: in ADDITION to the catch-set, a biome's unlock
@@ -3580,6 +3802,20 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     knowledgeRequirement: 'research-turnstone-insects', // by PLAY only — the non-forced species+bait catch
     reward: { kind: 'biome-access', biome: 'tidal' },
   },
+  // §4.2 — ALPINE/MONTANE access (R2's pattern), the MOOR's first arm (a single-successor extension — the
+  // bare summit east of the heather, the difficulty ceiling). cost 0 (the Alpine species are win-required
+  // → anti-wall). knowledgeRequirement = research-grouse-greens, a NON-FORCED species+bait challenge
+  // (#92) — double-enforced with isUnlockGateMet. The activity is moor study (you're there by now).
+  'unlock-the-alpine': {
+    id: 'unlock-the-alpine',
+    area: 'alpine',
+    name: 'Summit Access',
+    blurb: 'Climb east off the heather to the bare rocky tops, learn the red grouse’s table, and the alpine summit opens.',
+    cost: 0,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'moor', count: 4 },
+    knowledgeRequirement: 'research-grouse-greens', // by PLAY only — the non-forced species+bait catch
+    reward: { kind: 'biome-access', biome: 'alpine' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
@@ -3597,6 +3833,7 @@ export const RESEARCH_ORDER: readonly string[] = [
   'unlock-the-cave', // §4.2 — the always-dark biome (a 2nd arm off the Riverbank set)
   'study-the-shellfish-eaters', // §4.2 — the 5th-diet bait (OPTIONAL sink, never required)
   'unlock-the-tidal', // §4.2 — the saltmarsh/estuary (the Coast's first arm)
+  'unlock-the-alpine', // §4.2 — the alpine summit (the Moor's first arm; the difficulty ceiling)
 ];
 
 // ===========================================================================

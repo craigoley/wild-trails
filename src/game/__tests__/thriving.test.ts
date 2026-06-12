@@ -15,16 +15,16 @@ import { SPECIES, SPECIES_ORDER, BIOME_ORDER, THRIVING, type BiomeId } from '../
 const speciesIn = (b: BiomeId) => SPECIES_ORDER.filter((s) => SPECIES[s].biome === b);
 
 describe('Thriving — the derivation (caught-in-biome / total)', () => {
-  it('rises from 0 (none caught) to 1 (all caught) for a NO-PROJECT biome (moor — the guard)', () => {
+  it('rises from 0 (none caught) to 1 (all caught) for a NO-PROJECT biome (cave — the guard)', () => {
     const j = createJournal();
-    // The Moor has NO research project mapped to it (unlock-the-moor's activity is in the Highlands),
-    // so species-catalogued is used ALONE (no division by zero). (The Coast gained the tidal unlock
-    // project — its activity is in the Coast — so it is no longer a no-project biome.)
-    expect(thrivingForBiome(j, 'moor')).toBe(0); // nothing caught
-    const moor = speciesIn('moor');
-    expect(moor.length).toBeGreaterThan(0);
-    moor.forEach((id, i) => recordCatch(j, id, i + 1));
-    expect(thrivingForBiome(j, 'moor')).toBe(1); // every species -> fully thriving
+    // The Cave has NO research project mapped to it (unlock-the-cave's activity is in the Riverbank),
+    // so species-catalogued is used ALONE (no division by zero). (The Moor gained the alpine unlock
+    // project — its activity is in the Moor — so it is no longer a no-project biome.)
+    expect(thrivingForBiome(j, 'cave')).toBe(0); // nothing caught
+    const cave = speciesIn('cave');
+    expect(cave.length).toBeGreaterThan(0);
+    cave.forEach((id, i) => recordCatch(j, id, i + 1));
+    expect(thrivingForBiome(j, 'cave')).toBe(1); // every species -> fully thriving
   });
 
   it('⚠️ the GUARD: a no-project biome never divides by zero (finite, 0..1, for EVERY biome)', () => {

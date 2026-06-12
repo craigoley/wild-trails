@@ -36,6 +36,10 @@ const scenes = [
   // §4.2 — the TIDAL/SALTMARSH: the olive-mud estuary E of the Coast (the brackish tidal pools). A new
   // additive baseline (seeded after Craig approves the marsh look).
   { name: 'tidal-saltmarsh', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,120` },
+  // §4.2 — the ALPINE/MONTANE SUMMIT: the bare cold-grey scree E of the Moor (the single boulder, the
+  // exposed difficulty-ceiling biome). A new additive baseline (seeded after Craig approves the summit
+  // look). Eyeball: does it read as the bare rocky top — distinct from the Moor's heather-purple?
+  { name: 'alpine-summit', query: `?seed=${SEED}&freeze=1&unlock=all&at=120,40` },
 ];
 
 for (const scene of scenes) {
