@@ -19,7 +19,8 @@
 
 import './style.css';
 import { createGameState, update } from './game/GameState';
-import { readTestSeed, isFrozen, applyTestScene, signalRenderReady } from './testHooks';
+import { readTestSeed, readTestSeason, isFrozen, applyTestScene, signalRenderReady } from './testHooks';
+import { seasonOf } from './game/Season';
 import { Controls } from './input/Controls';
 import { SceneManager } from './rendering/SceneManager';
 import { WorldRenderer } from './rendering/WorldRenderer';
@@ -102,6 +103,11 @@ game.tool = journal.activeTool;
 // e.g. ?unlock=all opens biomes and the world renders without the locked-region fog.
 applyTestScene(game);
 
+// §4.6 D1a — the real-world SEASON (the seasonal re-grade input). Read the impure date HERE at the
+// boundary (like the Date.now() boot seed) so the sim stays pure; the pure layer reads game.season.
+// A ?season= URL param pins it for a deterministic L2 capture (seasonal looks else vary by real date).
+game.season = readTestSeason() ?? seasonOf(new Date());
+
 // Autosave: silent, dedup-guarded. persist() syncs the live bait into the journal
 // then writes (only if the store actually changed). Fired on durable milestones
 // (catch / mission) + bait deploy + tab blur — never per-frame.
@@ -141,6 +147,17 @@ const worldRenderer = new WorldRenderer(scene.scene, game.world);
 // §4.3 TL1 — seed the per-biome warmth grade from the loaded journal (a returning player's
 // studied biomes start warm; a fresh one starts in the quiet muted baseline). Cosmetic.
 worldRenderer.setThriving(thrivingByBiome(journal));
+// §4.6 D1a — apply the seasonal re-grade (composes WITH the warmth grade — both seasonal AND thriving)
+// + the winter snow overlay. Cosmetic; visual-only (no spawn/catch touch — that's D1b).
+worldRenderer.setSeason(game.season);
+// Refresh the season when the tab regains focus (a long session may cross a month boundary). The
+// impure date stays at the boundary; ?season= (if pinned) keeps an L2 capture deterministic.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    game.season = readTestSeason() ?? seasonOf(new Date());
+    worldRenderer.setSeason(game.season);
+  }
+});
 const entities = new EntityRenderer(scene.scene);
 const hud = new HUD(app);
 // Time-of-day indicator (top-left) — makes the day-night cycle legible: the

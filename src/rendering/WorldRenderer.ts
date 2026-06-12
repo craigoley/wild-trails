@@ -46,7 +46,10 @@ import {
   TRACK_SIGNS,
   WATER_RENDER,
   THRIVING,
+  SEASONAL,
+  SNOW_BIOMES,
   type HidingSpotDef,
+  type Season,
   type SupplyPostDef,
   type WaterDef,
   PALETTE,
@@ -78,6 +81,30 @@ export function warmthGrade(hex: number, thriving: number): number {
   return c.getHex();
 }
 
+/**
+ * §4.6 D1a — the SEASONAL grade: shift a biome's ground colour by season. A photographic colour grade
+ * (a saturation scale + a blend toward the season's TINT) so each season reads as its mood while every
+ * biome KEEPS its identity (a uniform hue rotation would wreck non-green biomes). ⚠️ SUMMER is the
+ * IDENTITY (tintAmount 0, satScale 1) → byte-for-byte today's colour, so a summer-pinned scene's L2
+ * baseline never moves. It COMPOSES with warmthGrade (see `gradedGround`) — the world is BOTH seasonal
+ * AND thriving, never one replacing the other. Cosmetic; not per-frame (only on season change / unlock).
+ */
+export function seasonalGrade(hex: number, season: Season): number {
+  const g = SEASONAL.grade[season];
+  const c = new Color(hex);
+  const hsl = { h: 0, s: 0, l: 0 };
+  c.getHSL(hsl);
+  c.setHSL(hsl.h, hsl.s * g.satScale, hsl.l); // the seasonal saturation wash (winter desaturates)
+  if (g.tintAmount > 0) c.lerp(new Color(g.tint), g.tintAmount); // blend toward the seasonal tint
+  return c.getHex();
+}
+
+/** The composed ground colour — BOTH seasonal AND thriving: warmthGrade(seasonalGrade(base), thriving).
+ *  The single source for every ground re-grade (rebuild / setThriving / setSeason) so they can't drift. */
+export function gradedGround(base: number, season: Season, thriving: number): number {
+  return warmthGrade(seasonalGrade(base, season), thriving);
+}
+
 const rectW = (r: Rect): number => r.maxX - r.minX;
 const rectH = (r: Rect): number => r.maxY - r.minY;
 const rectCX = (r: Rect): number => (r.minX + r.maxX) / 2;
@@ -93,9 +120,15 @@ export class WorldRenderer {
   /** §4.3 TL1 — per-biome "thriving" 0..1 (the warmth grade input). Set by `setThriving` from
    *  the journal; defaults to 0 (the muted baseline) until the first update. Cosmetic only. */
   private thriving: Record<string, number> = {};
-  /** Unlocked biomes' ground materials + base colours, so `setThriving` can re-grade them in
-   *  place (no rebuild) when thriving changes on a catch. */
+  /** §4.6 D1a — the current real-world season (the re-grade input). Defaults to 'summer' (the
+   *  identity grade) until `setSeason`; the boundary sets it from the real date / the ?season= hook. */
+  private season: Season = 'summer';
+  /** Unlocked biomes' ground materials + base colours, so `setThriving` / `setSeason` can re-grade
+   *  them in place (no rebuild) when thriving or the season changes. */
   private readonly groundMats = new Map<string, { mat: MeshStandardMaterial; base: number }>();
+  /** §4.6 D1a — the winter SNOW overlay planes (one per unlocked snow-opt-in biome), built in
+   *  rebuildDynamic and toggled visible by `setSeason` (visible only in winter). */
+  private snowOverlays: Mesh[] = [];
 
   constructor(scene: Scene, world: World) {
     this.group.add(this.dynamic);
@@ -134,8 +167,23 @@ export class WorldRenderer {
   setThriving(thriving: Record<string, number>): void {
     this.thriving = thriving;
     for (const [id, { mat, base }] of this.groundMats) {
-      mat.color.setHex(warmthGrade(base, thriving[id] ?? 0));
+      mat.color.setHex(gradedGround(base, this.season, thriving[id] ?? 0));
     }
+  }
+
+  /**
+   * §4.6 D1a — set the real-world SEASON (cosmetic). Re-grades every unlocked biome's ground IN PLACE
+   * (the proven setThriving path) through the composed seasonal+thriving grade, and toggles the winter
+   * snow overlays. Called once at boot (and on focus) from the boundary — never per frame. READS the
+   * passed season; the renderer never reads the clock/date (that's the boundary's job). VISUAL ONLY —
+   * the season touches nothing in the sim (spawn/catch/journal): D1a is the re-grade, the emphasis is D1b.
+   */
+  setSeason(season: Season): void {
+    this.season = season;
+    for (const [id, { mat, base }] of this.groundMats) {
+      mat.color.setHex(gradedGround(base, season, this.thriving[id] ?? 0));
+    }
+    for (const snow of this.snowOverlays) snow.visible = season === 'winter';
   }
 
   /** Dispose the old dynamic meshes (no GPU leak on repeated unlocks) and rebuild
@@ -149,6 +197,7 @@ export class WorldRenderer {
     }
     this.dynamic.clear();
     this.groundMats.clear(); // the old ground materials are disposed above; rebuild the map
+    this.snowOverlays = []; // the old snow planes were disposed above; rebuild the list
 
     for (const id of world.order) {
       const biome = world.biomes[id];
@@ -157,7 +206,7 @@ export class WorldRenderer {
       // Ground plane. Locked biomes are darkened (out of reach); UNLOCKED biomes carry the §4.3
       // warmth grade (muted when unstudied -> rich as it thrives) — a sibling to the locked dim.
       const color = biome.unlocked
-        ? warmthGrade(biome.def.color, this.thriving[id] ?? 0)
+        ? gradedGround(biome.def.color, this.season, this.thriving[id] ?? 0)
         : dim(biome.def.color, BIOME_RENDER.lockedDim);
       const groundMat = new MeshStandardMaterial({ color, roughness: 1 });
       const ground = new Mesh(new PlaneGeometry(rectW(r), rectH(r)), groundMat);
@@ -165,6 +214,25 @@ export class WorldRenderer {
       ground.position.set(rectCX(r), 0, rectCY(r));
       this.dynamic.add(ground);
       if (biome.unlocked) this.groundMats.set(id, { mat: groundMat, base: biome.def.color });
+
+      // §4.6 D1a — the winter SNOW overlay (a translucent white plane over the ground; the fog-veil
+      // pattern). Built for every unlocked snow-opt-in biome, visible ONLY in winter (setSeason toggles).
+      if (biome.unlocked && SNOW_BIOMES[id]) {
+        const snow = new Mesh(
+          new PlaneGeometry(rectW(r), rectH(r)),
+          new MeshBasicMaterial({
+            color: SEASONAL.snow.color,
+            transparent: true,
+            opacity: SEASONAL.snow.opacity,
+            depthWrite: false,
+          }),
+        );
+        snow.rotation.x = -Math.PI / 2;
+        snow.position.set(rectCX(r), SEASONAL.snow.y, rectCY(r));
+        snow.visible = this.season === 'winter';
+        this.dynamic.add(snow);
+        this.snowOverlays.push(snow);
+      }
 
       // Fog veil over locked biomes — a translucent dark plane above the ground.
       if (!biome.unlocked) {

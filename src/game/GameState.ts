@@ -72,6 +72,7 @@ import {
   TRACKING,
   TRACK_SIGNS,
   type BaitId,
+  type Season,
   type SpeciesId,
 } from '../utils/constants';
 import type { InputIntent } from './Input';
@@ -115,6 +116,12 @@ export interface GameState {
   world: World;
   currentBiome: BiomeId;
   dayPhase: DayPhase;
+  /** §4.6 D1 — the real-world season (ATMOSPHERE + TEACHING, never a gate). A BOUNDARY-set input:
+   *  unlike dayPhase (computed from the pure run clock in update()), the season comes from the real
+   *  wall-clock date, so main.ts sets it (game.season = readTestSeason() ?? seasonOf(new Date())) and
+   *  update() leaves it alone — the impure Date.now() never enters the pure sim. Defaults to 'summer'
+   *  (the identity grade) until the boundary sets it. D1a reads it for the render re-grade only. */
+  season: Season;
   timeSec: number;
   rng: Rng;
   animals: Animal[];
@@ -200,6 +207,7 @@ export function createGameState(seed: number = DEFAULT_SEED): GameState {
     world,
     currentBiome: 'meadow',
     dayPhase: dayPhaseAt(0),
+    season: 'summer', // §4.6 D1 — the identity grade; the boundary overrides from the real date
     timeSec: 0,
     rng: createRng(seed),
     animals: createAnimalPool(),

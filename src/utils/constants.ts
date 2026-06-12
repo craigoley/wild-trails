@@ -155,6 +155,52 @@ export const THRIVING = {
 } as const;
 
 /**
+ * §4.6 D1a — the SEASONAL re-grade (render). `seasonalGrade(base, season)` shifts a biome's ground
+ * colour by season; it COMPOSES with the warmth grade — finalGround = warmthGrade(seasonalGrade(base,
+ * season), thriving) — so the world is BOTH seasonal AND thriving (compose, never replace). Each
+ * season is a photographic colour grade: a saturation scale + a blend toward a seasonal TINT (a tint
+ * blend reads as the season's mood while preserving each biome's identity — a uniform hue rotation
+ * would wreck biomes whose base hue isn't green). ⚠️ SUMMER is the IDENTITY (tintAmount 0, satScale 1)
+ * → a summer-pinned scene renders byte-for-byte as today (the existing L2 baselines never move). Winter
+ * also drops a translucent SNOW overlay (per-biome opt-in, SNOW_BIOMES). Tuned on device (the look gate).
+ */
+export const SEASONAL = {
+  grade: {
+    // spring: fresher, a touch brighter + more saturated, a light green-gold tint.
+    spring: { tint: 0xbff29a, tintAmount: 0.1, satScale: 1.06 },
+    // ⚠️ summer: the IDENTITY — no tint, no sat change (today's look; baselines don't move).
+    summer: { tint: 0xffffff, tintAmount: 0.0, satScale: 1.0 },
+    // autumn: toward gold/amber, warm + slightly muted.
+    autumn: { tint: 0xd6912e, tintAmount: 0.22, satScale: 0.93 },
+    // winter: desaturated + cool + lightened toward snow-grey (the cold wash).
+    winter: { tint: 0xd2e2f0, tintAmount: 0.32, satScale: 0.55 },
+  },
+  /** The winter SNOW overlay — a translucent white plane over a snow-opt-in biome's ground (the
+   *  established fog-veil pattern). Just above the ground; entities composite over it (depthTest:false). */
+  snow: {
+    color: 0xeef3f7,
+    opacity: 0.4,
+    y: 0.03, // just above the ground plane (the fog veil sits at fogY 0.02 over LOCKED biomes — disjoint)
+  },
+} as const;
+
+/** §4.6 D1a — which biomes get the winter SNOW overlay (per-biome opt-in). The Cave is underground →
+ *  never snows; every surface biome does. A future tuning knob (e.g. the coast lighter) is a data edit. */
+export const SNOW_BIOMES: Partial<Record<BiomeId, boolean>> = {
+  meadow: true,
+  woodland: true,
+  wetland: true,
+  highlands: true,
+  riverbank: true,
+  coast: true,
+  moor: true,
+  pineforest: true,
+  cave: false, // underground — no snow
+  tidal: true,
+  alpine: true,
+};
+
+/**
  * The biome graph. A 2x2 grid of equal cells:
  *
  *     WOODLAND (0, +PITCH) | HIGHLANDS (+PITCH, +PITCH)
@@ -335,6 +381,16 @@ export const BIOME_RENDER = {
 /** The four phases of the day-night cycle. Time of day gates which species are
  *  out (the educational mechanic: crepuscular animals only at dawn/dusk, etc). */
 export type DayPhase = 'dawn' | 'day' | 'dusk' | 'night';
+
+/** §4.6 D1 — the four real-world seasons. The season is ATMOSPHERE + TEACHING, NEVER a gate
+ *  (the hybrid: the world reflects the real season but nothing is ever missable). D1a reads it
+ *  for the seasonal RE-GRADE only; the spawn EMPHASIS (still never exclusion) is the D1b slice. */
+export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
+
+/** Which half of the world — flips the season-by-month mapping (Dec is winter up north, summer
+ *  down south). Northern is the default (the roster is British wildlife); a Southern setting is a
+ *  future data swap, never a rewrite — the `hemisphere` arg is threaded from day one. */
+export type Hemisphere = 'northern' | 'southern';
 
 /** A species' activity window: one day phase, or ANY (out at all hours). */
 export type ActivityWindow = DayPhase | 'any';
