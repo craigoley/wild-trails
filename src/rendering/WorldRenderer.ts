@@ -28,6 +28,7 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   PlaneGeometry,
+  SphereGeometry,
   type Scene,
 } from 'three';
 import type { World } from '../game/World';
@@ -48,6 +49,9 @@ import {
   THRIVING,
   SEASONAL,
   SNOW_BIOMES,
+  SEASONAL_FLORA,
+  SEASONAL_DRESSING,
+  type BiomeId,
   type HidingSpotDef,
   type Season,
   type SupplyPostDef,
@@ -129,6 +133,14 @@ export class WorldRenderer {
   /** §4.6 D1a — the winter SNOW overlay planes (one per unlocked snow-opt-in biome), built in
    *  rebuildDynamic and toggled visible by `setSeason` (visible only in winter). */
   private snowOverlays: Mesh[] = [];
+  /** §4.6 D1c-i — the COVER/FLORA prop materials, tracked (like groundMats) so `setSeason` re-tints the
+   *  foliage by season (gold/frost/fresh). Built ONCE with the static cover props; FOLIAGE biomes only
+   *  (rocks/pines are excluded — austere/evergreen). */
+  private readonly propMats: { mat: MeshStandardMaterial; base: number }[] = [];
+  /** §4.6 D1c-i — the spring BLOOM accent meshes (meadow), toggled visible by `setSeason`. */
+  private readonly bloomProps: Mesh[] = [];
+  /** §4.6 D1c-i — the grass blades hidden in WINTER for a thinner frosted tuft (toggled by `setSeason`). */
+  private readonly winterThinProps: Mesh[] = [];
 
   constructor(scene: Scene, world: World) {
     this.group.add(this.dynamic);
@@ -184,6 +196,14 @@ export class WorldRenderer {
       mat.color.setHex(gradedGround(base, season, this.thriving[id] ?? 0));
     }
     for (const snow of this.snowOverlays) snow.visible = season === 'winter';
+    // §4.6 D1c-i — re-dress the cover/flora: re-tint the foliage (the proven seasonalGrade, in place),
+    // and toggle the seasonal accents. ⚠️ summer = identity → props return to today's look (baselines
+    // don't move). The per-biome map (SEASONAL_FLORA) already excluded the rock/cave/alpine props.
+    for (const { mat, base } of this.propMats) mat.color.setHex(seasonalGrade(base, season));
+    // ⚠️ Bloom is SPRING-ONLY (not summer): summer must stay byte-for-byte today's look so the existing
+    // 10 summer baselines don't move (the pin). Spring is the iconic bloom anyway; summer = lush green.
+    for (const bloom of this.bloomProps) bloom.visible = season === 'spring';
+    for (const blade of this.winterThinProps) blade.visible = season !== 'winter';
   }
 
   /** Dispose the old dynamic meshes (no GPU leak on repeated unlocks) and rebuild
@@ -378,6 +398,12 @@ export class WorldRenderer {
     this.group.add(canopies);
   }
 
+  /** §4.6 D1c-i — register a cover material for the seasonal re-tint, but ONLY for a FOLIAGE biome
+   *  (SEASONAL_FLORA): the rock/cave/alpine props stay austere; the pines are evergreen (never tracked). */
+  private trackFoliage(biome: BiomeId, mat: MeshStandardMaterial, base: number): void {
+    if (SEASONAL_FLORA[biome]?.foliage) this.propMats.push({ mat, base });
+  }
+
   /** Build a cover prop in the shape that fits its biome (the kind dispatch). The
    *  stealth mechanic treats every kind identically — only the look differs. */
   private addCover(spot: HidingSpotDef): void {
@@ -411,6 +437,7 @@ export class WorldRenderer {
   private addFernCluster(spot: HidingSpotDef): void {
     const geo = new ConeGeometry(FERN_RENDER.frondRadius, FERN_RENDER.frondHeight, 5);
     const mat = new MeshStandardMaterial({ color: FERN_RENDER.color, roughness: 1 });
+    this.trackFoliage(spot.biome, mat, FERN_RENDER.color); // §4.6 D1c-i — bracken golds in autumn
     for (let i = 0; i < FERN_RENDER.frondCount; i++) {
       const p = WorldRenderer.spiral(spot, FERN_RENDER.spread, FERN_RENDER.frondCount, i);
       const a = i * (Math.PI * (3 - Math.sqrt(5)));
@@ -426,6 +453,7 @@ export class WorldRenderer {
   private addReedCluster(spot: HidingSpotDef): void {
     const bladeGeo = new CylinderGeometry(REED_RENDER.bladeRadius, REED_RENDER.bladeRadius, REED_RENDER.bladeHeight, 5);
     const bladeMat = new MeshStandardMaterial({ color: REED_RENDER.color, roughness: 1 });
+    this.trackFoliage(spot.biome, bladeMat, REED_RENDER.color); // §4.6 D1c-i — reeds brown-gold in autumn
     const headGeo = new CylinderGeometry(REED_RENDER.cattailRadius, REED_RENDER.cattailRadius, REED_RENDER.cattailHeight, 6);
     const headMat = new MeshStandardMaterial({ color: REED_RENDER.cattailColor, roughness: 1 });
     for (let i = 0; i < REED_RENDER.bladeCount; i++) {
@@ -462,6 +490,7 @@ export class WorldRenderer {
   private addGrassCluster(spot: HidingSpotDef): void {
     const bladeGeo = new ConeGeometry(HIDING_RENDER.bladeRadius, HIDING_RENDER.bladeHeight, 5);
     const bladeMat = new MeshStandardMaterial({ color: HIDING_RENDER.color, roughness: 1 });
+    this.trackFoliage(spot.biome, bladeMat, HIDING_RENDER.color); // §4.6 D1c-i — re-tints by season
     const fill = spot.radius * HIDING_RENDER.spread;
     const golden = Math.PI * (3 - Math.sqrt(5)); // golden angle
     for (let i = 0; i < HIDING_RENDER.bladeCount; i++) {
@@ -471,6 +500,27 @@ export class WorldRenderer {
       const blade = new Mesh(bladeGeo, bladeMat);
       blade.position.set(spot.x + Math.cos(a) * r, HIDING_RENDER.bladeHeight / 2, spot.y + Math.sin(a) * r);
       this.group.add(blade);
+      // §4.6 D1c-i — WINTER "bare": every Nth blade is hidden in winter for a thinner frosted tuft
+      // (evenly distributed by the golden-angle order, so it thins uniformly rather than leaving a hole).
+      if (SEASONAL_FLORA[spot.biome]?.foliage && i % SEASONAL_DRESSING.winterThinEvery === 0) {
+        this.winterThinProps.push(blade);
+      }
+    }
+    // §4.6 D1c-i — the spring BLOOM accents (the meadow's alone): a FEW small bright flower dots
+    // among the blades, toggled visible only in spring by setSeason. Sparse + small = tasteful.
+    if (SEASONAL_FLORA[spot.biome]?.bloom) {
+      const B = SEASONAL_DRESSING.bloom;
+      const flowerGeo = new SphereGeometry(B.radius, 5, 4);
+      for (let i = 0; i < B.count; i++) {
+        const r = fill * Math.sqrt((i + 0.5) / B.count) * B.tuftRadiusFactor;
+        const a = i * golden + B.angleOffset;
+        const mat = new MeshStandardMaterial({ color: B.colors[i % B.colors.length], roughness: B.roughness });
+        const flower = new Mesh(flowerGeo, mat);
+        flower.position.set(spot.x + Math.cos(a) * r, B.height, spot.y + Math.sin(a) * r);
+        flower.visible = false; // setSeason reveals it in spring (built once, toggled)
+        this.group.add(flower);
+        this.bloomProps.push(flower);
+      }
     }
   }
 
