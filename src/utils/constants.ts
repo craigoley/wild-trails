@@ -285,6 +285,10 @@ export const SEASONAL_AMBIENT = {
   maxCount: 64,
   /** The local drift box around the player (world units) — particles wrap within it as they fall/sway. */
   box: { width: 32, height: 16, depth: 32 },
+  /** Global particle opacity (shared across all seasons). */
+  opacity: 0.85,
+  /** Vertical frequency of the lateral sway oscillation (shared across all seasons). */
+  swayFreq: 0.6,
   /** Per-season drift: `count` ≤ maxCount (MODEST — dial on device); `driftY` = fall speed (u/s);
    *  `sway` = lateral wobble (u/s); `color`/`size` = the look. */
   spring: { count: 20, color: 0xe8e6b8, size: 0.22, driftY: 0.25, sway: 0.4 }, // pale pollen, slow float

@@ -55,7 +55,7 @@ export class AmbientRenderer {
     }
     const geo = new BufferGeometry();
     geo.setAttribute('position', new BufferAttribute(this.positions, 3));
-    this.mat = new PointsMaterial({ size: SEASONAL_AMBIENT.summer.size, transparent: true, opacity: 0.85, depthWrite: false });
+    this.mat = new PointsMaterial({ size: SEASONAL_AMBIENT.summer.size, transparent: true, opacity: SEASONAL_AMBIENT.opacity, depthWrite: false });
     this.points = new Points(geo, this.mat);
     this.points.visible = false; // until update picks a season config
     scene.add(this.points);
@@ -90,7 +90,7 @@ export class AmbientRenderer {
     for (let i = 0; i < cfg.count; i++) {
       const j = i * 3;
       pos[j + 1] -= cfg.driftY * dt; // fall
-      pos[j + 0] += Math.sin(pos[j + 1] * 0.6 + i) * cfg.sway * dt; // a cheap deterministic sway
+      pos[j + 0] += Math.sin(pos[j + 1] * SEASONAL_AMBIENT.swayFreq + i) * cfg.sway * dt; // a cheap deterministic sway
       // Wrap within the box (a torus) so the fixed pool never empties.
       if (pos[j + 1] < 0) pos[j + 1] += this.box.height;
       if (pos[j + 0] > hw) pos[j + 0] -= this.box.width;
