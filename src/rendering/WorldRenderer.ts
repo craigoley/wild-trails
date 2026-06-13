@@ -135,9 +135,9 @@ export class WorldRenderer {
   private snowOverlays: Mesh[] = [];
   /** §4.6 D1c-i — the COVER/FLORA prop materials, tracked (like groundMats) so `setSeason` re-tints the
    *  foliage by season (gold/frost/fresh). Built ONCE with the static cover props; FOLIAGE biomes only
-   *  (rocks/pines are excluded — austere/evergreen). Each carries its biome so the per-biome map applies. */
-  private readonly propMats: { biome: BiomeId; mat: MeshStandardMaterial; base: number }[] = [];
-  /** §4.6 D1c-i — the spring/summer BLOOM accent meshes (meadow), toggled visible by `setSeason`. */
+   *  (rocks/pines are excluded — austere/evergreen). */
+  private readonly propMats: { mat: MeshStandardMaterial; base: number }[] = [];
+  /** §4.6 D1c-i — the spring BLOOM accent meshes (meadow), toggled visible by `setSeason`. */
   private readonly bloomProps: Mesh[] = [];
   /** §4.6 D1c-i — the grass blades hidden in WINTER for a thinner frosted tuft (toggled by `setSeason`). */
   private readonly winterThinProps: Mesh[] = [];
@@ -401,7 +401,7 @@ export class WorldRenderer {
   /** §4.6 D1c-i — register a cover material for the seasonal re-tint, but ONLY for a FOLIAGE biome
    *  (SEASONAL_FLORA): the rock/cave/alpine props stay austere; the pines are evergreen (never tracked). */
   private trackFoliage(biome: BiomeId, mat: MeshStandardMaterial, base: number): void {
-    if (SEASONAL_FLORA[biome]?.foliage) this.propMats.push({ biome, mat, base });
+    if (SEASONAL_FLORA[biome]?.foliage) this.propMats.push({ mat, base });
   }
 
   /** Build a cover prop in the shape that fits its biome (the kind dispatch). The
@@ -506,18 +506,18 @@ export class WorldRenderer {
         this.winterThinProps.push(blade);
       }
     }
-    // §4.6 D1c-i — the spring/summer BLOOM accents (the meadow's alone): a FEW small bright flower dots
-    // among the blades, toggled visible only in spring/summer by setSeason. Sparse + small = tasteful.
+    // §4.6 D1c-i — the spring BLOOM accents (the meadow's alone): a FEW small bright flower dots
+    // among the blades, toggled visible only in spring by setSeason. Sparse + small = tasteful.
     if (SEASONAL_FLORA[spot.biome]?.bloom) {
       const B = SEASONAL_DRESSING.bloom;
       const flowerGeo = new SphereGeometry(B.radius, 5, 4);
       for (let i = 0; i < B.count; i++) {
-        const r = fill * Math.sqrt((i + 0.5) / B.count) * 0.8; // sit within the tuft
-        const a = i * golden + 0.5; // offset from the blades so they don't overlap exactly
-        const mat = new MeshStandardMaterial({ color: B.colors[i % B.colors.length], roughness: 0.9 });
+        const r = fill * Math.sqrt((i + 0.5) / B.count) * B.tuftRadiusFactor;
+        const a = i * golden + B.angleOffset;
+        const mat = new MeshStandardMaterial({ color: B.colors[i % B.colors.length], roughness: B.roughness });
         const flower = new Mesh(flowerGeo, mat);
         flower.position.set(spot.x + Math.cos(a) * r, B.height, spot.y + Math.sin(a) * r);
-        flower.visible = false; // setSeason reveals it in spring/summer (built once, toggled)
+        flower.visible = false; // setSeason reveals it in spring (built once, toggled)
         this.group.add(flower);
         this.bloomProps.push(flower);
       }

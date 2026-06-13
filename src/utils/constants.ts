@@ -264,6 +264,9 @@ export const SEASONAL_DRESSING = {
     radius: 0.06,
     height: 0.16, // sits among the blade tips
     colors: [0xe8c84a, 0xd76a8a, 0xeae4ee], // buttercup yellow / campion pink / cow-parsley white
+    tuftRadiusFactor: 0.8, // flowers sit within the grass tuft (fraction of the fill radius)
+    angleOffset: 0.5, // angular offset from the blades so they don't overlap exactly
+    roughness: 0.9,
   },
   /** Winter "bare": hide every Nth grass blade for a thinner, frosted tuft (the tint does the rest). */
   winterThinEvery: 4,
