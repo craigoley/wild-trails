@@ -201,6 +201,37 @@ export const SNOW_BIOMES: Partial<Record<BiomeId, boolean>> = {
 };
 
 /**
+ * §4.6 D1b — SEASONAL EMPHASIS (the 2nd seasons slice): honest phenology as ABUNDANCE, NEVER a gate.
+ * ⚠️ THE SPINE: the season weights a species' SPAWN abundance (the lottery weight); it NEVER touches
+ * ELIGIBILITY (eligibleSpecies is byte-unchanged) — so every species stays findable in EVERY season. A
+ * `seasonTag` (a MINORITY of genuinely-migratory species; residents are untagged → flat 1.0) selects an
+ * abundance CURVE; the multiplier is ALWAYS ≥ the floor (> 0), so a winter player can ALWAYS find a
+ * summer visitor (just rarer). The catch FORMULA is untouched — abundance ≠ catch difficulty.
+ */
+export type SeasonalTag = 'summer-visitor' | 'winter-visitor';
+
+/** ⚠️ The hard ABUNDANCE FLOOR — seasonalAbundance is NEVER below this (> 0), so nothing is ever
+ *  un-findable by season (the anti-lockout spine). Every curve value below already clears it; the floor
+ *  is the structural guarantee a careless future edit can't breach. */
+export const SEASONAL_ABUNDANCE_FLOOR = 0.25;
+
+/** The per-tag abundance CURVE (the spawn-weight multiplier by season). Summer visitors peak in summer
+ *  and thin (never gone) by winter; winter visitors the reverse. All values clear the floor (> 0). */
+export const SEASONAL_ABUNDANCE: Record<SeasonalTag, Record<Season, number>> = {
+  'summer-visitor': { spring: 1.0, summer: 2.0, autumn: 0.6, winter: 0.3 },
+  'winter-visitor': { spring: 0.5, summer: 0.3, autumn: 1.2, winter: 2.0 },
+};
+
+/** §4.6 D1b — the honest phenology TEACHING note per tag (shown on the dex card for a tagged species).
+ *  ⚠️ Reinforces the spine: "scarce, never quite gone" — the abundance shifts, the content never locks. */
+export const SEASONAL_NOTE: Record<SeasonalTag, string> = {
+  'summer-visitor':
+    'A summer visitor — here to breed through the warm months, most numerous in summer, and scarce (though never quite gone) by winter.',
+  'winter-visitor':
+    'A winter visitor — arriving as the cold draws in, most numerous in winter, and scarce (though never quite gone) by summer.',
+};
+
+/**
  * The biome graph. A 2x2 grid of equal cells:
  *
  *     WOODLAND (0, +PITCH) | HIGHLANDS (+PITCH, +PITCH)
@@ -609,6 +640,11 @@ export interface SpeciesDef {
    *  hand net's reach over water — the lateral condition the dip-net (B1) answers.
    *  Omitted/false = flees straight away from the player (unchanged). */
   fleesToWater?: boolean;
+  /** §4.6 D1b — SEASONAL EMPHASIS: a genuinely-migratory species' phenology tag, selecting its spawn-
+   *  ABUNDANCE curve (SEASONAL_ABUNDANCE). ⚠️ Omitted = a RESIDENT (flat 1.0 every season — most of the
+   *  roster). The season weights ABUNDANCE only, NEVER eligibility — a tagged species is still findable
+   *  (abundance > 0) in every season; nothing is ever season-gated. */
+  seasonTag?: SeasonalTag;
 }
 
 /** Deterministic iteration order over the species table. */
@@ -1115,6 +1151,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     size: 0.5,
     profile:
       'Quail forage at first light for seeds and shoots, and would rather run than fly. Coveys roost together in a circle, tails pointing in.',
+    seasonTag: 'summer-visitor', // §4.6 D1b — Britain's only migratory gamebird; here to breed, gone-but-not-quite by winter
   },
   hedgehog: {
     id: 'hedgehog',
@@ -1311,6 +1348,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     size: 0.3,
     profile:
       'Dotterel nest on the highest, stoniest ground of all. Unusually, it is the female who is brighter coloured — the male sits on the eggs and raises the chicks alone.',
+    seasonTag: 'summer-visitor', // §4.6 D1b — a summer visitor to the high tops (its status says so); scarce-not-gone in winter
   },
   // --- Riverbank (§4.2) — flowing water; tier 4-5, the dip-net's biome. ---
   reedbunting: {
@@ -1463,6 +1501,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     size: 0.42,
     profile:
       'A small, dark winter goose that grazes the eelgrass and saltmarsh of the shallow coast, travelling in loose chattering flocks low over the water.',
+    seasonTag: 'winter-visitor', // §4.6 D1b — a winter visitor in good numbers (its status says so); scarce-not-gone in summer
   },
   turnstone: {
     id: 'turnstone',
@@ -1883,6 +1922,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     size: 0.3,
     profile:
       'The smoke over the mudflats — a grey wader in flocks tens of thousands strong, probing for tiny shellfish. ⚠️ Near-threatened; it depends on a handful of estuaries, so losing one hits all.',
+    seasonTag: 'winter-visitor', // §4.6 D1b — flies from the high Arctic to winter here (its profile says so); scarce-not-gone in summer
   },
   // --- Alpine/Montane (§4.2) — the difficulty CEILING. Pure DATA: difficulty = tuning EXISTING knobs
   // (baseCatchRate / detectionRadius / baseFleeSpeed) + the biome's LOW cover (1 boulder). All gait BIRD.
@@ -1943,6 +1983,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     size: 0.22,
     profile:
       'The bobbing white-rump of the stony tops, bounding between boulders after insects — a long-haul migrant up from Africa for the brief hill summer. Widespread but declining at both ends of its journey.',
+    seasonTag: 'summer-visitor', // §4.6 D1b — a long-haul summer migrant up from Africa (its profile says so); scarce-not-gone in winter
   },
   goldenplover: {
     id: 'goldenplover',

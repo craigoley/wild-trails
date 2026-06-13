@@ -39,7 +39,7 @@ describe('Spawn — weighted pick tracks spawnWeight (the rarity axis)', () => {
     const counts: Record<string, number> = { fieldmouse: 0, rabbit: 0 };
     const N = 6000;
     for (let i = 0; i < N; i++) {
-      const s = pickSpecies(eligible, rng);
+      const s = pickSpecies(eligible, 'summer', rng);
       counts[s!.id]++;
     }
     const total = SPECIES.fieldmouse.spawnWeight + SPECIES.rabbit.spawnWeight; // 9
@@ -52,7 +52,7 @@ describe('Spawn — weighted pick tracks spawnWeight (the rarity axis)', () => {
   });
 
   it('returns null for an empty eligible list', () => {
-    expect(pickSpecies([], createRng(1))).toBeNull();
+    expect(pickSpecies([], 'summer', createRng(1))).toBeNull();
   });
 });
 
@@ -62,7 +62,7 @@ describe('Spawn — biome containment', () => {
     const pool = createAnimalPool();
     const rng = createRng(999);
     for (let i = 0; i < 500; i++) {
-      const r = trySpawn(pool, world, 'meadow', 'day', 0, 0, rng);
+      const r = trySpawn(pool, world, 'meadow', 'day', 'summer', 0, 0, rng);
       if (r.animal) expect(r.animal.species).not.toBe('hedgehog');
     }
   });
@@ -77,7 +77,7 @@ describe('Spawn — biome containment', () => {
     let spawned = 0;
     let rejected = 0;
     for (let i = 0; i < 800; i++) {
-      const r = trySpawn(pool, world, 'meadow', 'day', edge, 0, rng);
+      const r = trySpawn(pool, world, 'meadow', 'day', 'summer', edge, 0, rng);
       if (r.outcome === 'spawned') {
         spawned++;
         expect(isInsideBiome(world, 'meadow', r.animal!.x, r.animal!.y)).toBe(true);
@@ -99,12 +99,12 @@ describe('Spawn — bounded population', () => {
     const pool = createAnimalPool();
     const rng = createRng(42);
     for (let i = 0; i < 1000; i++) {
-      trySpawn(pool, world, 'meadow', 'day', 0, 0, rng);
+      trySpawn(pool, world, 'meadow', 'day', 'summer', 0, 0, rng);
       expect(activeAnimalCount(pool)).toBeLessThanOrEqual(SPAWN.maxAnimals);
       expect(pool.length).toBe(SPAWN.maxAnimals); // pool never grows
     }
     expect(activeAnimalCount(pool)).toBe(SPAWN.maxAnimals); // filled up
-    const r = trySpawn(pool, world, 'meadow', 'day', 0, 0, rng);
+    const r = trySpawn(pool, world, 'meadow', 'day', 'summer', 0, 0, rng);
     expect(r.outcome).toBe('pool-full');
     expect(r.animal).toBeNull();
   });
