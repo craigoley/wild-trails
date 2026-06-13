@@ -232,6 +232,44 @@ export const SEASONAL_NOTE: Record<SeasonalTag, string> = {
 };
 
 /**
+ * §4.6 D1c-i — SEASONAL COVER/FLORA re-dress (render). The cover props re-TINT by season (reusing the
+ * D1a seasonalGrade — gold autumn, frost-washed winter, fresh spring; ⚠️ summer is the IDENTITY → the
+ * existing baselines don't move). Per-biome + honest: only FOLIAGE biomes (grass/ferns/reeds) re-tint;
+ * the ROCK biomes (highlands/cave/alpine) stay AUSTERE (stone doesn't change); the cave has no season at
+ * all. Bloom (sparse flower accents) is the meadow's alone. ⚠️ The Pine canopies are EVERGREEN — NOT
+ * re-tinted (conifers don't gold); only the pineforest's bracken understory golds. The honest-omission
+ * discipline, again (no bloom in the alpine, no season in the cave).
+ */
+export const SEASONAL_FLORA: Partial<Record<BiomeId, { foliage: boolean; bloom: boolean }>> = {
+  meadow: { foliage: true, bloom: true }, // grass — golds/frosts + the spring/summer bloom
+  woodland: { foliage: true, bloom: false }, // bracken golds
+  wetland: { foliage: true, bloom: false }, // reeds brown-gold
+  riverbank: { foliage: true, bloom: false }, // reeds brown-gold
+  coast: { foliage: true, bloom: false }, // marram grass — subtle/cool
+  moor: { foliage: true, bloom: false }, // grass gold-brown
+  pineforest: { foliage: true, bloom: false }, // ⚠️ the BRACKEN understory golds; the pines stay evergreen (untracked)
+  tidal: { foliage: true, bloom: false }, // saltmarsh grass — cool winter
+  highlands: { foliage: false, bloom: false }, // rocks — austere stone
+  cave: { foliage: false, bloom: false }, // ⚠️ underground — no season, no dressing
+  alpine: { foliage: false, bloom: false }, // ⚠️ AUSTERE year-round — bare scree, never bloom
+};
+
+/** §4.6 D1c-i — the seasonal dressing prims/toggles (no magic numbers). Sparse + tasteful. */
+export const SEASONAL_DRESSING = {
+  /** The SPRING bloom accents — a FEW small bright flower dots per opted-in cover spot (toggled visible
+   *  in SPRING only; ⚠️ NOT summer, so summer stays today's look + the 10 baselines don't move). Sparse
+   *  + small is the whole discipline (not a flower riot). */
+  bloom: {
+    count: 4, // per cover spot — sparse
+    radius: 0.06,
+    height: 0.16, // sits among the blade tips
+    colors: [0xe8c84a, 0xd76a8a, 0xeae4ee], // buttercup yellow / campion pink / cow-parsley white
+  },
+  /** Winter "bare": hide every Nth grass blade for a thinner, frosted tuft (the tint does the rest). */
+  winterThinEvery: 4,
+} as const;
+
+/**
  * The biome graph. A 2x2 grid of equal cells:
  *
  *     WOODLAND (0, +PITCH) | HIGHLANDS (+PITCH, +PITCH)
