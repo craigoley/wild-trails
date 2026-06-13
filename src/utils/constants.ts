@@ -273,6 +273,31 @@ export const SEASONAL_DRESSING = {
 } as const;
 
 /**
+ * §4.6 D1c-ii — the SEASONAL AMBIENT particle layer (a NEW bounded pool — there was no TL2 to extend).
+ * MODEST density: the D1a snow GROUND overlay does winter's heavy lifting; the air adds a gentle drift
+ * (one calm wintry read, not a blizzard). Per season: spring pollen, summer motes, autumn falling leaves
+ * (trees only), winter drifting snow. ⚠️ A FIXED pool (`maxCount`) — the buffer is allocated ONCE; the
+ * frame loop only mutates floats in place (NO per-frame alloc). `drawRange` limits the rendered count per
+ * season (density without re-alloc). Freeze → static (seeded, not advanced). Tuned on device (the feel).
+ */
+export const SEASONAL_AMBIENT = {
+  /** The FIXED pool size — the buffer is always this big; setDrawRange limits the rendered count. */
+  maxCount: 64,
+  /** The local drift box around the player (world units) — particles wrap within it as they fall/sway. */
+  box: { width: 32, height: 16, depth: 32 },
+  /** Global particle opacity (shared across all seasons). */
+  opacity: 0.85,
+  /** Vertical frequency of the lateral sway oscillation (shared across all seasons). */
+  swayFreq: 0.6,
+  /** Per-season drift: `count` ≤ maxCount (MODEST — dial on device); `driftY` = fall speed (u/s);
+   *  `sway` = lateral wobble (u/s); `color`/`size` = the look. */
+  spring: { count: 20, color: 0xe8e6b8, size: 0.22, driftY: 0.25, sway: 0.4 }, // pale pollen, slow float
+  summer: { count: 26, color: 0xfff0c4, size: 0.12, driftY: 0.1, sway: 0.5 }, // fine motes, gentle shimmer
+  autumn: { count: 24, color: 0xc6792c, size: 0.34, driftY: 1.0, sway: 0.9 }, // tumbling leaves (trees only)
+  winter: { count: 30, color: 0xeef3f7, size: 0.24, driftY: 0.7, sway: 0.5 }, // ⚠️ MODEST snow (the ground does the rest)
+} as const;
+
+/**
  * The biome graph. A 2x2 grid of equal cells:
  *
  *     WOODLAND (0, +PITCH) | HIGHLANDS (+PITCH, +PITCH)

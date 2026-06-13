@@ -25,6 +25,7 @@ import { Controls } from './input/Controls';
 import { SceneManager } from './rendering/SceneManager';
 import { WorldRenderer } from './rendering/WorldRenderer';
 import { EntityRenderer } from './rendering/EntityRenderer';
+import { AmbientRenderer } from './rendering/AmbientRenderer';
 import { HUD, isDebugEnabled } from './rendering/HUD';
 import { TimeIndicator } from './rendering/TimeIndicator';
 import { JournalPanel } from './rendering/JournalPanel';
@@ -159,6 +160,9 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 const entities = new EntityRenderer(scene.scene);
+// §4.6 D1c-ii — the seasonal AMBIENT particle layer (bounded, no per-frame alloc, freeze-static). Seeded
+// from the boot seed so a frozen L2 capture is byte-stable. Reads game.season + the current biome.
+const seasonalAmbient = new AmbientRenderer(scene.scene, bootSeed);
 const hud = new HUD(app);
 // Time-of-day indicator (top-left) — makes the day-night cycle legible: the
 // last invisible core mechanic. Reads game.dayPhase + game.timeSec each frame.
@@ -521,6 +525,7 @@ function frame(nowMs: number): void {
 
   // Render the interpolated state. Renderers read prev+current; never mutate.
   entities.sync(game, alpha, dt, l2Frozen); // dt + freeze drive the CJ1 walk cycle (frozen → neutral)
+  seasonalAmbient.update(game, alpha, dt, l2Frozen); // §4.6 D1c-ii — seasonal particles (frozen → static, no advance)
   // Frozen (L2) scenes snap the camera to the player so the capture is byte-stable (the normal
   // exponential ease never settles — the screenshot would drift forever). No effect on play.
   scene.updateFollow(game, alpha, dt, l2Frozen);
