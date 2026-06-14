@@ -2793,6 +2793,19 @@ export type ModelKind = 'mouse' | 'rabbit' | 'bird' | 'hedgehog' | 'squirrel' | 
 export const MODEL_SEGMENTS = 8;
 
 /**
+ * §HUD catch-target (i) — the THUMBNAIL render (render-to-texture). Each procedural species model is
+ * rendered ONCE (lazily) into a small target → a cached dataURL the HUD shows as an `<img>` background.
+ * No per-frame cost. An iso-ish framing + a dedicated light read the low-poly model at HUD size.
+ */
+export const THUMBNAIL = {
+  size: 128, // the render-target + canvas resolution (square px)
+  background: 0x2a2f26, // a calm dark behind the portrait (sits with the panel's tone)
+  margin: 1.18, // × the model's bounding radius — frames it with a little breathing room
+  light: { ambient: 0.6, key: 1.05, keyPos: { x: 2, y: 4, z: 3 } }, // the thumb scene's own lights (the models are MeshStandardMaterial)
+} as const;
+
+
+/**
  * The PLAYER figure — an upright human-ish silhouette (legs + torso + head +
  * arms), built foot-origin (lowest point at y = 0) and facing +z. Dimensions in
  * world units; clearly taller + bipedal so it never reads as an animal.

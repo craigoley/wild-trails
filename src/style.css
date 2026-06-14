@@ -1547,3 +1547,40 @@ body.modal-open .touch-stick-thumb {
 .action-mute.muted {
   opacity: 0.55;
 }
+
+/* §HUD catch-target (i) — the species PORTRAIT (a rendered procedural-model thumbnail, or a colour+gait
+   SWATCH fallback) shown beside each mission/research row. Render-only; reads existing target data. */
+.species-thumb {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  background-color: rgba(255, 255, 255, 0.06);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+/* The fallback token (until/without the GL thumbnail): the species colour, softened. */
+.species-thumb--swatch {
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.2);
+}
+.species-gait-bird {
+  border-radius: 50%;
+} /* a rounder token for birds */
+.species-gait-hop {
+  border-radius: 14px;
+}
+/* The mission row becomes flex: portrait | text column (the research row is already flex). */
+.mission-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.mission-rowtext {
+  flex: 1;
+  min-width: 0;
+}
+/* Let the research text grow so the right-hand control stays right of the portrait + text. */
+.research-info {
+  flex: 1;
+}

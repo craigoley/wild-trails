@@ -22,7 +22,13 @@ import {
   RESEARCH_PROJECTS,
   SPECIES,
   type ResearchActivity,
+  type SpeciesId,
 } from '../utils/constants';
+import { speciesForResearch } from '../game/catchTarget';
+import { speciesThumbHtml } from './speciesPortrait';
+
+/** §HUD catch-target (i) — the cached species thumbnail getter (set from main with the RTT). */
+type ThumbUrl = (species: SpeciesId) => string | null;
 
 /** A short legible description of what advances a project (the teaching axes). */
 function describeActivity(a: ResearchActivity): string {
@@ -44,10 +50,17 @@ export class ResearchPanel {
   private open = false;
   private signature = '';
   private journal: Journal | null = null;
+  /** §HUD catch-target (i) — the cached species-thumbnail getter (RTT, from main); swatch until wired. */
+  private thumbUrl: ThumbUrl = () => null;
   /** Start a project (spend the cost + persist) — wired at the boundary. */
   private readonly onStart: (id: string) => void;
   /** Complete a ready project (charge any top-up + apply the reward + persist). */
   private readonly onComplete: (id: string) => void;
+
+  /** §HUD catch-target (i) — wire the cached species-thumbnail getter (the RTT, from main). */
+  setThumbnails(thumbUrl: ThumbUrl): void {
+    this.thumbUrl = thumbUrl;
+  }
 
   constructor(container: HTMLElement, onStart: (id: string) => void, onComplete: (id: string) => void) {
     this.onStart = onStart;
@@ -157,6 +170,15 @@ export class ResearchPanel {
     const s = researchState(journal, id);
     const row = document.createElement('div');
     row.className = 'research-row';
+
+    // §HUD catch-target (i) — the species PORTRAIT (its named challenge's species, else the activity's
+    // representative). A thumbnail on device; the colour+gait swatch otherwise. Left of the text.
+    const species = speciesForResearch(id);
+    if (species) {
+      const portrait = document.createElement('span');
+      portrait.innerHTML = speciesThumbHtml(species, this.thumbUrl(species));
+      row.appendChild(portrait.firstElementChild!);
+    }
 
     const info = document.createElement('div');
     info.className = 'research-info';

@@ -121,6 +121,12 @@ export class SceneManager {
     this.renderer.render(this.scene, this.camera);
   }
 
+  /** §HUD catch-target — read-only access to the WebGL renderer so the thumbnail RTT reuses the ONE GL
+   *  context (a render target, not a 2nd renderer). The thumbnail render restores the main target after. */
+  get glRenderer(): WebGLRenderer {
+    return this.renderer;
+  }
+
   /** Reposition the camera so it views the current focus from the iso offset
    *  (equal x/z for the 45° yaw, +y above for the downward pitch). */
   private place(): void {

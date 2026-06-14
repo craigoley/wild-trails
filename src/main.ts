@@ -26,6 +26,8 @@ import { SceneManager } from './rendering/SceneManager';
 import { WorldRenderer } from './rendering/WorldRenderer';
 import { EntityRenderer } from './rendering/EntityRenderer';
 import { AmbientRenderer } from './rendering/AmbientRenderer';
+import { SpeciesThumbnails } from './rendering/speciesPortrait';
+import { createThumbnailRenderer } from './rendering/thumbnailRenderer';
 import { HUD, isDebugEnabled } from './rendering/HUD';
 import { TimeIndicator } from './rendering/TimeIndicator';
 import { JournalPanel } from './rendering/JournalPanel';
@@ -70,6 +72,7 @@ import {
   type BaitId,
   type BiomeId,
   type ResearchReward,
+  type SpeciesId,
 } from './utils/constants';
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -195,6 +198,20 @@ const researchPanel = new ResearchPanel(
     }
   },
 );
+
+// §HUD catch-target (i) — the species THUMBNAIL cache (render-to-texture via the ONE GL context, cached
+// per species, rendered LAZILY on first panel display → NO per-frame cost). Wire it into the panels so a
+// mission/research row shows the actual procedural-model portrait beside its text.
+const speciesThumbnails = new SpeciesThumbnails(createThumbnailRenderer(scene.glRenderer));
+const thumbUrl = (species: SpeciesId): string | null => {
+  try {
+    return speciesThumbnails.get(species);
+  } catch {
+    return null; // the RTT failed (e.g. no GL) → the panel falls back to the colour+gait swatch
+  }
+};
+missionPanel.setThumbnails(thumbUrl);
+researchPanel.setThumbnails(thumbUrl);
 
 /**
  * Apply a completed research project's REWARD to the live game (R0b/R1 — the reward
