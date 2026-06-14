@@ -2801,7 +2801,7 @@ export const THUMBNAIL = {
   size: 128, // the render-target + canvas resolution (square px)
   background: 0x2a2f26, // a calm dark behind the portrait (sits with the panel's tone)
   margin: 1.18, // × the model's bounding radius — frames it with a little breathing room
-  light: { ambient: 0.6, key: 1.05 }, // the thumb scene's own lights (the models are MeshStandardMaterial)
+  light: { ambient: 0.6, key: 1.05, keyPos: { x: 2, y: 4, z: 3 } }, // the thumb scene's own lights (the models are MeshStandardMaterial)
 } as const;
 
 

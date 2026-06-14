@@ -47,7 +47,7 @@ export function createThumbnailRenderer(renderer: WebGLRenderer): (species: Spec
   scene.background = new Color(THUMBNAIL.background);
   scene.add(new AmbientLight(0xffffff, THUMBNAIL.light.ambient));
   const key = new DirectionalLight(0xffffff, THUMBNAIL.light.key);
-  key.position.set(2, 4, 3);
+  key.position.set(THUMBNAIL.light.keyPos.x, THUMBNAIL.light.keyPos.y, THUMBNAIL.light.keyPos.z);
   scene.add(key);
   const camera = new OrthographicCamera(-1, 1, 1, -1, 0.01, 100);
   const pixels = new Uint8Array(S * S * 4);
