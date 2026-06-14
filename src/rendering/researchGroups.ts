@@ -81,9 +81,6 @@ export interface ResearchAreaGroup {
   accessed: boolean;
   /** Project ids to render as full cards (the visible ones), in RESEARCH_ORDER. */
   visibleIds: string[];
-  /** Does this area have ≥1 HIDDEN internal project (collapsed away)? Drives the
-   *  "more to study here once you arrive" teaser (don't promise more if there's none). */
-  hasHiddenInternal: boolean;
   /** P1 — for a LOCKED area, the breadcrumb describing how to reach it: the (relocated) access
    *  project's name + the accessed PREREQ area you do the work in. Set ONLY when that prereq is
    *  itself accessed (the one-area-ahead horizon); null when the area is accessed, when no research
@@ -94,8 +91,8 @@ export interface ResearchAreaGroup {
 /**
  * Group the research registry by DISPLAY area in BIOME_ORDER (P1: a gating project displays under
  * its accessed activity area, not its locked target). Areas with NO project (woodland) are skipped.
- * For each area, partition its projects into the visible cards (shown) and the hidden internals
- * (teased), and — for a locked area — compute the how-to-reach breadcrumb (one-area-ahead only).
+ * For each area, collect the visible cards (shown) and — for a locked area — compute the how-to-reach
+ * breadcrumb (one-area-ahead only).
  */
 export function groupResearchByArea(journal: Journal): ResearchAreaGroup[] {
   const groups: ResearchAreaGroup[] = [];
@@ -105,10 +102,6 @@ export function groupResearchByArea(journal: Journal): ResearchAreaGroup[] {
 
     const accessed = isAreaAccessed(journal, area);
     const visibleIds = ids.filter((id) => isProjectVisible(journal, RESEARCH_PROJECTS[id]));
-    const hasHiddenInternal = ids.some(
-      (id) =>
-        !isProjectVisible(journal, RESEARCH_PROJECTS[id]) && !isGatingProject(RESEARCH_PROJECTS[id]),
-    );
     // P1 — a locked area's reach breadcrumb: named only when its access project's prereq (activity)
     // area is itself accessed (the one-area-ahead horizon). Else null → "more lands ahead".
     let reach: ResearchAreaGroup['reach'] = null;
@@ -125,7 +118,6 @@ export function groupResearchByArea(journal: Journal): ResearchAreaGroup[] {
       displayName: BIOMES[area].displayName,
       accessed,
       visibleIds,
-      hasHiddenInternal,
       reach,
     });
   }
