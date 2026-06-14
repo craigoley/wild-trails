@@ -145,6 +145,11 @@ export class WorldRenderer {
   constructor(scene: Scene, world: World) {
     this.group.add(this.dynamic);
 
+    // §ground-seam — the static BASE-GROUND plane under the WHOLE world (built FIRST, sits below
+    // everything). Fills the bare void past a biome edge with a calm ground tone so the camera never
+    // sees the stark dark background there (the diagonal void-seam). Unlock-independent.
+    this.addBaseGround(world);
+
     // Static props — built ONCE (unlock-independent): water, cover, signs, grid, the pine scatter.
     for (const w of world.water) this.addWater(w);
     for (const spot of world.hidingSpots) this.addCover(spot);
@@ -542,6 +547,36 @@ export class WorldRenderer {
     );
     wall.position.set((edge.x1 + edge.x2) / 2, BIOME_RENDER.wallHeight / 2, (edge.y1 + edge.y2) / 2);
     this.dynamic.add(wall);
+  }
+
+  /** §ground-seam — the static BASE-GROUND plane under the WHOLE world. Spans the world bounding box
+   *  + a generous margin (BIOME_RENDER.baseMargin) and sits a hair BELOW the biome ground planes
+   *  (BIOME_RENDER.baseY < 0), so it fills the bare VOID past a biome edge with a calm ground tone
+   *  (PALETTE.groundBase) instead of the stark dark `background` — killing the diagonal void-seam at
+   *  the iso yaw. Built ONCE (unlock-independent, like the grid); the opaque biome/locked planes at
+   *  y=0 draw OVER it via depth, so the by-design locked dim / fog veil / boundary wall are untouched
+   *  — the base shows ONLY where no plane covers it. Lit like the biome grounds (MeshStandardMaterial,
+   *  flat +Y normal → uniform), so it reads as the same ground material continuing outward. */
+  private addBaseGround(world: World): void {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const id of world.order) {
+      const r = world.biomes[id].def.bounds;
+      minX = Math.min(minX, r.minX);
+      minY = Math.min(minY, r.minY);
+      maxX = Math.max(maxX, r.maxX);
+      maxY = Math.max(maxY, r.maxY);
+    }
+    const m = BIOME_RENDER.baseMargin;
+    const base = new Mesh(
+      new PlaneGeometry(maxX - minX + 2 * m, maxY - minY + 2 * m),
+      new MeshStandardMaterial({ color: PALETTE.groundBase, roughness: 1 }),
+    );
+    base.rotation.x = -Math.PI / 2;
+    base.position.set((minX + maxX) / 2, BIOME_RENDER.baseY, (minY + maxY) / 2);
+    this.group.add(base);
   }
 
   /** One faint grid covering the bounding box of every biome (one line per unit). */

@@ -18,6 +18,11 @@ export const PALETTE = {
   background: 0x0d1f12,
   /** Ground plane — deep forest green. */
   ground: 0x1d3b24,
+  /** §ground-seam — the static BASE-GROUND plane under the WHOLE world. A calm muted ground-green
+   *  (between the biome grounds and the deep background) shown ONLY where no biome plane covers it
+   *  (the bare void past an edge), so "ground continues past the edge" reads natural instead of the
+   *  stark dark `background` void-seam at the 45° iso yaw. */
+  groundBase: 0x254a2e,
   /** Faint world grid lines over the ground. */
   groundLine: 0x2c5436,
   /** Player marker — warm trail-blaze orange (reads against the green). */
@@ -469,6 +474,13 @@ export const BIOME_RENDER = {
   wallHeight: 1.2,
   wallThickness: 0.3,
   wallOpacity: 0.55,
+  /** §ground-seam — the static BASE-GROUND plane (PALETTE.groundBase). `baseMargin` extends it
+   *  generously past the world bounding box on every side (so the plane's OWN edge is never near the
+   *  view, even standing at a world corner); `baseY` sits it just BELOW the biome ground planes
+   *  (y=0) — far enough under to never z-fight at the iso distance, visually flush — so the biome /
+   *  locked planes draw OVER it and it shows only in the bare void. */
+  baseMargin: 60,
+  baseY: -0.05,
 } as const;
 
 // ===========================================================================
