@@ -19,6 +19,7 @@ import {
   MeshStandardMaterial,
   OrthographicCamera,
   Scene,
+  SRGBColorSpace,
   Vector3,
   WebGLRenderTarget,
   type Group,
@@ -43,6 +44,10 @@ function disposeModel(model: Group): void {
 export function createThumbnailRenderer(renderer: WebGLRenderer): (species: SpeciesId) => string {
   const S = THUMBNAIL.size;
   const target = new WebGLRenderTarget(S, S);
+  // ⚠️ P3 ROOT FIX: the live scene is drawn sRGB, but a render target defaults to LINEAR — so
+  // readRenderTargetPixels() returns the un-encoded (darker) linear pixels, the cause of the dim
+  // thumbnails. Mark the target texture sRGB so the readback matches the on-screen encoding.
+  target.texture.colorSpace = SRGBColorSpace;
   const scene = new Scene();
   scene.background = new Color(THUMBNAIL.background);
   scene.add(new AmbientLight(0xffffff, THUMBNAIL.light.ambient));

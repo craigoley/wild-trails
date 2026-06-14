@@ -2799,9 +2799,9 @@ export const MODEL_SEGMENTS = 8;
  */
 export const THUMBNAIL = {
   size: 128, // the render-target + canvas resolution (square px)
-  background: 0x2a2f26, // a calm dark behind the portrait (sits with the panel's tone)
+  background: 0x3a4234, // P3: a touch lighter behind the portrait (was 0x2a2f26 — too dim with the sRGB readback)
   margin: 1.18, // × the model's bounding radius — frames it with a little breathing room
-  light: { ambient: 0.6, key: 1.05, keyPos: { x: 2, y: 4, z: 3 } }, // the thumb scene's own lights (the models are MeshStandardMaterial)
+  light: { ambient: 0.72, key: 1.2, keyPos: { x: 2, y: 4, z: 3 } }, // P3: a touch more key+fill so the portrait reads cleanly
 } as const;
 
 /**

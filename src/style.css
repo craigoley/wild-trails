@@ -638,17 +638,25 @@ body.modal-open .touch-stick-thumb {
 }
 /* §17.1 "Reach new lands" carrot lines — the set→biome-unlock relationship, inside
  * the scroll body (the scroll architecture is untouched). */
+/* P2: a COLUMN — the goal+progress head row, then the research sub-lines stacked
+ * full-width below (they used to wrap awkwardly against the space-between baseline). */
 .unlock-line {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
+  flex-direction: column;
+  gap: 4px;
   padding: 8px 10px;
   border: 1px solid rgba(122, 200, 255, 0.3);
   border-radius: 10px;
   background: rgba(20, 40, 60, 0.4);
   color: rgba(255, 255, 255, 0.88);
   font-size: 13px;
+}
+/* P2: the head row — goal on the left, the "done of total" count on the right. */
+.unlock-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
 }
 .unlock-goal {
   font-weight: 700;
@@ -657,7 +665,6 @@ body.modal-open .touch-stick-thumb {
  * goal. Amber while still required, soft green once done. */
 .unlock-research {
   width: 100%;
-  margin-top: 3px;
   font-size: 12.5px;
   font-weight: 600;
   color: rgba(255, 209, 102, 0.92);
@@ -1433,8 +1440,17 @@ body.modal-open .touch-stick-thumb {
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
 }
+/* P5: take the available width and allow shrinking (min-width:0) so the long activity
+ * line ellipsises instead of pushing the Start control into an overlap. */
 .research-info {
+  flex: 1 1 auto;
   min-width: 0;
+}
+/* P5: the right-hand control keeps its natural width (never squeezed under the text); the
+ * .research-row gap then guarantees clear space so Start can't overlap the activity line. */
+.research-row > .shop-buy,
+.research-row > .research-done {
+  flex: 0 0 auto;
 }
 .research-name {
   font-size: 15px;
@@ -1451,6 +1467,10 @@ body.modal-open .touch-stick-thumb {
   font-size: 12.5px;
   font-weight: 700;
   color: rgba(159, 240, 168, 0.92);
+  /* P5: keep the "… · X / N" count on one line and ellipsise rather than wrap/overflow. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 /* The research PROGRESS BAR — UNIFIED with its label so it never reads as an inert empty strip.
  * The bar CARRIES "Catch in the … · X / N" ON it (the fill = progress/count, set inline; the

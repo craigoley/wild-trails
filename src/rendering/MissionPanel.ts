@@ -169,9 +169,13 @@ export class MissionPanel {
         const projectLine = p
           ? `<div class="unlock-research${p.completed ? ' done' : ''}">${UNLOCK_COPY.andResearchProject(p.name, p.started, p.progress, p.count, p.completed)}</div>`
           : '';
+        // P2: a HEAD row (goal + progress, space-between) over the stacked research sub-lines —
+        // the goal no longer competes with the count on one baseline, so each reads full-width.
         row.innerHTML =
+          `<div class="unlock-head">` +
           `<div class="unlock-goal">${UNLOCK_COPY.toReach(l.setName, l.unlocksName!)}</div>` +
           `<div class="unlock-prog">${l.done} of ${l.total}</div>` +
+          `</div>` +
           research +
           projectLine;
       }
