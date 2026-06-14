@@ -63,6 +63,7 @@ body {
 body.modal-open .action-btn,
 body.modal-open .bait-hint,
 body.modal-open .hud-hidden,
+body.modal-open .hud-target,
 body.modal-open .touch-stick-base,
 body.modal-open .touch-stick-thumb {
   display: none;
@@ -1583,4 +1584,89 @@ body.modal-open .touch-stick-thumb {
 /* Let the research text grow so the right-hand control stays right of the portrait + text. */
 .research-info {
   flex: 1;
+}
+
+/* §HUD catch-target (ii) — the play-screen TARGET CHIP: one quiet objective label in the top-left
+   passive stack (below the credits). Small + low-contrast so the clean play screen stays clean; it
+   PULSES gently (.is-near) when the tracked species wanders near. Hidden in menus (body.modal-open). */
+.hud-target {
+  position: fixed;
+  top: 168px;
+  left: 14px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 9px 4px 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  pointer-events: none; /* a passive label — never blocks play */
+  max-width: 52vw;
+}
+.hud-target .species-thumb {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+.hud-target-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  min-width: 0;
+}
+.hud-target-name {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #f3efe6;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hud-target-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: #cfe0c8;
+  letter-spacing: 0.03em;
+}
+/* The gentle "there it is" pulse — a soft glow + a breath of scale, NOT a flashing alarm. */
+.hud-target.is-near {
+  border-color: rgba(151, 230, 160, 0.85);
+  animation: hud-target-pulse 1.5s ease-in-out infinite;
+}
+@keyframes hud-target-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(151, 230, 160, 0);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 12px 1px rgba(151, 230, 160, 0.5);
+    transform: scale(1.04);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-target.is-near {
+    animation: none;
+    box-shadow: 0 0 10px 1px rgba(151, 230, 160, 0.45);
+  }
+}
+
+/* The quiet tap-to-track affordance on an active mission row. */
+.mission-track {
+  margin-top: 7px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #cfe0c8;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.mission-track.is-tracked {
+  color: #0c130c;
+  background: rgba(151, 230, 160, 0.85);
+  border-color: rgba(151, 230, 160, 0.85);
 }

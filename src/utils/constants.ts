@@ -2804,6 +2804,14 @@ export const THUMBNAIL = {
   light: { ambient: 0.6, key: 1.05, keyPos: { x: 2, y: 4, z: 3 } }, // the thumb scene's own lights (the models are MeshStandardMaterial)
 } as const;
 
+/**
+ * §HUD catch-target (ii) — the play-screen TARGET CHIP. ⚠️ Display-only. `nearRadius` = how close the
+ * tracked species must be (world units) for the chip to PULSE ("oh, there it is") — a gentle nudge, not
+ * an alarm. A simple distance scan over the bounded animal pool drives it (no per-frame alloc).
+ */
+export const TARGET_CHIP = {
+  nearRadius: 9, // world units — roughly "on screen near you" at the iso framing
+} as const;
 
 /**
  * The PLAYER figure — an upright human-ish silhouette (legs + torso + head +
