@@ -43,6 +43,30 @@ export function isGatingProject(p: ResearchProject): boolean {
   return p.reward.kind === 'biome-access';
 }
 
+/** P1 — the biome a project is DISPLAYED under. A gating (biome-access) project shows under its
+ *  ACTIVITY area (the accessed prereq where you DO the unlock work), NOT its locked target `area`,
+ *  so the startable card lives where it's actionable and the locked target shows only a breadcrumb.
+ *  Internal projects (and any non-biome-locked gating — none today) stay in their own `area`. The
+ *  ENGINE is untouched; this only decides which section the panel renders the card in. */
+export function displayArea(p: ResearchProject): BiomeId {
+  if (isGatingProject(p)) {
+    const a = activityBiome(p);
+    if (a !== null) return a; // relocate to the accessed prereq area
+  }
+  return p.area;
+}
+
+/** P1 — the biome-access project that OPENS `area` (reward.biome === area), or null if `area` isn't
+ *  research-gated (the gentle, mission-set gates — e.g. the wetland). Drives the locked-area
+ *  breadcrumb ("Reach by completing 'X Access' in the [prereq]"). */
+function gatingProjectFor(area: BiomeId): ResearchProject | null {
+  for (const id of RESEARCH_ORDER) {
+    const p = RESEARCH_PROJECTS[id];
+    if (p.reward.kind === 'biome-access' && p.reward.biome === area) return p;
+  }
+  return null;
+}
+
 /** THE HIDE RULE: shown iff its activity area is accessed (actionable) OR it's started. */
 export function isProjectVisible(journal: Journal, p: ResearchProject): boolean {
   if (journal.research[p.id]?.started) return true; // in-flight safety — never hide mid-study
@@ -60,37 +84,49 @@ export interface ResearchAreaGroup {
   /** Does this area have ≥1 HIDDEN internal project (collapsed away)? Drives the
    *  "more to study here once you arrive" teaser (don't promise more if there's none). */
   hasHiddenInternal: boolean;
-  /** Is this area's gating breadcrumb VISIBLE (its access project is actionable)? This is
-   *  the one-area-ahead horizon: true = "more to study here"; false = "more lands ahead". */
-  gatingVisible: boolean;
+  /** P1 — for a LOCKED area, the breadcrumb describing how to reach it: the (relocated) access
+   *  project's name + the accessed PREREQ area you do the work in. Set ONLY when that prereq is
+   *  itself accessed (the one-area-ahead horizon); null when the area is accessed, when no research
+   *  gates it, or when the prereq is still locked (then the section reads "more lands ahead"). */
+  reach: { projectName: string; prereqName: string } | null;
 }
 
 /**
- * Group the research registry by area in BIOME_ORDER. Areas with NO project (woodland)
- * are skipped. For each area, partition its projects into the visible cards (shown) and
- * the hidden internals (teased), and flag whether its gating breadcrumb is reachable.
+ * Group the research registry by DISPLAY area in BIOME_ORDER (P1: a gating project displays under
+ * its accessed activity area, not its locked target). Areas with NO project (woodland) are skipped.
+ * For each area, partition its projects into the visible cards (shown) and the hidden internals
+ * (teased), and — for a locked area — compute the how-to-reach breadcrumb (one-area-ahead only).
  */
 export function groupResearchByArea(journal: Journal): ResearchAreaGroup[] {
   const groups: ResearchAreaGroup[] = [];
   for (const area of BIOME_ORDER) {
-    const ids = RESEARCH_ORDER.filter((id) => RESEARCH_PROJECTS[id].area === area);
-    if (ids.length === 0) continue; // no research in this area (e.g. woodland) — no section
+    const ids = RESEARCH_ORDER.filter((id) => displayArea(RESEARCH_PROJECTS[id]) === area);
+    if (ids.length === 0) continue; // no research displays in this area (e.g. woodland) — no section
 
+    const accessed = isAreaAccessed(journal, area);
     const visibleIds = ids.filter((id) => isProjectVisible(journal, RESEARCH_PROJECTS[id]));
     const hasHiddenInternal = ids.some(
       (id) =>
         !isProjectVisible(journal, RESEARCH_PROJECTS[id]) && !isGatingProject(RESEARCH_PROJECTS[id]),
     );
-    const gatingId = ids.find((id) => isGatingProject(RESEARCH_PROJECTS[id]));
-    const gatingVisible = gatingId ? isProjectVisible(journal, RESEARCH_PROJECTS[gatingId]) : false;
+    // P1 — a locked area's reach breadcrumb: named only when its access project's prereq (activity)
+    // area is itself accessed (the one-area-ahead horizon). Else null → "more lands ahead".
+    let reach: ResearchAreaGroup['reach'] = null;
+    if (!accessed) {
+      const g = gatingProjectFor(area);
+      const prereq = g ? activityBiome(g) : null;
+      if (g && prereq !== null && isAreaAccessed(journal, prereq)) {
+        reach = { projectName: g.name, prereqName: BIOMES[prereq].displayName };
+      }
+    }
 
     groups.push({
       area,
       displayName: BIOMES[area].displayName,
-      accessed: isAreaAccessed(journal, area),
+      accessed,
       visibleIds,
       hasHiddenInternal,
-      gatingVisible,
+      reach,
     });
   }
   return groups;

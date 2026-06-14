@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultTrackedMission, resolveTracked, isTargetNear } from '../trackedTarget';
 import { speciesForChallenge } from '../catchTarget';
 import { createJournal } from '../../state/Journal';
-import { MISSIONS, SPECIES } from '../../utils/constants';
+import { MISSIONS, MISSION_ORDER, SPECIES } from '../../utils/constants';
 import type { Animal } from '../Animal';
 
 /**
@@ -22,9 +22,36 @@ describe('defaultTrackedMission — the auto pick (the current biome’s goal)',
     expect(SPECIES[speciesForChallenge(MISSIONS[id!].requirement)].biome).toBe('meadow'); // the biome preference held
   });
 
-  it('falls back to the first active goal when the biome has none', () => {
+  it('falls back to a sensible default when the biome has none', () => {
     const id = defaultTrackedMission(createJournal(), 'cave'); // no active cave goal early on
-    expect(id).not.toBeNull(); // still a sensible default (the first active progression mission)
+    expect(id).not.toBeNull(); // still a sensible default (an active progression mission)
+  });
+
+  it('⚠️ P4: the fallback is the NEAREST-to-complete goal, not the first in order', () => {
+    const j = createJournal();
+    // The trackable (incomplete, progression) missions, in order — none of which target 'cave'.
+    const trackable = MISSION_ORDER.filter(
+      (id) => !MISSIONS[id].standalone && SPECIES[speciesForChallenge(MISSIONS[id].requirement)].biome !== 'cave',
+    );
+    expect(trackable.length).toBeGreaterThan(1);
+    // Push a LATER mission to the most progress (ratio 1.0, still incomplete); the first stays at 0.
+    const target = trackable[trackable.length - 1];
+    j.missions[target] = { progress: MISSIONS[target].requirement.count, completed: false };
+    // The chip should point at the one you're closest to finishing — not trackable[0].
+    expect(defaultTrackedMission(j, 'cave')).toBe(target);
+    expect(target).not.toBe(trackable[0]); // and it genuinely beat the first-in-order pick
+  });
+
+  it('⚠️ P4: a current-biome goal still wins over a near-complete elsewhere (biome preference first)', () => {
+    const j = createJournal();
+    // Make some non-meadow goal nearly complete...
+    const elsewhere = MISSION_ORDER.find(
+      (id) => !MISSIONS[id].standalone && SPECIES[speciesForChallenge(MISSIONS[id].requirement)].biome !== 'meadow',
+    )!;
+    j.missions[elsewhere] = { progress: MISSIONS[elsewhere].requirement.count - 1, completed: false };
+    // ...the meadow default still wins (the biome preference precedes the nearest-complete fallback).
+    const id = defaultTrackedMission(j, 'meadow')!;
+    expect(SPECIES[speciesForChallenge(MISSIONS[id].requirement)].biome).toBe('meadow');
   });
 
   it('returns null when nothing is left (all goals complete)', () => {

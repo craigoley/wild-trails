@@ -59,17 +59,19 @@ describe('researchGroups (pure) — the project→area tag + the hide rule', () 
 });
 
 describe('ResearchPanel — grouped by area + the one-area-ahead breadcrumb horizon', () => {
-  it('⚠️ the NEXT-area gating breadcrumb is SHOWN (no silent wall), even though it opens a locked area', () => {
+  it('⚠️ P1: the access card RELOCATES to its (accessed) activity area — still startable, never hidden', () => {
     const j = wetlandPlayer();
     const p = new ResearchPanel(document.body, vi.fn(), vi.fn());
     p.refresh(j);
-    // Highlands Access (activity = catch in the accessed wetland) is the breadcrumb to the
-    // next area — it MUST render as a startable card under the (locked) Highlands section.
+    // Highlands Access (activity = catch in the accessed wetland) renders as a startable card —
+    // under the WETLAND section now (its activity area), NOT the locked Highlands. The unlock
+    // mechanism is intact (the Start card lives where you can act on it).
     expect(rowNames()).toContain('Highlands Access');
-    // ...but the highlands INTERNAL study (activity in not-accessed highlands) is hidden.
+    // ...but the highlands INTERNAL study (activity in not-accessed highlands) is still hidden.
     expect(rowNames()).not.toContain('The Open Tops');
-    // The locked Highlands section teases the hidden internal without naming it.
-    expect(text()).toContain('More to study here once you arrive');
+    // P1: the locked Highlands section shows ONLY the how-to-reach breadcrumb (no card, no Start).
+    expect(text()).toContain('Reach by completing ‘Highlands Access’ in the Wetland');
+    expect(text()).not.toContain('More to study here once you arrive');
   });
 
   it('⚠️ areas 2+ ahead show "more lands ahead" — no dead-end breadcrumb', () => {
@@ -111,15 +113,35 @@ describe('ResearchPanel — grouped by area + the one-area-ahead breadcrumb hori
 });
 
 describe('groupResearchByArea (pure) — section shape', () => {
-  it('skips areas with no research (woodland) and orders meadow → … in world order', () => {
+  it('orders meadow → … in world order; woodland now hosts the relocated Pine Forest Access', () => {
     const groups = groupResearchByArea(wetlandPlayer());
     const areas = groups.map((g) => g.area);
-    expect(areas).not.toContain('woodland'); // no woodland research project
+    // P1: woodland has no NATIVE project, but Pine Forest Access (activity = woodland) relocates
+    // here — so the woodland section now exists (its access card lives where the work is done).
+    expect(areas).toContain('woodland');
     expect(areas[0]).toBe('meadow');
     // meadow + wetland accessed; highlands/riverbank/coast not.
     expect(groups.find((g) => g.area === 'wetland')!.accessed).toBe(true);
     expect(groups.find((g) => g.area === 'highlands')!.accessed).toBe(false);
-    expect(groups.find((g) => g.area === 'highlands')!.gatingVisible).toBe(true); // next-area breadcrumb
-    expect(groups.find((g) => g.area === 'riverbank')!.gatingVisible).toBe(false); // 2+ ahead
+    // P1: the one-area-ahead locked section carries a reach breadcrumb; 2+ ahead does not.
+    expect(groups.find((g) => g.area === 'highlands')!.reach).not.toBeNull();
+    expect(groups.find((g) => g.area === 'riverbank')!.reach).toBeNull(); // 2+ ahead
+  });
+});
+
+describe('groupResearchByArea (pure) — P1: gating cards relocate to their activity area', () => {
+  it('the access project displays under its accessed PREREQ area, not its locked target', () => {
+    const groups = groupResearchByArea(wetlandPlayer());
+    const wetland = groups.find((g) => g.area === 'wetland')!;
+    const highlands = groups.find((g) => g.area === 'highlands')!;
+    // Highlands Access (reward biome = highlands, activity = wetland) relocates to the WETLAND group...
+    expect(wetland.visibleIds).toContain('unlock-the-highlands');
+    // ...and is NOT in the locked Highlands group (whose own study cards stay there, hidden).
+    expect(highlands.visibleIds).not.toContain('unlock-the-highlands');
+  });
+
+  it('the locked one-ahead section names its access project + accessed prereq in `reach`', () => {
+    const highlands = groupResearchByArea(wetlandPlayer()).find((g) => g.area === 'highlands')!;
+    expect(highlands.reach).toEqual({ projectName: 'Highlands Access', prereqName: 'Wetland' });
   });
 });

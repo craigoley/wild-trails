@@ -22,6 +22,27 @@ describe('MissionPanel — the "Reach new lands" unlock block (§17.1)', () => {
     expect(list.textContent).toContain('0 of 3');
   });
 
+  it('⚠️ P2: the carrot STACKS — a head row (goal + count) over full-width research sub-lines', () => {
+    const p = new MissionPanel(document.body);
+    p.refresh(createJournal(), telemetry, false);
+    // The Wetland→Highlands carrot is research-wrapped (Highlands Access) so it has a sub-line.
+    const line = [...document.querySelectorAll('.unlock-line')].find((e) =>
+      e.querySelector('.unlock-research'),
+    ) as HTMLElement | undefined;
+    expect(line).toBeTruthy();
+    // P2: the goal + the "done of total" now share a .unlock-head row...
+    const head = line!.querySelector('.unlock-head')!;
+    expect(head).not.toBeNull();
+    expect(head.querySelector('.unlock-goal')).not.toBeNull();
+    expect(head.querySelector('.unlock-prog')).not.toBeNull();
+    // ...and each research sub-line is a DIRECT child of the line (stacked below the head), never
+    // crammed inside the head row onto the goal's baseline (the bug this fixes).
+    for (const sub of line!.querySelectorAll('.unlock-research')) {
+      expect(sub.parentElement).toBe(line);
+    }
+    expect(head.querySelector('.unlock-research')).toBeNull();
+  });
+
   it('an already-unlocked set reads as a quiet ✓ line (the path walked)', () => {
     const j = createJournal();
     j.unlockedBiomes = ['woodland']; // Meadow set already opened the Woodland

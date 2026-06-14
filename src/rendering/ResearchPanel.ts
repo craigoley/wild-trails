@@ -132,10 +132,8 @@ export class ResearchPanel {
     for (const g of groupResearchByArea(journal)) {
       this.list.appendChild(ResearchPanel.areaHeader(g));
       for (const id of g.visibleIds) this.list.appendChild(this.row(id));
-      if (!g.accessed) {
-        const teaser = ResearchPanel.collapsedTeaser(g);
-        if (teaser) this.list.appendChild(teaser);
-      }
+      // P1 — a locked section shows its how-to-reach breadcrumb (one ahead) or "more lands ahead".
+      if (!g.accessed) this.list.appendChild(ResearchPanel.collapsedTeaser(g));
     }
   }
 
@@ -148,19 +146,17 @@ export class ResearchPanel {
     return head;
   }
 
-  /** The collapsed-area teaser: "more to study here" when the area is reachable and has
-   *  hidden internal projects; "more lands ahead" for an area still beyond the horizon
-   *  (its breadcrumb isn't actionable yet). Null when the visible card already says it
-   *  all (a reachable area whose only project is its gating breadcrumb). Never names the
-   *  hidden projects/species (focus). */
-  private static collapsedTeaser(g: ResearchAreaGroup): HTMLDivElement | null {
-    let text: string;
-    if (g.gatingVisible && g.hasHiddenInternal) text = 'More to study here once you arrive.';
-    else if (!g.gatingVisible) text = 'More lands ahead.';
-    else return null;
+  /** P1 — the locked-area line. When the area is ONE ahead (its access project's prereq is reached),
+   *  show the how-to-reach BREADCRUMB ("Reach by completing ‘X Access’ in the [prereq].") — the only
+   *  thing a locked target shows (no card, no Start; its full study cards appear once it unlocks, and
+   *  the relocated access card lives in the accessed prereq's section). Otherwise (2+ ahead, or a
+   *  gentle non-research gate) a quiet "More lands ahead." Never names the hidden projects (focus). */
+  private static collapsedTeaser(g: ResearchAreaGroup): HTMLDivElement {
     const el = document.createElement('div');
     el.className = 'research-teaser';
-    el.textContent = text;
+    el.textContent = g.reach
+      ? `Reach by completing ‘${g.reach.projectName}’ in the ${g.reach.prereqName}.`
+      : 'More lands ahead.';
     return el;
   }
 

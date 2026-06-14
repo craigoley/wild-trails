@@ -17,18 +17,29 @@ function isTrackable(id: string, journal: Journal): boolean {
 
 /**
  * The DEFAULT tracked mission (no override): the current biome's first active progression goal (the goal
- * for WHERE YOU ARE), falling back to the first active goal overall. Null when nothing's left (all done).
+ * for WHERE YOU ARE). When the current biome has none left, fall back to the NEAREST-TO-COMPLETE active
+ * goal overall (the most progress toward its count) rather than the first in MISSION_ORDER — so the chip
+ * points at the goal you're closest to finishing, not an arbitrary far-off one in another biome. Null
+ * when nothing's left (all done).
  */
 export function defaultTrackedMission(journal: Journal, biome: BiomeId): string | null {
   // ⚠️ A single pass — NO array allocation (this runs from the render loop via resolveTracked). Prefer
-  // the current biome's first active goal; else the first active goal overall.
-  let first: string | null = null;
+  // the current biome's first active goal; else the active goal nearest to complete (by progress ratio).
+  let fallback: string | null = null;
+  let bestRatio = -1;
   for (const id of MISSION_ORDER) {
     if (!isTrackable(id, journal)) continue;
-    if (first === null) first = id;
     if (SPECIES[speciesForChallenge(MISSIONS[id].requirement)].biome === biome) return id; // the biome's goal
+    // Fallback: track the nearest-to-complete (highest progress/count). Strict > keeps the
+    // FIRST-in-order on a tie (a stable choice), and skips zero-count guards (count is ≥1).
+    const count = MISSIONS[id].requirement.count;
+    const ratio = count > 0 ? Math.min(journal.missions[id]?.progress ?? 0, count) / count : 0;
+    if (ratio > bestRatio) {
+      bestRatio = ratio;
+      fallback = id;
+    }
   }
-  return first; // else the first active goal (or null when all done)
+  return fallback; // else the active goal nearest to complete (or null when all done)
 }
 
 /**
