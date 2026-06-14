@@ -11,10 +11,16 @@
 
 import type { Journal } from '../state/Journal';
 import { currentRank, rankPointsTotal } from '../game/Missions';
-import { MISSIONS, MISSION_ORDER, PANEL_LABELS, UNLOCK_COPY } from '../utils/constants';
+import { MISSIONS, MISSION_ORDER, PANEL_LABELS, UNLOCK_COPY, type SpeciesId } from '../utils/constants';
 import { addOverlayDismiss } from './overlayDismiss';
 import { groupMissions } from './missionGroups';
 import { unlockLines } from './unlockLines';
+import { speciesForChallenge } from '../game/catchTarget';
+import { speciesThumbHtml } from './speciesPortrait';
+
+/** §HUD catch-target (i) — the cached species thumbnail getter (set from main with the RTT); defaults to
+ *  the colour+gait SWATCH (null) until wired, so the portraits read with or without the GL thumbnail. */
+type ThumbUrl = (species: SpeciesId) => string | null;
 
 /** Funnel counts for the mission pipeline (debug-only, §5.5). */
 export interface MissionTelemetry {
@@ -154,6 +160,12 @@ export class MissionPanel {
     }
   }
 
+  /** §HUD catch-target (i) — wire the cached species-thumbnail getter (the RTT, from main). */
+  setThumbnails(thumbUrl: ThumbUrl): void {
+    this.thumbUrl = thumbUrl;
+  }
+  private thumbUrl: ThumbUrl = () => null; // default: the swatch fallback
+
   /** Append a section header + its mission rows. No-op (no header) when empty. */
   private appendSection(label: string, ids: readonly string[], journal: Journal): void {
     if (ids.length === 0) return;
@@ -161,22 +173,26 @@ export class MissionPanel {
     head.className = 'mission-section';
     head.textContent = label;
     this.list.appendChild(head);
-    for (const id of ids) this.list.appendChild(MissionPanel.row(id, journal));
+    for (const id of ids) this.list.appendChild(this.row(id, journal));
   }
 
-  /** One mission row (unchanged markup; just extracted for the section split). */
-  private static row(id: string, journal: Journal): HTMLDivElement {
+  /** One mission row — a species PORTRAIT (catch-target) + the text/progress. */
+  private row(id: string, journal: Journal): HTMLDivElement {
     const def = MISSIONS[id];
     const prog = journal.missions[id];
     const done = prog?.completed ?? false;
     const at = prog?.progress ?? 0;
+    const species = speciesForChallenge(def.requirement); // §HUD — which species to PORTRAY
     const row = document.createElement('div');
     row.className = `mission-row${done ? ' done' : ''}`;
     row.innerHTML =
+      speciesThumbHtml(species, this.thumbUrl(species)) +
+      `<div class="mission-rowtext">` +
       `<div class="mission-title">${done ? '✓ ' : ''}${def.title}</div>` +
       `<div class="mission-desc">${def.description}</div>` +
       `<div class="mission-prog">${done ? 'Complete' : `${at} / ${def.requirement.count}`}` +
-      ` · +${def.rewardPoints} pts</div>`;
+      ` · +${def.rewardPoints} pts</div>` +
+      `</div>`;
     return row;
   }
 }
