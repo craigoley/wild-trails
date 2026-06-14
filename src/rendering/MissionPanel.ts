@@ -38,6 +38,10 @@ export class MissionPanel {
   private readonly debugLine: HTMLDivElement;
   private open = false;
   private signature = '';
+  /** §HUD catch-target (ii) — tap-to-track: the in-session tracked mission (null = the auto default) +
+   *  the boundary callback. Display-only; no persistence (the chip re-computes its default each load). */
+  private trackedId: string | null = null;
+  private onTrack: (id: string) => void = () => {};
 
   constructor(container: HTMLElement) {
     this.root = document.createElement('div');
@@ -66,6 +70,21 @@ export class MissionPanel {
     this.list = document.createElement('div');
     this.list.className = 'mission-list';
     scroll.appendChild(this.list);
+
+    // §HUD catch-target (ii) — tap-to-track (delegated): a row's "Track" button sets THIS mission as the
+    // chip's tracked target. Toggles the buttons in place (no full refresh) + notifies the boundary.
+    this.list.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('.mission-track') as HTMLElement | null;
+      const mid = btn?.dataset.mid;
+      if (!mid) return;
+      this.trackedId = mid;
+      for (const b of this.list.querySelectorAll<HTMLElement>('.mission-track')) {
+        const on = b.dataset.mid === mid;
+        b.classList.toggle('is-tracked', on);
+        b.textContent = on ? '◉ Tracking' : '◎ Track';
+      }
+      this.onTrack(mid);
+    });
 
     this.debugLine = document.createElement('div');
     this.debugLine.className = 'mission-debug';
@@ -166,6 +185,15 @@ export class MissionPanel {
   }
   private thumbUrl: ThumbUrl = () => null; // default: the swatch fallback
 
+  /** §HUD catch-target (ii) — wire the tap-to-track callback (the boundary stores the override). */
+  setOnTrack(fn: (id: string) => void): void {
+    this.onTrack = fn;
+  }
+  /** §HUD catch-target (ii) — reflect the active tracked mission (the auto default or the override). */
+  setTracked(id: string | null): void {
+    this.trackedId = id;
+  }
+
   /** Append a section header + its mission rows. No-op (no header) when empty. */
   private appendSection(label: string, ids: readonly string[], journal: Journal): void {
     if (ids.length === 0) return;
@@ -185,6 +213,7 @@ export class MissionPanel {
     const species = speciesForChallenge(def.requirement); // §HUD — which species to PORTRAY
     const row = document.createElement('div');
     row.className = `mission-row${done ? ' done' : ''}`;
+    const tracked = this.trackedId === id;
     row.innerHTML =
       speciesThumbHtml(species, this.thumbUrl(species)) +
       `<div class="mission-rowtext">` +
@@ -192,6 +221,8 @@ export class MissionPanel {
       `<div class="mission-desc">${def.description}</div>` +
       `<div class="mission-prog">${done ? 'Complete' : `${at} / ${def.requirement.count}`}` +
       ` · +${def.rewardPoints} pts</div>` +
+      // §HUD catch-target (ii) — a quiet tap-to-track affordance (incomplete missions only) → the chip.
+      (done ? '' : `<button class="mission-track${tracked ? ' is-tracked' : ''}" data-mid="${id}">${tracked ? '◉ Tracking' : '◎ Track'}</button>`) +
       `</div>`;
     return row;
   }

@@ -28,6 +28,9 @@ import { EntityRenderer } from './rendering/EntityRenderer';
 import { AmbientRenderer } from './rendering/AmbientRenderer';
 import { SpeciesThumbnails } from './rendering/speciesPortrait';
 import { createThumbnailRenderer } from './rendering/thumbnailRenderer';
+import { TargetChip } from './rendering/TargetChip';
+import { targetForMission } from './game/catchTarget';
+import { resolveTracked, isTargetNear } from './game/trackedTarget';
 import { HUD, isDebugEnabled } from './rendering/HUD';
 import { TimeIndicator } from './rendering/TimeIndicator';
 import { JournalPanel } from './rendering/JournalPanel';
@@ -67,6 +70,7 @@ import {
   RESEARCH_PROJECTS,
   SIM_DT,
   SUPPLY_POSTS,
+  TARGET_CHIP,
   TOOLS,
   TRACKING,
   type BaitId,
@@ -212,6 +216,15 @@ const thumbUrl = (species: SpeciesId): string | null => {
 };
 missionPanel.setThumbnails(thumbUrl);
 researchPanel.setThumbnails(thumbUrl);
+
+// §HUD catch-target (ii) — the play-screen TARGET CHIP (one quiet corner element). The tracked target is
+// SESSION-only: an in-memory override (tap-to-track in the Missions panel) over a re-computed default;
+// no schema bump. The chip + the near-pulse are display-only — they read mission state + game.animals.
+const targetChip = new TargetChip(app);
+let trackedOverride: string | null = null;
+missionPanel.setOnTrack((id) => {
+  trackedOverride = id; // the chip picks it up next frame; the panel toggled its own button in place
+});
 
 /**
  * Apply a completed research project's REWARD to the live game (R0b/R1 — the reward
@@ -548,6 +561,16 @@ function frame(nowMs: number): void {
   scene.updateFollow(game, alpha, dt, l2Frozen);
   scene.render();
   hud.update(game);
+  // §HUD catch-target (ii) — drive the play-screen chip: resolve the tracked mission (override → default),
+  // read its {species, progress, count}, and pulse if a target instance is near. ⚠️ Frozen → pulse OFF
+  // (deterministic L2). All reads — no spawn/catch touch. The near-scan allocates nothing.
+  const trackedId = resolveTracked(trackedOverride, journal, game.currentBiome);
+  const target = trackedId ? targetForMission(trackedId, journal) : null;
+  missionPanel.setTracked(trackedId);
+  const near =
+    !l2Frozen && target !== null &&
+    isTargetNear(game.animals, target.species, game.player.x, game.player.y, TARGET_CHIP.nearRadius);
+  targetChip.update(target, target ? thumbUrl(target.species) : null, near);
   hud.setCredits(journal.credits); // §12 1a — the persistent balance (cheap text set)
   timeIndicator.update(game.dayPhase, game.timeSec);
   // Atmosphere A1: feed the live biome + phase to the ambient soundscape (a no-op until the
