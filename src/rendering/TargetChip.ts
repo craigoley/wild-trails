@@ -7,7 +7,7 @@
  * (the per-frame `is-near` toggle is idempotent + cheap — no per-frame DOM churn, no alloc).
  */
 
-import { SPECIES, type SpeciesId } from '../utils/constants';
+import { SPECIES } from '../utils/constants';
 import { speciesThumbHtml } from './speciesPortrait';
 import type { CatchTarget } from '../game/catchTarget';
 
@@ -35,7 +35,7 @@ export class TargetChip {
     const sig = `${target.species}|${target.progress}/${target.count}|${thumbUrl ? 1 : 0}`;
     if (sig !== this.sig) {
       this.sig = sig;
-      const def = SPECIES[target.species as SpeciesId];
+      const def = SPECIES[target.species];
       this.el.innerHTML =
         speciesThumbHtml(target.species, thumbUrl) +
         `<span class="hud-target-text">` +

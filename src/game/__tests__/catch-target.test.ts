@@ -6,6 +6,7 @@ import {
   targetForMission,
   speciesForResearch,
   type CatchChallenge,
+  type CatchTarget,
 } from '../catchTarget';
 import { createJournal } from '../../state/Journal';
 import { MISSIONS, MISSION_ORDER, SPECIES, SPECIES_ORDER, RESEARCH_PROJECTS, type SpeciesId } from '../../utils/constants';
@@ -59,6 +60,16 @@ describe('catchTarget — targetForMission (species + live progress)', () => {
 
   it('returns null for an unknown mission id', () => {
     expect(targetForMission('not-a-mission', createJournal())).toBeNull();
+  });
+
+  it('⚠️ reuses the `out` scratch when given (the no-per-frame-alloc contract for the render loop)', () => {
+    const id = MISSION_ORDER[0];
+    const journal = createJournal();
+    const scratch: CatchTarget = { species: 'fieldmouse', progress: 0, count: 0 };
+    const a = targetForMission(id, journal, scratch);
+    const b = targetForMission(id, journal, scratch);
+    expect(a).toBe(scratch); // filled the SAME object, not a new one
+    expect(b).toBe(a); // every call reuses it → zero per-frame allocation
   });
 });
 

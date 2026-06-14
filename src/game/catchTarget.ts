@@ -64,15 +64,22 @@ export interface CatchTarget {
   count: number;
 }
 
-/** The catch target for a MISSION (the "Catch the hedgehog · 0/3" challenge), or null if unknown. */
-export function targetForMission(missionId: string, journal: Journal): CatchTarget | null {
+/** The catch target for a MISSION (the "Catch the hedgehog · 0/3" challenge), or null if unknown.
+ *  ⚠️ Pass `out` to REUSE one object per frame (the render-loop caller) — no per-frame allocation; the
+ *  panel callers (not per-frame) omit it and get a fresh object. */
+export function targetForMission(missionId: string, journal: Journal, out?: CatchTarget): CatchTarget | null {
   const def = MISSIONS[missionId];
   if (!def) return null;
-  return {
-    species: speciesForChallenge(def.requirement),
-    progress: journal.missions[missionId]?.progress ?? 0,
-    count: def.requirement.count,
-  };
+  const species = speciesForChallenge(def.requirement);
+  const progress = journal.missions[missionId]?.progress ?? 0;
+  const count = def.requirement.count;
+  if (out) {
+    out.species = species;
+    out.progress = progress;
+    out.count = count;
+    return out;
+  }
+  return { species, progress, count };
 }
 
 /** The species to PORTRAY for a RESEARCH project: its named mastery challenge's species (e.g. "The

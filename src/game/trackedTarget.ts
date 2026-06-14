@@ -20,9 +20,15 @@ function isTrackable(id: string, journal: Journal): boolean {
  * for WHERE YOU ARE), falling back to the first active goal overall. Null when nothing's left (all done).
  */
 export function defaultTrackedMission(journal: Journal, biome: BiomeId): string | null {
-  const active = MISSION_ORDER.filter((id) => isTrackable(id, journal));
-  const here = active.find((id) => SPECIES[speciesForChallenge(MISSIONS[id].requirement)].biome === biome);
-  return here ?? active[0] ?? null;
+  // ⚠️ A single pass — NO array allocation (this runs from the render loop via resolveTracked). Prefer
+  // the current biome's first active goal; else the first active goal overall.
+  let first: string | null = null;
+  for (const id of MISSION_ORDER) {
+    if (!isTrackable(id, journal)) continue;
+    if (first === null) first = id;
+    if (SPECIES[speciesForChallenge(MISSIONS[id].requirement)].biome === biome) return id; // the biome's goal
+  }
+  return first; // else the first active goal (or null when all done)
 }
 
 /**

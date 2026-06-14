@@ -29,7 +29,7 @@ import { AmbientRenderer } from './rendering/AmbientRenderer';
 import { SpeciesThumbnails } from './rendering/speciesPortrait';
 import { createThumbnailRenderer } from './rendering/thumbnailRenderer';
 import { TargetChip } from './rendering/TargetChip';
-import { targetForMission } from './game/catchTarget';
+import { targetForMission, type CatchTarget } from './game/catchTarget';
 import { resolveTracked, isTargetNear } from './game/trackedTarget';
 import { HUD, isDebugEnabled } from './rendering/HUD';
 import { TimeIndicator } from './rendering/TimeIndicator';
@@ -222,6 +222,8 @@ researchPanel.setThumbnails(thumbUrl);
 // no schema bump. The chip + the near-pulse are display-only — they read mission state + game.animals.
 const targetChip = new TargetChip(app);
 let trackedOverride: string | null = null;
+// ⚠️ A single reused target object — targetForMission fills it each frame (no per-frame allocation).
+const targetScratch: CatchTarget = { species: 'fieldmouse', progress: 0, count: 0 };
 missionPanel.setOnTrack((id) => {
   trackedOverride = id; // the chip picks it up next frame; the panel toggled its own button in place
 });
@@ -563,9 +565,10 @@ function frame(nowMs: number): void {
   hud.update(game);
   // §HUD catch-target (ii) — drive the play-screen chip: resolve the tracked mission (override → default),
   // read its {species, progress, count}, and pulse if a target instance is near. ⚠️ Frozen → pulse OFF
-  // (deterministic L2). All reads — no spawn/catch touch. The near-scan allocates nothing.
+  // (deterministic L2). All reads — no spawn/catch touch. ⚠️ No per-frame alloc: the resolvers are
+  // alloc-free and targetForMission fills the reused `targetScratch` (the near-scan allocates nothing).
   const trackedId = resolveTracked(trackedOverride, journal, game.currentBiome);
-  const target = trackedId ? targetForMission(trackedId, journal) : null;
+  const target = trackedId ? targetForMission(trackedId, journal, targetScratch) : null;
   missionPanel.setTracked(trackedId);
   const near =
     !l2Frozen && target !== null &&
