@@ -34,7 +34,7 @@ export type AnimalAIState = 'wander' | 'flee' | 'approach';
  * (aiState 'wander'), subdividing the old single wander into the calm life: rest (hold still),
  * forage (a slow head-down amble), vigilance (hold still + scan), locomote (the onward wander).
  * flee/approach OVERRIDE it (the SM is suspended and resumes on return to calm). It is a READABLE
- * signal (the D3 "jizz" seam) and drives only the step SPEED — the speed-driven gait responds for
+ * signal (the D3 behavioural-signature seam) and drives only the step SPEED — the speed-driven gait responds for
  * free, so there's no render change. ⚠️ NEVER feeds the catch (the catch reads aiState === 'flee').
  */
 export type AnimalBehavior = 'rest' | 'forage' | 'vigilance' | 'locomote';
@@ -92,7 +92,7 @@ export interface Animal {
   facingX: number;
   facingY: number;
   aiState: AnimalAIState;
-  /** §D2 (i) — the calm ETHOGRAM state (readable; the D3 jizz seam). Meaningful while aiState is
+  /** §D2 (i) — the calm ETHOGRAM state (readable; the D3 behavioural-signature seam). Meaningful while aiState is
    *  'wander'; suspended (held) during flee/approach. */
   behavior: AnimalBehavior;
   /** Time left (seconds) in the current behavior before the next is rolled. Ticks ONLY while calm. */

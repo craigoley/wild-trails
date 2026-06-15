@@ -33,7 +33,7 @@ export function speciesBudget(id: SpeciesId): EthogramBudget {
   return SPECIES_BEHAVIOR[id]?.budget ?? ETHOGRAM.defaultBudget;
 }
 
-/** §4.6 D2 (ii) — a species' SIGNATURE behaviour (the jizz beat the render plays + D3 reads), or 'none'
+/** §4.6 D2 (ii) — a species' SIGNATURE behaviour (the signature beat the render plays + D3 reads), or 'none'
  *  (the honest default — most species have no signature). PURE data read. */
 export function speciesSignature(id: SpeciesId): SignatureKind {
   return SPECIES_BEHAVIOR[id]?.signature ?? 'none';
