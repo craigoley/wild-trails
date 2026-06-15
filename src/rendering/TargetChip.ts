@@ -14,12 +14,30 @@ import type { CatchTarget } from '../game/catchTarget';
 export class TargetChip {
   private readonly el: HTMLDivElement;
   private sig = '';
+  /** §chip-detail — the tap handler (opens the detail sheet). The chip is `pointer-events: auto` (CSS),
+   *  so a touch TARGETS the chip — the canvas-only roam guard (isRoamTouchTarget) skips it, so the tap
+   *  is purely additive and never disturbs the drag-to-roam gesture. Default no-op until wired. */
+  private onTap: () => void = () => {};
 
   constructor(container: HTMLElement) {
     this.el = document.createElement('div');
     this.el.className = 'hud-target';
     this.el.style.display = 'none';
+    this.el.setAttribute('role', 'button');
+    this.el.setAttribute('aria-label', 'Show target details');
+    // pointerdown (immediate on touch, matches the action buttons); stopPropagation mirrors the button
+    // pattern (the roam handler already ignores a non-canvas target — this is belt-and-braces).
+    this.el.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      this.onTap();
+    });
+    this.el.addEventListener('touchstart', (e) => e.stopPropagation());
     container.appendChild(this.el);
+  }
+
+  /** §chip-detail — wire the tap-to-open-detail-sheet callback (the boundary opens the sheet). */
+  setOnTap(onTap: () => void): void {
+    this.onTap = onTap;
   }
 
   /** Show the tracked target (portrait + name · p/c), or hide when null. `near` toggles the pulse. */

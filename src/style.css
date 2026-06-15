@@ -1621,7 +1621,12 @@ body.modal-open .touch-stick-thumb {
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.32);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  pointer-events: none; /* a passive label — never blocks play */
+  /* §chip-detail — TAPPABLE: a touch targets the chip (so the canvas-only roam guard skips it →
+     the tap is additive, never disturbs drag-to-roam). min-height keeps a ≥44px HIG hit target. */
+  pointer-events: auto;
+  cursor: pointer;
+  min-height: 44px;
+  box-sizing: border-box;
   max-width: 52vw;
 }
 .hud-target .species-thumb {
@@ -1671,6 +1676,126 @@ body.modal-open .touch-stick-thumb {
     animation: none;
     box-shadow: 0 0 10px 1px rgba(151, 230, 160, 0.45);
   }
+}
+
+/* §chip-detail — the target-chip DETAIL BOTTOM SHEET. Rises from the bottom edge over a LIGHT scrim so
+   the world stays visible above (spatial context — not a full-screen modal). Dismiss: drag-handle / scrim
+   tap / ✕ / Escape. The play HUD is hidden while open via body.modal-open (driven from the main poll). */
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: none; /* flex when open (set inline by DetailSheet) */
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.28); /* a LIGHT scrim — the world reads above it */
+}
+.detail-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  max-height: 72vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 18px calc(20px + env(safe-area-inset-bottom)) 18px;
+  background: rgba(18, 26, 20, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: none;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.45);
+  animation: detail-rise 0.22s ease-out;
+}
+@keyframes detail-rise {
+  from {
+    transform: translateY(18px);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .detail-sheet {
+    animation: none;
+  }
+}
+/* The grab-handle (pull-down-to-close affordance) — centred, generous tap area. */
+.detail-handle {
+  width: 44px;
+  height: 5px;
+  margin: 4px auto 12px auto;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.32);
+  cursor: pointer;
+}
+/* The ✕ (addOverlayDismiss) sits top-right of the sheet. */
+.detail-sheet .overlay-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+}
+/* LEAD — portrait + name + catch progress. */
+.detail-lead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.detail-lead .species-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.detail-name {
+  font-size: 19px;
+  font-weight: 800;
+  color: #f3efe6;
+}
+.detail-progress {
+  font-size: 13px;
+  font-weight: 700;
+  color: #9fe6a0;
+  margin-top: 2px;
+}
+/* WHERE / HOW / WHY — three tight, scannable sections. */
+.detail-section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.detail-h {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(191, 227, 255, 0.72);
+  margin-bottom: 4px;
+}
+.detail-line {
+  font-size: 14px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.9);
+}
+.detail-line b {
+  color: #ffd166;
+}
+.detail-tip {
+  color: rgba(255, 255, 255, 0.72);
+}
+.detail-why-tracked b {
+  color: #f3efe6;
+}
+.detail-also {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.detail-also-label {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* The quiet tap-to-track affordance on an active mission row. */
