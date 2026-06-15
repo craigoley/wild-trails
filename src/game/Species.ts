@@ -9,11 +9,15 @@
  */
 
 import {
+  ETHOGRAM,
   SPECIES,
+  SPECIES_BEHAVIOR,
   SPECIES_ORDER,
   type ActivityWindow,
   type BiomeId,
   type DayPhase,
+  type EthogramBudget,
+  type SignatureKind,
   type SpeciesDef,
   type SpeciesId,
 } from '../utils/constants';
@@ -21,6 +25,18 @@ import {
 /** The full definition for a species id. */
 export function getSpecies(id: SpeciesId): SpeciesDef {
   return SPECIES[id];
+}
+
+/** §4.6 D2 (ii) — a species' ethogram TIME-BUDGET (its character weighting), or the default when the
+ *  species isn't tagged in SPECIES_BEHAVIOR. PURE data read; drives the slice-(i) behaviour SM. */
+export function speciesBudget(id: SpeciesId): EthogramBudget {
+  return SPECIES_BEHAVIOR[id]?.budget ?? ETHOGRAM.defaultBudget;
+}
+
+/** §4.6 D2 (ii) — a species' SIGNATURE behaviour (the jizz beat the render plays + D3 reads), or 'none'
+ *  (the honest default — most species have no signature). PURE data read. */
+export function speciesSignature(id: SpeciesId): SignatureKind {
+  return SPECIES_BEHAVIOR[id]?.signature ?? 'none';
 }
 
 /** Is a species with `window` out during `phase`? ANY is always out. */
