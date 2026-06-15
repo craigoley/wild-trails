@@ -21,7 +21,7 @@ jobs:
     name: Live bug-hunt (pinned container)
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0-noble
+      image: mcr.microsoft.com/playwright:v1.61.0-noble
     continue-on-error: true # report-only — never blocks
     timeout-minutes: 25
     steps:
