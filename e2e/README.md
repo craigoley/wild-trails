@@ -69,7 +69,7 @@ gh workflow run e2e-visual.yml --ref <your-branch> -f update_snapshots=true
 
 It runs `--update-snapshots` in the container, uploads the baselines as the `l2-visual-baselines`
 artifact for review, and commits them back under `e2e/visual.spec.ts-snapshots/`. (With local
-Docker the equivalent is `docker run … mcr.microsoft.com/playwright:v1.60.0-noble sh -c "npm ci &&
+Docker the equivalent is `docker run … mcr.microsoft.com/playwright:v1.61.0-noble sh -c "npm ci &&
 npm run test:e2e:visual -- --update-snapshots"` + commit — same image, same bytes.)
 
 **Prove no-flake by dispatching once more *without* `update_snapshots`** — it diffs the committed

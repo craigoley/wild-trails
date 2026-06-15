@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     # MUST match the installed @playwright/test version so the bundled browser + render match.
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0-noble
+      image: mcr.microsoft.com/playwright:v1.61.0-noble
     # Non-blocking until the baselines are seeded AND the gate is activated (see the header).
     continue-on-error: true
     timeout-minutes: 25
