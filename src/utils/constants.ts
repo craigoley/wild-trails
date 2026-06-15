@@ -2148,6 +2148,27 @@ export const ANIMAL = {
   fleeReleaseBuffer: 1.5,
 } as const;
 
+/**
+ * §4.6 D2 (i) — the ETHOGRAM behavior engine. A calm animal (aiState 'wander') cycles a small set of
+ * behavior states; the state sets the step SPEED, and the existing speed-driven gait responds for free
+ * (rest → idle, forage → slow walk, locomote → walk). ⚠️ Slice (i): ONE default budget for every
+ * species (the per-species budgets + signatures are slice ii). Pure data — no magic numbers in the SM.
+ */
+export const ETHOGRAM = {
+  /** The DEFAULT time-budget over the calm states (relative weights; the picker normalizes). Slice (i)
+   *  is uniform — forage-leaning with rest, the occasional scan, and some onward amble. */
+  defaultBudget: { rest: 0.25, forage: 0.4, vigilance: 0.15, locomote: 0.2 },
+  /** FORAGE amble speed (world u/s) — a head-down potter, slower than the wander locomote (1.2). */
+  forageSpeed: 0.55,
+  /** Per-state dwell range [minSec, maxSec] — how long a state holds before the next is rolled. */
+  dwell: {
+    rest: [2.5, 5.0],
+    forage: [2.0, 4.0],
+    vigilance: [0.8, 2.0],
+    locomote: [1.5, 3.0],
+  },
+} as const;
+
 // ===========================================================================
 // Stealth + detection (PR #6 — an ISOLABLE layer ON TOP of the #4 values)
 // ===========================================================================
