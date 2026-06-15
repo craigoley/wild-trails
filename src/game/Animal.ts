@@ -19,7 +19,7 @@
  * interpolation each animal keeps its previous sim-step position.
  */
 
-import { ANIMAL, BAIT, SPAWN, TOOLS, WATER_FLEE_BIAS, type BaitId, type SpeciesId, type ToolId } from '../utils/constants';
+import { ANIMAL, BAIT, ETHOGRAM, SPAWN, TOOLS, WATER_FLEE_BIAS, type BaitId, type SpeciesId, type ToolId } from '../utils/constants';
 import { clampToBiome, isInWater, isOpenBiome, nearestWater, type World } from './World';
 import { getSpecies } from './Species';
 import { effectiveDetectionRadius } from './Detection';
@@ -28,6 +28,50 @@ import type { Rng } from '../utils/rng';
 import type { Vec2 } from '../utils/math';
 
 export type AnimalAIState = 'wander' | 'flee' | 'approach';
+
+/**
+ * §4.6 D2 (i) — the ETHOGRAM behavior state, ORTHOGONAL to aiState. It runs ONLY while calm
+ * (aiState 'wander'), subdividing the old single wander into the calm life: rest (hold still),
+ * forage (a slow head-down amble), vigilance (hold still + scan), locomote (the onward wander).
+ * flee/approach OVERRIDE it (the SM is suspended and resumes on return to calm). It is a READABLE
+ * signal (the D3 "jizz" seam) and drives only the step SPEED — the speed-driven gait responds for
+ * free, so there's no render change. ⚠️ NEVER feeds the catch (the catch reads aiState === 'flee').
+ */
+export type AnimalBehavior = 'rest' | 'forage' | 'vigilance' | 'locomote';
+
+const BEHAVIORS: readonly AnimalBehavior[] = ['rest', 'forage', 'vigilance', 'locomote'];
+
+/** A weighted, SEEDED pick of the next calm behavior from a budget (relative weights). Pure. */
+export function pickBehavior(rng: Rng, budget: Readonly<Record<AnimalBehavior, number>>): AnimalBehavior {
+  let total = 0;
+  for (const b of BEHAVIORS) total += budget[b];
+  let r = rng.next() * total;
+  for (const b of BEHAVIORS) {
+    r -= budget[b];
+    if (r < 0) return b;
+  }
+  return BEHAVIORS[BEHAVIORS.length - 1]; // float-rounding guard — never normally hit
+}
+
+/** The SEEDED dwell (seconds) a behavior holds before the next is rolled — lerped in its [min,max]. Pure. */
+export function behaviorDwell(behavior: AnimalBehavior, rng: Rng): number {
+  const [lo, hi] = ETHOGRAM.dwell[behavior];
+  return lo + rng.next() * (hi - lo);
+}
+
+/** The step SPEED for a calm behavior (world u/s): rest/vigilance hold still (→ the idle gait),
+ *  forage ambles slowly, locomote uses the full wander speed. The speed-driven gait does the rest. */
+export function behaviorSpeed(behavior: AnimalBehavior): number {
+  switch (behavior) {
+    case 'rest':
+    case 'vigilance':
+      return 0;
+    case 'forage':
+      return ETHOGRAM.forageSpeed;
+    case 'locomote':
+      return ANIMAL.wanderSpeed;
+  }
+}
 
 /** An active bait lure the AI can be drawn to (matching diet only). */
 export interface BaitLure {
@@ -48,6 +92,11 @@ export interface Animal {
   facingX: number;
   facingY: number;
   aiState: AnimalAIState;
+  /** §D2 (i) — the calm ETHOGRAM state (readable; the D3 jizz seam). Meaningful while aiState is
+   *  'wander'; suspended (held) during flee/approach. */
+  behavior: AnimalBehavior;
+  /** Time left (seconds) in the current behavior before the next is rolled. Ticks ONLY while calm. */
+  behaviorTimer: number;
   /** Current WANDER heading (unit vector) and time until the next retarget. */
   headingX: number;
   headingY: number;
@@ -68,6 +117,8 @@ function makeInactiveAnimal(): Animal {
     facingX: 0,
     facingY: 1,
     aiState: 'wander',
+    behavior: 'locomote',
+    behaviorTimer: 0,
     headingX: 0,
     headingY: 0,
     retargetTimer: 0,
@@ -166,6 +217,11 @@ export function spawnAnimal(pool: Animal[], species: SpeciesId, x: number, y: nu
     a.headingY = 0;
     a.retargetTimer = 0;
     a.aiState = 'wander';
+    // §D2 (i) — a fresh animal starts calm in 'locomote' with a 0 timer, so its first calm step rolls
+    // the seeded behavior (deterministic via game.rng). Under ?freeze no step runs → it stays here
+    // (speed 0 at spawn → idle gait), so the frozen capture is unchanged.
+    a.behavior = 'locomote';
+    a.behaviorTimer = 0;
     a.inWater = false;
     return a;
   }
@@ -293,15 +349,31 @@ export function updateAnimal(
     vx = ux * def.baseFleeSpeed;
     vy = uy * def.baseFleeSpeed;
   } else {
-    animal.retargetTimer -= dt;
-    if (animal.retargetTimer <= 0) {
-      randomHeading(rng, _heading);
-      animal.headingX = _heading.x;
-      animal.headingY = _heading.y;
-      animal.retargetTimer = ANIMAL.wanderRetargetSec;
+    // --- §D2 (i) the ETHOGRAM: calm only (we reach here iff aiState === 'wander'). Advance the dwell;
+    // on expiry roll the next state (seeded). flee/approach never reach here, so the SM is naturally
+    // suspended during them and resumes (mid-dwell) on return to calm. The state sets the step SPEED;
+    // the speed-driven gait does the rest (rest/vigilance → idle, forage → slow, locomote → walk).
+    animal.behaviorTimer -= dt;
+    if (animal.behaviorTimer <= 0) {
+      animal.behavior = pickBehavior(rng, ETHOGRAM.defaultBudget);
+      animal.behaviorTimer = behaviorDwell(animal.behavior, rng);
     }
-    vx = animal.headingX * ANIMAL.wanderSpeed;
-    vy = animal.headingY * ANIMAL.wanderSpeed;
+    const speed = behaviorSpeed(animal.behavior);
+    if (speed > 0) {
+      // A moving state re-picks a wander heading on the existing cadence (the random-walk).
+      animal.retargetTimer -= dt;
+      if (animal.retargetTimer <= 0) {
+        randomHeading(rng, _heading);
+        animal.headingX = _heading.x;
+        animal.headingY = _heading.y;
+        animal.retargetTimer = ANIMAL.wanderRetargetSec;
+      }
+      vx = animal.headingX * speed;
+      vy = animal.headingY * speed;
+    } else {
+      vx = 0; // rest / vigilance — hold still (the idle gait reads as a calm pause)
+      vy = 0;
+    }
   }
 
   if (vx !== 0 || vy !== 0) {
