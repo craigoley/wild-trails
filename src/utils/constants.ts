@@ -514,6 +514,17 @@ export const ACTIVITY_LABEL: Record<ActivityWindow, string> = {
   night: 'Active at night',
 };
 
+/** §chip-detail — the species detail sheet's DERIVED "how to approach" tip. The wary/bold split is a
+ *  PURE read of the existing `detectionRadius` (a wary species genuinely bolts from further) — no
+ *  authored lore, the mechanic IS the tip. `waryThreshold` is pinned from the real roster spread
+ *  (radius range 2–5.5, median ≈3.6) at a natural value-gap (3.8 → 4.0): ≥4 are the skittish larger
+ *  fauna (deer / hare / marten / otter / seal / badger), <4 the small birds & mice that let you close. */
+export const SPECIES_DETAIL = {
+  waryThreshold: 4.0,
+  waryTip: 'Skittish — approach slowly, from cover.',
+  boldTip: 'Will feed in the open — approach gently.',
+} as const;
+
 /** §4.2 — the CAVE species are `'any'`-window like the meadow round-the-clock foragers, but for a
  *  different reason: the cave is ALWAYS dark, a place OUTSIDE the surface cycle. The journal card
  *  shows this teaching label for cave species (NOT the generic "all day", which would mislead — they

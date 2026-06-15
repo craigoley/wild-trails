@@ -29,6 +29,7 @@ import { AmbientRenderer } from './rendering/AmbientRenderer';
 import { SpeciesThumbnails } from './rendering/speciesPortrait';
 import { createThumbnailRenderer } from './rendering/thumbnailRenderer';
 import { TargetChip } from './rendering/TargetChip';
+import { DetailSheet } from './rendering/DetailSheet';
 import { targetForMission, type CatchTarget } from './game/catchTarget';
 import { resolveTracked, isTargetNear } from './game/trackedTarget';
 import { HUD, isDebugEnabled } from './rendering/HUD';
@@ -226,6 +227,14 @@ let trackedOverride: string | null = null;
 const targetScratch: CatchTarget = { species: 'fieldmouse', progress: 0, count: 0 };
 missionPanel.setOnTrack((id) => {
   trackedOverride = id; // the chip picks it up next frame; the panel toggled its own button in place
+});
+// §chip-detail — tapping the chip opens a bottom-sheet species detail card (where/how/why). It details
+// the SAME tracked target the chip names (resolved fresh at tap time), so the two can never disagree.
+const detailSheet = new DetailSheet(app);
+detailSheet.setThumbnails(thumbUrl);
+targetChip.setOnTap(() => {
+  const id = resolveTracked(trackedOverride, journal, game.currentBiome);
+  if (id) detailSheet.openFor(id, journal);
 });
 
 /**
@@ -483,7 +492,8 @@ function frame(nowMs: number): void {
     baitPanel.isOpen() ||
     shopPanel.isOpen() ||
     winScreen.isOpen() ||
-    startScreen.isOpen();
+    startScreen.isOpen() ||
+    detailSheet.isOpen();
   if (modalOpen !== modalOpenPrev) {
     syncModalOpenClass(modalOpen);
     modalOpenPrev = modalOpen;
