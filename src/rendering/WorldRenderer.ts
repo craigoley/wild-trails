@@ -21,6 +21,7 @@ import {
   ConeGeometry,
   CylinderGeometry,
   GridHelper,
+  IcosahedronGeometry,
   Group,
   InstancedMesh,
   Matrix4,
@@ -39,6 +40,8 @@ import {
   HIDING_RENDER,
   FERN_RENDER,
   PINE_RENDER,
+  HEDGE_RENDER,
+  COPSE_RENDER,
   REED_RENDER,
   ROCK_RENDER,
   SIGN_RENDER,
@@ -155,6 +158,8 @@ export class WorldRenderer {
     for (const spot of world.hidingSpots) this.addCover(spot);
     this.addTrackSigns();
     this.addPineForest(); // §4.2 — the dense pine scatter (instanced; the locked fog veils it until open)
+    this.addHedgerow(); // §hedgerow — the hedge lining the corridor (a walk-through lane kept clear)
+    this.addCopse(); // §hedgerow — the isolated hazel stand (a clearing kept clear)
     this.addGrid(world);
 
     // The locked-region visuals — built from the current unlock state, and
@@ -395,6 +400,94 @@ export class WorldRenderer {
       trunks.setMatrixAt(i, m);
       m.makeScale(1, canopyH, 1);
       m.setPosition(t.x, trunkH + canopyH / 2, t.z);
+      canopies.setMatrixAt(i, m);
+    }
+    trunks.instanceMatrix.needsUpdate = true;
+    canopies.instanceMatrix.needsUpdate = true;
+    this.group.add(trunks);
+    this.group.add(canopies);
+  }
+
+  /** §hedgerow — the HEDGE that lines the corridor: a dense scatter of low bushes across the ribbon, with
+   *  a clear central LANE (|x| < laneHalf) kept bush-free so the player walks meadow ↔ copse through the
+   *  gap. Instanced (one draw call), deterministic (a sin-hash). Entities draw OVER it (depthTest:false),
+   *  and the lane keeps the play clear — a hedge can never hide a catch (the Pine #109 legibility). */
+  private addHedgerow(): void {
+    const H = HEDGE_RENDER;
+    const r = BIOMES.hedgerow.bounds;
+    const w = r.maxX - r.minX;
+    const d = r.maxY - r.minY;
+    const cx = (r.minX + r.maxX) / 2;
+    const hash = (a: number, b: number): number => {
+      const s = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
+      return s - Math.floor(s);
+    };
+    const bushes: { x: number; z: number; h: number }[] = [];
+    for (let gx = 0; gx < H.gridN; gx++) {
+      for (let gz = 0; gz < H.rowsN; gz++) {
+        const x = r.minX + ((gx + 0.5 + (hash(gx + 1, gz + 1) - 0.5) * H.jitter) / H.gridN) * w;
+        const z = r.minY + ((gz + 0.5 + (hash(gx + 5, gz + 9) - 0.5) * H.jitter) / H.rowsN) * d;
+        if (Math.abs(x - cx) < H.laneHalf) continue; // keep the central walk-through lane clear
+        bushes.push({ x, z, h: H.minHeight + hash(gx + 11, gz + 3) * (H.maxHeight - H.minHeight) });
+      }
+    }
+    const n = bushes.length;
+    if (n === 0) return;
+    const bushGeo = new IcosahedronGeometry(H.bushRadius, 1); // a low faceted bush, scaled per instance
+    const bushMat = new MeshStandardMaterial({ color: H.color, roughness: 1, flatShading: true });
+    const mesh = new InstancedMesh(bushGeo, bushMat, n);
+    const m = new Matrix4();
+    for (let i = 0; i < n; i++) {
+      const b = bushes[i];
+      m.makeScale(1, b.h, 1); // squash to the hedge height (a low wall of green, not a ball)
+      m.setPosition(b.x, (b.h * H.bushRadius) / 2, b.z);
+      mesh.setMatrixAt(i, m);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    this.group.add(mesh);
+  }
+
+  /** §hedgerow — the HAZEL COPSE: a sparse stand of multi-stem hazel (a short trunk + a broad rounded
+   *  deciduous canopy), with a CLEARING at the centre (the play space). A REMNANT, distinct from the
+   *  conifer Pine + the dense Woodland. Instanced + deterministic; entities draw over it. */
+  private addCopse(): void {
+    const C = COPSE_RENDER;
+    const r = BIOMES.copse.bounds;
+    const cx = (r.minX + r.maxX) / 2;
+    const cz = (r.minY + r.maxY) / 2;
+    const w = r.maxX - r.minX;
+    const d = r.maxY - r.minY;
+    const hash = (a: number, b: number): number => {
+      const s = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
+      return s - Math.floor(s);
+    };
+    const trees: { x: number; z: number; h: number }[] = [];
+    for (let gx = 0; gx < C.gridN; gx++) {
+      for (let gz = 0; gz < C.gridN; gz++) {
+        const x = r.minX + ((gx + 0.5 + (hash(gx + 2, gz + 4) - 0.5) * C.jitter) / C.gridN) * w;
+        const z = r.minY + ((gz + 0.5 + (hash(gx + 6, gz + 8) - 0.5) * C.jitter) / C.gridN) * d;
+        if (Math.hypot(x - cx, z - cz) < C.clearingRadius) continue; // keep the coppice glade clear
+        trees.push({ x, z, h: C.minHeight + hash(gx + 13, gz + 7) * (C.maxHeight - C.minHeight) });
+      }
+    }
+    const n = trees.length;
+    if (n === 0) return;
+    const trunkGeo = new CylinderGeometry(C.trunkRadius, C.trunkRadius, 1, 5);
+    const canopyGeo = new IcosahedronGeometry(C.canopyRadius, 1); // a broad faceted deciduous canopy (vs the pine cone)
+    const trunkMat = new MeshStandardMaterial({ color: C.trunkColor, roughness: 1 });
+    const canopyMat = new MeshStandardMaterial({ color: C.canopyColor, roughness: 1, flatShading: true });
+    const trunks = new InstancedMesh(trunkGeo, trunkMat, n);
+    const canopies = new InstancedMesh(canopyGeo, canopyMat, n);
+    const m = new Matrix4();
+    for (let i = 0; i < n; i++) {
+      const t = trees[i];
+      const trunkH = t.h * C.trunkFraction;
+      const canopyH = t.h - trunkH;
+      m.makeScale(1, trunkH, 1);
+      m.setPosition(t.x, trunkH / 2, t.z);
+      trunks.setMatrixAt(i, m);
+      m.makeScale(1, canopyH, 1);
+      m.setPosition(t.x, trunkH + (canopyH * C.canopyRadius) / 2, t.z);
       canopies.setMatrixAt(i, m);
     }
     trunks.instanceMatrix.needsUpdate = true;

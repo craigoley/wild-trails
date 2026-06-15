@@ -230,4 +230,13 @@ export function catchRemainingSpecies(j: Journal): void {
   applyCatch(j, ev('wheatear', 'alpine', 'day'));
   applyCatch(j, ev('goldenplover', 'alpine', 'day'));
   applyCatch(j, ev('ringouzel', 'alpine', 'day'));
+  // §hedgerow — the CONNECTOR chain roster. The 4 hedgerow catches also complete hedgerow-survey
+  // (catch-in-biome ×4); the whitethroat completes hedgerow-edge; the dormouse completes copse-dormouse —
+  // so the new gating sets close (the win requires them) and the dex fills.
+  applyCatch(j, ev('bankvole', 'hedgerow', 'day')); // the bait-less valve
+  applyCatch(j, ev('harvestmouse', 'hedgerow', 'day'));
+  applyCatch(j, ev('yellowhammer', 'hedgerow', 'day'));
+  applyCatch(j, ev('whitethroat', 'hedgerow', 'day')); // 4th hedgerow catch → survey; + hedgerow-edge
+  applyCatch(j, ev('dormouse', 'copse', 'night')); // copse-dormouse + finds the dormouse
+  applyCatch(j, ev('blackcap', 'copse', 'day'));
 }

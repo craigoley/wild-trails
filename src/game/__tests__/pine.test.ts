@@ -91,7 +91,7 @@ describe('Pine Forest — ⚠️ the BRANCH (additive: the existing Woodland→W
   it('the Woodland set forks to BOTH the Wetland AND the Pine Forest; the Wetland arm stays first', () => {
     expect(BIOME_SET_UNLOCK.woodland).toEqual(['wetland', 'pineforest']); // the fork (existing arm first)
     // Every OTHER link unchanged (the meadow→woodland source + the highlands fork from the Moor build):
-    expect(BIOME_SET_UNLOCK.meadow).toEqual(['woodland']);
+    expect(BIOME_SET_UNLOCK.meadow).toEqual(['woodland', 'hedgerow']); // §hedgerow — the meadow set now forks to the corridor too
     expect(BIOME_SET_UNLOCK.wetland).toEqual(['highlands']);
     expect(BIOME_SET_UNLOCK.highlands).toEqual(['riverbank', 'moor']);
   });

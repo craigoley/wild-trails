@@ -37,6 +37,11 @@ const scenes = [
   { name: 'tidal-saltmarsh', query: `?seed=${SEED}&freeze=1&unlock=all&at=80,120&season=summer` },
   // §4.2 — the ALPINE/MONTANE SUMMIT: the bare cold-grey scree E of the Moor (the single boulder).
   { name: 'alpine-summit', query: `?seed=${SEED}&freeze=1&unlock=all&at=120,40&season=summer` },
+  // §hedgerow — the CONNECTOR corridor (the thin full-width ribbon S of the Meadow): the hedge LINES the
+  // sides with a clear walk-through lane (the Pine #109 legibility — a hedge never hides a catch).
+  { name: 'hedgerow-corridor', query: `?seed=${SEED}&freeze=1&unlock=all&at=0,-24&season=summer` },
+  // §hedgerow — the isolated HAZEL COPSE (the remnant the corridor reaches): a sparse stand + a glade.
+  { name: 'hazel-copse', query: `?seed=${SEED}&freeze=1&unlock=all&at=0,-48&season=summer` },
   // §4.6 D1a — the 4-SEASON meadow set: the seasonal re-grade on ONE representative scene (the meadow,
   // same seed/freeze as meadow-day-start). Summer ≈ meadow-day-start (identity), so these THREE are the
   // additive seasonal baselines (seeded after Craig approves the look). Eyeball: does each read as its

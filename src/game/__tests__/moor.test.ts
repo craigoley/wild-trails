@@ -87,7 +87,7 @@ describe('Moor — ⚠️ the BRANCH (additive: the existing linear arms are UNC
     expect(BIOME_SET_UNLOCK.highlands).toEqual(['riverbank', 'moor']); // the fork (order: existing arm first)
     // The linear chain is unchanged EXCEPT the Woodland, which the Pine Forest build forks (a 2nd arm,
     // additive — the Woodland→Wetland successor stays first). The Highlands fork (this slice) is intact.
-    expect(BIOME_SET_UNLOCK.meadow).toEqual(['woodland']);
+    expect(BIOME_SET_UNLOCK.meadow).toEqual(['woodland', 'hedgerow']); // §hedgerow — the meadow set now forks to the corridor too
     expect(BIOME_SET_UNLOCK.woodland).toEqual(['wetland', 'pineforest']); // §4.2 — the pine fork (Wetland arm unchanged)
     expect(BIOME_SET_UNLOCK.wetland).toEqual(['highlands']);
     expect(BIOME_SET_UNLOCK.riverbank).toEqual(['coast', 'cave']); // §4.2 — the cave fork (Coast arm unchanged)

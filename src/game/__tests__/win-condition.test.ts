@@ -28,6 +28,10 @@ function fullyCompletedJournal() {
   // Complete the Wetland set (Highlands content): survey ×3 (+ day mallard) + dawn frog.
   for (let i = 0; i < 3; i++) evaluateCatch(j, { species: 'mallard', biome: 'wetland', phase: 'day' });
   evaluateCatch(j, { species: 'frog', biome: 'wetland', phase: 'dawn' });
+  // §hedgerow — the connector chain sets: the corridor (survey ×4 + the whitethroat) + the copse dormouse.
+  for (let i = 0; i < 4; i++) evaluateCatch(j, { species: 'bankvole', biome: 'hedgerow', phase: 'day' });
+  evaluateCatch(j, { species: 'whitethroat', biome: 'hedgerow', phase: 'day' });
+  evaluateCatch(j, { species: 'dormouse', biome: 'copse', phase: 'night' });
   return j;
 }
 
@@ -104,8 +108,8 @@ describe('achievability — the win is REACHABLE with shipped content (no grind)
     const missionPts = MISSION_ORDER.reduce((s, id) => s + MISSIONS[id].rewardPoints, 0);
     const speciesPts = SPECIES_ORDER.length * RANK.perSpeciesFound;
     const top = RANKS[RANKS.length - 1].minPoints;
-    expect(missionPts).toBe(339); // +1 alpine multi-condition challenge (only RAISES the ceiling)
-    expect(SPECIES_ORDER.length).toBe(49); // +5 Alpine species — bigger roster, bigger win bar
+    expect(missionPts).toBe(414); // §hedgerow +75 (survey 25 + edge 20 + dormouse 30) — only RAISES the ceiling
+    expect(SPECIES_ORDER.length).toBe(55); // +6 §hedgerow chain — bigger roster, bigger win bar
     expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // clears with margin
   });
 
