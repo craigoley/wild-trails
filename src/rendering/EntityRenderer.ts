@@ -34,6 +34,14 @@ import {
   type WalkState,
   type WalkTransform,
 } from './walkCycle';
+import {
+  createSignatureState,
+  createSignatureTransform,
+  stepSignature,
+  type SignatureState,
+  type SignatureTransform,
+} from './signature';
+import { speciesSignature } from '../game/Species';
 import { CATCH, CATCH_FX, GAIT_PROFILES, HIDE, PALETTE, SIM_DT, SPAWN, SPECIES, SPECIES_ORDER, type SpeciesId } from '../utils/constants';
 import { clamp, lerp } from '../utils/math';
 
@@ -52,6 +60,10 @@ export class EntityRenderer {
    *  (state.animals), allocated ONCE (no per-frame alloc). Reset on a (re)spawn edge. The
    *  walkOut scratch above is reused across the player + every animal (applied immediately). */
   private readonly animalGait: WalkState[] = Array.from({ length: SPAWN.maxAnimals }, createWalkState);
+  /** §4.6 D2 (ii) — per-animal SIGNATURE accumulators (the jizz beat), a FIXED pool like animalGait
+   *  (allocated once, reset on a respawn edge). The sigOut scratch is reused (no per-frame alloc). */
+  private readonly animalSig: SignatureState[] = Array.from({ length: SPAWN.maxAnimals }, createSignatureState);
+  private readonly sigOut: SignatureTransform = createSignatureTransform();
   private readonly animalActivePrev: boolean[] = new Array(SPAWN.maxAnimals).fill(false);
   /** A pool of built models per species (claimed by active animals each frame). */
   private readonly animalPools: Record<SpeciesId, Group[]>;
@@ -156,9 +168,10 @@ export class EntityRenderer {
       const alz = lerp(a.prevY, a.y, alpha);
       EntityRenderer.faceTravel(model, a.facingX, a.facingY);
       if (enc && enc.animalIndex === idx) {
-        // Encounter target: the catch-shake squash OWNS the transform (the gait yields).
+        // Encounter target: the catch-shake squash OWNS the transform (the gait + signature yield).
         model.position.set(alx, 0, alz);
         model.rotation.x = 0;
+        model.rotation.z = 0; // clear any signature roll while the squash owns the pose
         EntityRenderer.applySquash(model, enc);
       } else {
         // CJ2 — the procedural gait (a VISUAL transform AROUND the logical lerp). Velocity
@@ -166,17 +179,22 @@ export class EntityRenderer {
         // water; flee makes it more urgent. Frozen → neutral (the L2 capture is unchanged).
         const g = this.animalGait[idx];
         if (!this.animalActivePrev[idx]) {
-          // (Re)spawn edge — start this slot's gait fresh (no stale phase from a prior animal).
+          // (Re)spawn edge — start this slot's gait + signature fresh (no stale phase from a prior animal).
           g.walkPhase = 0;
           g.idleClock = 0;
           g.lean = 0;
+          this.animalSig[idx].clock = 0;
         }
         const speed = Math.hypot(a.x - a.prevX, a.y - a.prevY) / SIM_DT;
         const profile = a.inWater ? GAIT_PROFILES.swim : GAIT_PROFILES[SPECIES[a.species].gait];
         const t = stepGait(g, speed, profile, dt, frozen, a.aiState === 'flee', this.walkOut);
-        model.position.set(alx, t.bobY, alz);
+        // §4.6 D2 (ii) — the SIGNATURE beat (dipper bob / wagtail wag), layered on the gait. Plays while
+        // CALM (not fleeing); frozen/none/fleeing → neutral, so the L2 freeze capture is byte-stable.
+        const sig = stepSignature(this.animalSig[idx], speciesSignature(a.species), a.aiState !== 'flee', dt, frozen, this.sigOut);
+        model.position.set(alx, t.bobY + sig.bobY, alz);
         model.scale.set(t.scaleXZ, t.scaleY, t.scaleXZ);
         model.rotation.x = t.leanX;
+        model.rotation.z = sig.rollZ;
       }
       this.animalActivePrev[idx] = true;
       model.visible = true;

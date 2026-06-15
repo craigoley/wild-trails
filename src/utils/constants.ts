@@ -2151,13 +2151,23 @@ export const ANIMAL = {
 /**
  * §4.6 D2 (i) — the ETHOGRAM behavior engine. A calm animal (aiState 'wander') cycles a small set of
  * behavior states; the state sets the step SPEED, and the existing speed-driven gait responds for free
- * (rest → idle, forage → slow walk, locomote → walk). ⚠️ Slice (i): ONE default budget for every
- * species (the per-species budgets + signatures are slice ii). Pure data — no magic numbers in the SM.
+ * (rest → idle, forage → slow walk, locomote → walk). ⚠️ Slice (i) shipped ONE default budget; slice (ii)
+ * adds the PER-SPECIES weights (below) on the SAME engine. Pure data — no magic numbers in the SM.
  */
 export const ETHOGRAM = {
-  /** The DEFAULT time-budget over the calm states (relative weights; the picker normalizes). Slice (i)
-   *  is uniform — forage-leaning with rest, the occasional scan, and some onward amble. */
+  /** The DEFAULT time-budget over the calm states (relative weights; the picker normalizes). The
+   *  fallback for any species not tagged in SPECIES_BEHAVIOR — forage-leaning with rest + the odd scan. */
   defaultBudget: { rest: 0.25, forage: 0.4, vigilance: 0.15, locomote: 0.2 },
+  /** §4.6 D2 (ii) — the per-CHARACTER archetype budgets. A species' jizz comes from its weighting:
+   *  the wader stand-scans then feeds; the grazer crops with vigilance-lifts; the darter is restless;
+   *  the songbird perches/rests; the ambusher watches then strikes. Assigned per species below. */
+  budgets: {
+    grazer: { rest: 0.15, forage: 0.5, vigilance: 0.25, locomote: 0.1 },
+    darter: { rest: 0.1, forage: 0.45, vigilance: 0.15, locomote: 0.3 },
+    wader: { rest: 0.1, forage: 0.4, vigilance: 0.4, locomote: 0.1 },
+    songbird: { rest: 0.4, forage: 0.3, vigilance: 0.2, locomote: 0.1 },
+    ambusher: { rest: 0.15, forage: 0.35, vigilance: 0.4, locomote: 0.1 },
+  },
   /** FORAGE amble speed (world u/s) — a head-down potter, slower than the wander locomote (1.2). */
   forageSpeed: 0.55,
   /** Per-state dwell range [minSec, maxSec] — how long a state holds before the next is rolled. */
@@ -2168,6 +2178,71 @@ export const ETHOGRAM = {
     locomote: [1.5, 3.0],
   },
 } as const;
+
+/** §4.6 D2 (ii) — a calm time-budget over the four ethogram states (relative weights; the picker
+ *  normalizes). Shape shared by ETHOGRAM.defaultBudget / .budgets / a species' SPECIES_BEHAVIOR budget. */
+export type EthogramBudget = { rest: number; forage: number; vigilance: number; locomote: number };
+
+/** §4.6 D2 (ii) — a species' SIGNATURE behaviour (the "jizz" beat the render layer plays + D3 will read).
+ *  HONEST + species-level: only a species with a REAL signature is tagged; 'none' is the honest default. */
+export type SignatureKind = 'none' | 'bob' | 'wag';
+
+/** §4.6 D2 (ii) — the SIGNATURE render motion tuning (the gentle jizz beat, layered on the gait; it
+ *  collapses to neutral under ?freeze so the L2 capture is byte-stable). A small bob (dipper) / tail-wag
+ *  roll (wagtail) — characterful, NOT twitchy. The motion lives in src/rendering/signature.ts. */
+export const SIGNATURE = {
+  freqHz: 1.6, // the bob/wag cadence (Hz)
+  bobAmplitude: 0.11, // 'bob' — extra vertical bob (world units), added to the gait bob
+  wagAmplitude: 0.16, // 'wag' — lateral tail-wag roll (radians, about the forward axis)
+} as const;
+
+/**
+ * §4.6 D2 (ii) — the PER-SPECIES character: each tagged species' time-budget archetype + its signature.
+ * Additive DATA (the data-slice pattern, like SEASONAL_FLORA) — a species not listed runs the DEFAULT
+ * budget + 'none' (honest omission; most animals have no quirk). No per-species CODE: the pure slice-(i)
+ * SM reads the budget; the render reads the signature. The "heron" archetype is realised by the estuary
+ * WADERS (stand-scan-then-feed). ⚠️ Signatures stay honest: only the dipper bobs and the wagtail wags.
+ */
+export const SPECIES_BEHAVIOR: Partial<Record<SpeciesId, { budget?: EthogramBudget; signature?: SignatureKind }>> = {
+  // Grazers — crop (forage) with frequent vigilance-lifts.
+  rabbit: { budget: ETHOGRAM.budgets.grazer },
+  roedeer: { budget: ETHOGRAM.budgets.grazer },
+  reddeer: { budget: ETHOGRAM.budgets.grazer },
+  mountainhare: { budget: ETHOGRAM.budgets.grazer },
+  brentgoose: { budget: ETHOGRAM.budgets.grazer },
+  redgrouse: { budget: ETHOGRAM.budgets.grazer },
+  ptarmigan: { budget: ETHOGRAM.budgets.grazer },
+  capercaillie: { budget: ETHOGRAM.budgets.grazer },
+  // Darters — dart-and-forage, restless, little rest.
+  fieldmouse: { budget: ETHOGRAM.budgets.darter },
+  watervole: { budget: ETHOGRAM.budgets.darter },
+  redsquirrel: { budget: ETHOGRAM.budgets.darter },
+  pinemarten: { budget: ETHOGRAM.budgets.darter },
+  // Waders — the "heron" jizz: stand-scan (vigilance) then feed.
+  curlew: { budget: ETHOGRAM.budgets.wader },
+  redshank: { budget: ETHOGRAM.budgets.wader },
+  oystercatcher: { budget: ETHOGRAM.budgets.wader },
+  avocet: { budget: ETHOGRAM.budgets.wader },
+  dunlin: { budget: ETHOGRAM.budgets.wader },
+  knot: { budget: ETHOGRAM.budgets.wader },
+  turnstone: { budget: ETHOGRAM.budgets.wader },
+  goldenplover: { budget: ETHOGRAM.budgets.wader },
+  // Songbirds — perch + rest, brief foraging forays.
+  robin: { budget: ETHOGRAM.budgets.songbird },
+  linnet: { budget: ETHOGRAM.budgets.songbird },
+  twite: { budget: ETHOGRAM.budgets.songbird },
+  coaltit: { budget: ETHOGRAM.budgets.songbird },
+  crestedtit: { budget: ETHOGRAM.budgets.songbird },
+  crossbill: { budget: ETHOGRAM.budgets.songbird },
+  stonechat: { budget: ETHOGRAM.budgets.songbird },
+  snowbunting: { budget: ETHOGRAM.budgets.songbird },
+  // Ambushers — watch (vigilance) then strike.
+  kingfisher: { budget: ETHOGRAM.budgets.ambusher },
+  otter: { budget: ETHOGRAM.budgets.ambusher },
+  // The SIGNATURES (the jizz beat) — honest, species-level, and rare.
+  dipper: { budget: ETHOGRAM.budgets.ambusher, signature: 'bob' }, // dippers bob at the water's edge
+  greywagtail: { budget: ETHOGRAM.budgets.darter, signature: 'wag' }, // wagtails wag their tails
+};
 
 // ===========================================================================
 // Stealth + detection (PR #6 — an ISOLABLE layer ON TOP of the #4 values)

@@ -21,7 +21,7 @@
 
 import { ANIMAL, BAIT, ETHOGRAM, SPAWN, TOOLS, WATER_FLEE_BIAS, type BaitId, type SpeciesId, type ToolId } from '../utils/constants';
 import { clampToBiome, isInWater, isOpenBiome, nearestWater, type World } from './World';
-import { getSpecies } from './Species';
+import { getSpecies, speciesBudget } from './Species';
 import { effectiveDetectionRadius } from './Detection';
 import type { PlayerState } from './Player';
 import type { Rng } from '../utils/rng';
@@ -355,7 +355,9 @@ export function updateAnimal(
     // the speed-driven gait does the rest (rest/vigilance → idle, forage → slow, locomote → walk).
     animal.behaviorTimer -= dt;
     if (animal.behaviorTimer <= 0) {
-      animal.behavior = pickBehavior(rng, ETHOGRAM.defaultBudget);
+      // §D2 (ii) — roll the next state from THIS SPECIES' budget (its character), not the global default
+      // (slice ii data wiring; the SM logic is unchanged). Untagged species fall back to the default.
+      animal.behavior = pickBehavior(rng, speciesBudget(animal.species));
       animal.behaviorTimer = behaviorDwell(animal.behavior, rng);
     }
     const speed = behaviorSpeed(animal.behavior);
