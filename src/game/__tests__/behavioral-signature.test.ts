@@ -5,9 +5,9 @@ import { createAnimalPool, spawnAnimal, type AnimalBehavior } from '../Animal';
 import { SPECIES, ETHOGRAM } from '../../utils/constants';
 
 /**
- * §4.6 D2 (iii) — the READABLE jizz seam (the D3 identify-by-behavior readout). PURE. These pin: the
+ * §4.6 D2 (iii) — the READABLE behavioural-signature seam (the D3 identify-by-behavior readout). PURE. These pin: the
  * signal COMPOSES the live behaviour + the species signature/budget/descriptors (a read, no new
- * behaviour), the dominant-activity derivation, and that DISTINCT species carry DISTINCT jizz.
+ * behaviour), the dominant-activity derivation, and that DISTINCT species carry DISTINCT behavioural signatures.
  */
 
 const animalOf = (species: Parameters<typeof spawnAnimal>[1]) => {
@@ -15,7 +15,7 @@ const animalOf = (species: Parameters<typeof spawnAnimal>[1]) => {
   return spawnAnimal(pool, species, 0, 0)!;
 };
 
-describe('currentSignature — composes the existing jizz into one readable signal', () => {
+describe('currentSignature — composes the existing behavioural data into one readable signal', () => {
   it('reflects the LIVE behaviour + the species signature / budget / descriptors', () => {
     const a = animalOf('dipper');
     a.behavior = 'vigilance'; // the live state, right now
@@ -45,11 +45,11 @@ describe('currentSignature — composes the existing jizz into one readable sign
     expect(currentSignature(animalOf('curlew')).dominant).toBe('forage');
   });
 
-  it('⚠️ DISTINCT species carry DISTINCT jizz (the seam carries the character)', () => {
+  it('⚠️ DISTINCT species carry DISTINCT behavioural signatures (the seam carries the character)', () => {
     const wader = currentSignature(animalOf('curlew')); // wader budget, vigilance-heavy, no signature
     const mouse = currentSignature(animalOf('fieldmouse')); // darter budget, locomote-heavy, no signature
     const dipper = currentSignature(animalOf('dipper')); // ambusher budget + the 'bob' signature
-    // The budgets differ → the jizz differs.
+    // The budgets differ → the behavioural signature differs.
     expect(wader.budget).not.toBe(mouse.budget);
     expect(wader.budget.vigilance).toBeGreaterThan(mouse.budget.vigilance);
     expect(mouse.budget.locomote).toBeGreaterThan(wader.budget.locomote);

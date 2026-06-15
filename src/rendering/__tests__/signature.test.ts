@@ -7,7 +7,7 @@ import {
 import { SIGNATURE } from '../../utils/constants';
 
 /**
- * §4.6 D2 (ii) — the SIGNATURE render motion (the jizz beat). Pure, like walkCycle. These pin: bob moves
+ * §4.6 D2 (ii) — the SIGNATURE render motion (the signature beat). Pure, like walkCycle. These pin: bob moves
  * the vertical only, wag rolls the lateral only, and — the L2 rule — FROZEN / inactive / 'none' collapse to
  * NEUTRAL with the accumulator zeroed (byte-stable capture) and ZERO per-frame allocation (the out scratch
  * is reused). The on-device LOOK of the bob/wag is Craig's gate.
@@ -16,7 +16,7 @@ import { SIGNATURE } from '../../utils/constants';
 const ST = () => createSignatureState();
 const OUT = createSignatureTransform();
 
-describe('stepSignature — the per-species jizz beat', () => {
+describe('stepSignature — the per-species signature beat', () => {
   it('bob moves the vertical (bobY) only; wag rolls the lateral (rollZ) only', () => {
     const bob = stepSignature(ST(), 'bob', true, 0.2, false, OUT);
     expect(Math.abs(bob.bobY)).toBeGreaterThan(0);

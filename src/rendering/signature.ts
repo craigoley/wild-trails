@@ -1,5 +1,5 @@
 /**
- * §4.6 D2 (ii) — the SIGNATURE render motion (the "jizz" beat). A small, characterful idle motion layered
+ * §4.6 D2 (ii) — the SIGNATURE render motion (the signature beat). A small, characterful idle motion layered
  * on the gait: the dipper BOBS (a gentle vertical bob), the wagtail WAGS (a lateral tail-wag roll). PURE +
  * Node-testable: NO three, NO DOM — just numbers, like walkCycle. The EntityRenderer applies the result on
  * top of the gait transform (bob → +y, wag → rotation.z).

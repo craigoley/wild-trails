@@ -2158,7 +2158,7 @@ export const ETHOGRAM = {
   /** The DEFAULT time-budget over the calm states (relative weights; the picker normalizes). The
    *  fallback for any species not tagged in SPECIES_BEHAVIOR — forage-leaning with rest + the odd scan. */
   defaultBudget: { rest: 0.25, forage: 0.4, vigilance: 0.15, locomote: 0.2 },
-  /** §4.6 D2 (ii) — the per-CHARACTER archetype budgets. A species' jizz comes from its weighting:
+  /** §4.6 D2 (ii) — the per-CHARACTER archetype budgets. A species' behavioural signature comes from its weighting:
    *  the wader stand-scans then feeds; the grazer crops with vigilance-lifts; the darter is restless;
    *  the songbird perches/rests; the ambusher watches then strikes. Assigned per species below. */
   budgets: {
@@ -2183,11 +2183,11 @@ export const ETHOGRAM = {
  *  normalizes). Shape shared by ETHOGRAM.defaultBudget / .budgets / a species' SPECIES_BEHAVIOR budget. */
 export type EthogramBudget = { rest: number; forage: number; vigilance: number; locomote: number };
 
-/** §4.6 D2 (ii) — a species' SIGNATURE behaviour (the "jizz" beat the render layer plays + D3 will read).
+/** §4.6 D2 (ii) — a species' SIGNATURE behaviour (the signature beat the render layer plays + D3 will read).
  *  HONEST + species-level: only a species with a REAL signature is tagged; 'none' is the honest default. */
 export type SignatureKind = 'none' | 'bob' | 'wag';
 
-/** §4.6 D2 (ii) — the SIGNATURE render motion tuning (the gentle jizz beat, layered on the gait; it
+/** §4.6 D2 (ii) — the SIGNATURE render motion tuning (the gentle signature beat, layered on the gait; it
  *  collapses to neutral under ?freeze so the L2 capture is byte-stable). A small bob (dipper) / tail-wag
  *  roll (wagtail) — characterful, NOT twitchy. The motion lives in src/rendering/signature.ts. */
 export const SIGNATURE = {
@@ -2218,7 +2218,7 @@ export const SPECIES_BEHAVIOR: Partial<Record<SpeciesId, { budget?: EthogramBudg
   watervole: { budget: ETHOGRAM.budgets.darter },
   redsquirrel: { budget: ETHOGRAM.budgets.darter },
   pinemarten: { budget: ETHOGRAM.budgets.darter },
-  // Waders — the "heron" jizz: stand-scan (vigilance) then feed.
+  // Waders — the "heron" read: stand-scan (vigilance) then feed.
   curlew: { budget: ETHOGRAM.budgets.wader },
   redshank: { budget: ETHOGRAM.budgets.wader },
   oystercatcher: { budget: ETHOGRAM.budgets.wader },
@@ -2239,7 +2239,7 @@ export const SPECIES_BEHAVIOR: Partial<Record<SpeciesId, { budget?: EthogramBudg
   // Ambushers — watch (vigilance) then strike.
   kingfisher: { budget: ETHOGRAM.budgets.ambusher },
   otter: { budget: ETHOGRAM.budgets.ambusher },
-  // The SIGNATURES (the jizz beat) — honest, species-level, and rare.
+  // The SIGNATURES (the signature beat) — honest, species-level, and rare.
   dipper: { budget: ETHOGRAM.budgets.ambusher, signature: 'bob' }, // dippers bob at the water's edge
   greywagtail: { budget: ETHOGRAM.budgets.darter, signature: 'wag' }, // wagtails wag their tails
 };

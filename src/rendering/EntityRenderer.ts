@@ -60,7 +60,7 @@ export class EntityRenderer {
    *  (state.animals), allocated ONCE (no per-frame alloc). Reset on a (re)spawn edge. The
    *  walkOut scratch above is reused across the player + every animal (applied immediately). */
   private readonly animalGait: WalkState[] = Array.from({ length: SPAWN.maxAnimals }, createWalkState);
-  /** §4.6 D2 (ii) — per-animal SIGNATURE accumulators (the jizz beat), a FIXED pool like animalGait
+  /** §4.6 D2 (ii) — per-animal SIGNATURE accumulators (the signature beat), a FIXED pool like animalGait
    *  (allocated once, reset on a respawn edge). The sigOut scratch is reused (no per-frame alloc). */
   private readonly animalSig: SignatureState[] = Array.from({ length: SPAWN.maxAnimals }, createSignatureState);
   private readonly sigOut: SignatureTransform = createSignatureTransform();

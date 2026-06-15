@@ -8,7 +8,7 @@ decision. A MAJOR arc; recon-first.
 ethogram of STATES (rest / forage / vigilance / preen / [vocalize] / flee) + per-species TIME-BUDGET
 WEIGHTS over those states + a SIGNATURE behavior or two per species (the dipper bobs, the wagtail
 wags). A species' character = its weighting + signature. The state machine drives WHICH gait / WHERE
-/ the dwell; CJ renders the locomotion. JIZZ (the behavioral signature) is the bridge to D3.
+/ the dwell; CJ renders the locomotion. The behavioural signature is the bridge to D3.
 
 ⚠️ **Ordering:** D2 builds **after** the pending seasonal reseed closes — the L2 gate must be UP
 (fresh, correct baselines) before D2's new motion, so D2's own reseed captures behavior on top of an
@@ -137,11 +137,11 @@ slice (i) ships (b) (catch byte-unchanged); (a) is a deliberate, separately-tuna
 
 ---
 
-## 5. The D3 bridge (the jizz seam) — **CAUSE (build it as a readable signal)**
+## 5. The D3 bridge (the behavioural-signature seam) — **CAUSE (build it as a readable signal)**
 
 **CAUSE.** D3 (identify-by-behavior) will read the animal's *current behavior* + the species
 *signature*. D2 should expose `behavior` as a **readable field on the Animal struct** (exactly as the
-renderer already reads `aiState` / `inWater`), plus the species `signature` data. The "jizz" = the
+renderer already reads `aiState` / `inWater`), plus the species `signature` data. The behavioural signature = the
 species' weighting + signature, surfaced as (1) the static data tag and (2) the live `behavior` state.
 
 Build D2's behavior **as that readable signal now** — e.g. a tidy `currentSignature(animal)` /
@@ -208,7 +208,7 @@ interleave.
 - **#4 (CAUSE):** catch reads only `aiState === 'flee'` → keep `behavior` orthogonal and
   `finalCatchChance` is **byte-unchanged with unchanged inputs**. The one honest odds option
   (vigilance) routes through the **detection radius**, never the formula — flagged, deferred.
-- **#5 (CAUSE):** expose `behavior` + the species `signature` as a **readable signal** now (the jizz)
+- **#5 (CAUSE):** expose `behavior` + the species `signature` as a **readable signal** now (the behavioural signature)
   — the D3 identify-by-behavior seam, without building D3.
 - **#6 (CAUSE):** pure + L1-testable; **freeze → neutral / seeded-initial** (the L2 rule); it's a
   canvas change → **reseed**; **lands AFTER the seasonal reseed** (gate up). Slice **i** engine →
