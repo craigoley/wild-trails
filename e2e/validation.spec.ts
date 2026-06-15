@@ -52,7 +52,11 @@ async function boot(page: Page, query: string): Promise<void> {
   await page.waitForFunction(() => (window as { __renderReady?: boolean }).__renderReady === true, null, { timeout: 30_000 });
   const splash = page.locator('.start-overlay');
   if (await splash.isVisible().catch(() => false)) {
-    await page.locator('.start-primary').click(); // "Start / Continue" — begins play (the real dismiss path)
+    // First run shows a Skip link (begins play AND suppresses the onboarding prompts → a cleaner sweep);
+    // a returning player gets Continue. Either is the real "begin play" dismiss path.
+    const skip = page.locator('.start-skip');
+    if (await skip.isVisible().catch(() => false)) await skip.click();
+    else await page.locator('.start-primary').click();
     await expect(splash).toBeHidden();
   }
   await waitHudReady(page);
@@ -69,17 +73,17 @@ test('console sweep — boot, each panel, the detail sheet', async ({ page }) =>
   test.setTimeout(60_000);
   const c = collect(page);
   await boot(page, '?seed=7&season=summer');
-  // Open each panel by its HUD button, then close with Escape — waiting for the CLEAN closed state
-  // between iterations (F1: a prior overlay must clear body.modal-open before the next HUD button is
-  // visible; wait for it, never force a hidden click).
-  for (const sel of ['.action-journal', '.action-missions', '.action-research', '.action-baitpanel']) {
-    const btn = page.locator(sel);
-    if ((await btn.count()) === 0) { console.log(`[VALIDATION]   note: ${sel} not present`); continue; }
-    await expect(btn.first()).toBeVisible();
-    await btn.first().click();
-    await page.waitForTimeout(120);
+  // Open each panel via its KEYBOARD SHORTCUT, then close with Escape — waiting for the clean state at
+  // each edge. ⚠️ We drive the panels by key (j/m/r/e), NOT by clicking the HUD buttons: while modal-open
+  // toggles, the buttons hide/show (a CSS transition), so a rapid open→close→next-button click races that
+  // transition ("not stable"/"not visible"). The keyboard toggles are immune (the handler is global) and
+  // still exercise each panel for the console-error sweep — the actual goal here.
+  for (const [key, name] of [['j', 'journal'], ['m', 'missions'], ['r', 'research'], ['e', 'bait']] as const) {
+    await page.keyboard.press(key);
+    await page.waitForFunction(() => document.body.classList.contains('modal-open'), null, { timeout: 5_000 }); // opened
+    console.log(`[VALIDATION]   ${name} panel opened`);
     await page.keyboard.press('Escape');
-    await waitHudReady(page); // the overlay fully closed before the next panel
+    await waitHudReady(page); // closed before the next panel
   }
   // The detail sheet (tap the target chip if it's showing a tracked target).
   const chip = page.locator('.hud-target');
