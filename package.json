@@ -13,7 +13,9 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test --project=smoke",
-    "test:e2e:visual": "playwright test --project=visual"
+    "test:e2e:visual": "playwright test --project=visual",
+    "test:e2e:validation": "playwright test --project=validation",
+    "validate:node": "npx tsx scripts/validate-node.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

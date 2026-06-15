@@ -1,0 +1,42 @@
+name: Validation (live bug-hunt)
+
+# §validation — the BROAD live bug-hunt (manual dispatch). Runs the `validation` Playwright project IN
+# THE PINNED CONTAINER (the same image as the visual gate, so the WebGL render matches) and prints the
+# [VALIDATION] findings to the job log for triage. REPORT-ONLY: it does NOT gate any PR (manual-only,
+# continue-on-error) and FIXES nothing — it surfaces console errors/warnings + interaction/soak results
+# the freeze-frame baselines can't see. Read the job log / the artifact for the findings.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validation:
+    name: Live bug-hunt (pinned container)
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
+    continue-on-error: true # report-only — never blocks
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - run: npm ci
+      - name: Pure-Node bug-hunt (data + sim soak)
+        run: npm run validate:node
+      - name: Live browser bug-hunt (console / interaction / D2 soak)
+        run: npm run test:e2e:validation
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+          if-no-files-found: ignore

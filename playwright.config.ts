@@ -41,6 +41,9 @@ export default defineConfig({
   projects: [
     { name: 'smoke', testMatch: /smoke\.spec\.ts/ },
     { name: 'visual', testMatch: /visual\.spec\.ts/ },
+    // §validation — the broad live bug-hunt (container-only, manual dispatch). NOT a PR gate: it logs
+    // findings ([VALIDATION] lines) for triage and hard-fails only on a true crash. Run via validation.yml.
+    { name: 'validation', testMatch: /validation\.spec\.ts/ },
   ],
   webServer: {
     // Build once, then serve the static dist for the browser to hit.
