@@ -81,6 +81,12 @@ onboarding and **snaps the camera** to the player (the follow eases exponentiall
 otherwise) — both `?freeze`-only, so gameplay is unaffected. The settle budget is `expect.timeout`
 (30 s, generous for the slow container) — NOT the diff tolerance (`maxDiffPixelRatio: 0.02`).
 
+⚠️ **After a seeding run, push a human-authored commit.** The seeding job commits the baselines as
+`github-actions[bot]`, which becomes the PR's HEAD. The auto-review/merge pipeline has an *"exit if the
+workflow authored the last commit"* guard (loop-prevention), so it **self-skips** while the bot's
+baseline commit is HEAD — the PR sits unmerged. Land one more **non-bot** commit (a short doc note like
+this one) so the guard passes and the review/merge fires.
+
 ## What L2 does NOT do
 
 It does **not** unblock feel work (e.g. the Nets B1 glide-smoothness, frog-aliveness,
