@@ -13,6 +13,7 @@ import {
   completeCaveGate,
   completeTidalGate,
   completeAlpineGate,
+  completeEstuaryGate,
   catchRemainingSpecies,
 } from './harness';
 import { createJournal } from '../../../state/Journal';
@@ -141,8 +142,14 @@ describe('L1 Guard 3 — progression-to-win (the unlock chain + the win fires)',
     expect(j.unlockedBiomes).not.toContain('alpine');
     completeAlpineGate(j);
     expect(j.unlockedBiomes).toContain('alpine');
-    // Fill the dex (every roster, incl. the Tidal five + the Alpine five) -> the win fires. WIN REACHABLE
-    // through every research-gated biome (the cardinal anti-wall pin: no impossible state).
+    // §migration — the ESTUARY migration hub (the open mudflats, tier 7) is the TIDAL's first arm (a
+    // single-successor extension off the previously-terminal saltmarsh), behind its OWN species+bait gate
+    // (research-knot-shellfish). Additive: the Tidal's prior terminus behaviour is unchanged.
+    expect(j.unlockedBiomes).not.toContain('estuary');
+    completeEstuaryGate(j);
+    expect(j.unlockedBiomes).toContain('estuary');
+    // Fill the dex (every roster, incl. the Tidal five + the Alpine five + the Estuary seven) -> the win
+    // fires. WIN REACHABLE through every research-gated biome (the cardinal anti-wall pin: no impossible state).
     catchRemainingSpecies(j);
     expect(SPECIES_ORDER.every((id) => j.species[id])).toBe(true);
     expect(isGameComplete(j)).toBe(true);

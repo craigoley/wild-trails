@@ -67,9 +67,11 @@ describe('Tidal — ⚠️ THE 5th DIET is the CLEAN fish-diet ENUM pattern (zer
     expect(SPECIES.dipper.bait).toBe('insects');
     expect(SPECIES.kingfisher.bait).toBe('fish');
     expect(SPECIES.turnstone.bait).toBe('insects'); // the coast wader stays insects (its gate diet)
-    // The ONLY shellfish species in the whole roster are the two true mollusc-eaters:
+    // The shellfish diet appears ONLY on the true mollusc-eaters: the Tidal pair (knot + oystercatcher)
+    // and — §migration, additive — the Estuary pair (the bar-tailed godwit probing deep + the shelduck
+    // scything the mud). No pre-tidal species ever gained it; the diet stays honest to the real eaters.
     const shellfishEaters = SPECIES_ORDER.filter((id) => SPECIES[id as SpeciesId].bait === 'shellfish').sort();
-    expect(shellfishEaters).toEqual(['knot', 'oystercatcher']);
+    expect(shellfishEaters).toEqual(['bartailedgodwit', 'knot', 'oystercatcher', 'shelduck']);
   });
 });
 
@@ -78,7 +80,7 @@ describe('Tidal — the biome + roster (honest estuary waders; shellfish only on
     expect(BIOMES.tidal.tier).toBe(6); // ⚠️ past the tier-5 Coast — the Tier widen
     expect(BIOMES.tidal.prereq).toBe('coast');
     expect(BIOMES.tidal.bounds).toEqual({ minX: 60, minY: 100, maxX: 100, maxY: 140 });
-    expect(BIOMES.tidal.adjacent).toEqual(['coast']);
+    expect(BIOMES.tidal.adjacent).toEqual(['coast', 'estuary']); // §migration — the estuary mudflats abut to the east
     expect(BIOMES.coast.adjacent).toContain('tidal'); // symmetric
     expect(WATER.filter((w) => w.biome === 'tidal').length).toBeGreaterThanOrEqual(2); // tidal pools (#55 reused)
     expect(HIDING_SPOTS.filter((h) => h.biome === 'tidal')).toHaveLength(2);

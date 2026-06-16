@@ -38,6 +38,7 @@ describe('lockedRegions — the walled-edge set (the bug fix, at the logic seam)
     unlockBiome(w, 'alpine'); // §4.2 — and the 11th (Alpine Summit, the Moor's first arm)
     unlockBiome(w, 'hedgerow'); // §hedgerow — the corridor
     unlockBiome(w, 'copse'); // §hedgerow — the copse it links to
+    unlockBiome(w, 'estuary'); // §migration — the open estuary mudflats (the Tidal's east arm)
     expect(walledEdges(w)).toHaveLength(0);
   });
 
@@ -53,8 +54,8 @@ describe('lockedRegions — the walled-edge set (the bug fix, at the logic seam)
 describe('lockedRegions — the dim/fog (locked-biome) set', () => {
   it('shrinks as biomes unlock', () => {
     const w = createWorld();
-    expect([...lockedBiomes(w)].sort()).toEqual(['alpine', 'cave', 'coast', 'copse', 'hedgerow', 'highlands', 'moor', 'pineforest', 'riverbank', 'tidal', 'wetland', 'woodland']);
+    expect([...lockedBiomes(w)].sort()).toEqual(['alpine', 'cave', 'coast', 'copse', 'estuary', 'hedgerow', 'highlands', 'moor', 'pineforest', 'riverbank', 'tidal', 'wetland', 'woodland']);
     unlockBiome(w, 'woodland');
-    expect([...lockedBiomes(w)].sort()).toEqual(['alpine', 'cave', 'coast', 'copse', 'hedgerow', 'highlands', 'moor', 'pineforest', 'riverbank', 'tidal', 'wetland']); // Woodland un-fogged
+    expect([...lockedBiomes(w)].sort()).toEqual(['alpine', 'cave', 'coast', 'copse', 'estuary', 'hedgerow', 'highlands', 'moor', 'pineforest', 'riverbank', 'tidal', 'wetland']); // Woodland un-fogged
   });
 });
