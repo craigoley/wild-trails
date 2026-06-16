@@ -440,7 +440,7 @@ export class WorldRenderer {
     for (let i = 0; i < n; i++) {
       const b = bushes[i];
       m.makeScale(1, b.h, 1); // squash to the hedge height (a low wall of green, not a ball)
-      m.setPosition(b.x, (b.h * H.bushRadius) / 2, b.z);
+      m.setPosition(b.x, b.h * H.bushRadius, b.z);
       mesh.setMatrixAt(i, m);
     }
     mesh.instanceMatrix.needsUpdate = true;
@@ -487,7 +487,7 @@ export class WorldRenderer {
       m.setPosition(t.x, trunkH / 2, t.z);
       trunks.setMatrixAt(i, m);
       m.makeScale(1, canopyH, 1);
-      m.setPosition(t.x, trunkH + (canopyH * C.canopyRadius) / 2, t.z);
+      m.setPosition(t.x, trunkH + canopyH * C.canopyRadius, t.z);
       canopies.setMatrixAt(i, m);
     }
     trunks.instanceMatrix.needsUpdate = true;
