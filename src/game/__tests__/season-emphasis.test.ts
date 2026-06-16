@@ -20,7 +20,16 @@ import {
  */
 const ALL_SEASONS: Season[] = ['spring', 'summer', 'autumn', 'winter'];
 const SUMMER_VISITORS = ['quail', 'dotterel', 'wheatear'] as const;
-const WINTER_VISITORS = ['brentgoose', 'knot'] as const;
+// §migration — the estuary's dramatic Arctic-flyway winter visitors join the proven brentgoose/knot.
+const WINTER_VISITORS = [
+  'brentgoose',
+  'knot',
+  'bartailedgodwit',
+  'greyplover',
+  'wigeon',
+  'pintail',
+  'sanderling',
+] as const;
 const TAGGED = [...SUMMER_VISITORS, ...WINTER_VISITORS] as const;
 
 describe('§4.6 D1b — ⚠️⚠️ THE SPINE: anti-lockout holds in EVERY season (nothing is ever missable)', () => {
@@ -87,7 +96,8 @@ describe('§4.6 D1b — the abundance EMPHASIS direction (honest phenology)', ()
 describe('§4.6 D1b — the HONEST roster (a minority migratory, most flat — the omission discipline)', () => {
   it('residents are FLAT 1.0 every season (no seasonal weighting — most of the roster)', () => {
     const residents = SPECIES_ORDER.filter((id) => !SPECIES[id as SpeciesId].seasonTag);
-    expect(residents.length).toBeGreaterThan(SPECIES_ORDER.length - 8); // the vast majority are flat
+    // §migration — 10 tagged migrants now (5 estuary winter-visitors join the proven 5); still the vast majority flat.
+    expect(residents.length).toBeGreaterThan(SPECIES_ORDER.length - 13); // the vast majority are flat
     for (const id of residents) {
       for (const season of ALL_SEASONS) {
         expect(seasonalAbundance(SPECIES[id as SpeciesId], season)).toBe(1); // flat — byte 1.0

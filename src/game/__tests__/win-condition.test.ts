@@ -108,8 +108,8 @@ describe('achievability — the win is REACHABLE with shipped content (no grind)
     const missionPts = MISSION_ORDER.reduce((s, id) => s + MISSIONS[id].rewardPoints, 0);
     const speciesPts = SPECIES_ORDER.length * RANK.perSpeciesFound;
     const top = RANKS[RANKS.length - 1].minPoints;
-    expect(missionPts).toBe(414); // §hedgerow +75 (survey 25 + edge 20 + dormouse 30) — only RAISES the ceiling
-    expect(SPECIES_ORDER.length).toBe(55); // +6 §hedgerow chain — bigger roster, bigger win bar
+    expect(missionPts).toBe(481); // §migration +67 (estuary-survey 30 + estuary-flyway 25 + research-knot-shellfish 12) — only RAISES the ceiling
+    expect(SPECIES_ORDER.length).toBe(62); // +6 §hedgerow chain — bigger roster, bigger win bar
     expect(missionPts + speciesPts).toBeGreaterThanOrEqual(top); // clears with margin
   });
 

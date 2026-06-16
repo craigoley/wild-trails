@@ -86,7 +86,7 @@ export const WORLD = {
 } as const;
 
 /** The biomes in the world. `meadow` is the starting region. */
-export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave' | 'tidal' | 'alpine' | 'hedgerow' | 'copse';
+export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave' | 'tidal' | 'alpine' | 'hedgerow' | 'copse' | 'estuary';
 
 /** Static definition of one biome: its finite bounds, display name, adjacency
  *  in the world graph, initial unlocked state, and ground tint. */
@@ -134,7 +134,7 @@ function cell(cx: number, cy: number): Rect {
 }
 
 /** Iteration order for the biome graph (deterministic; render + lookup order). */
-export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave', 'tidal', 'alpine', 'hedgerow', 'copse'];
+export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave', 'tidal', 'alpine', 'hedgerow', 'copse', 'estuary'];
 
 /**
  * The THROUGH-LINE (§4.3 TL1) — the soul layer's first slice. A biome's "thriving" derives from
@@ -207,6 +207,8 @@ export const SNOW_BIOMES: Partial<Record<BiomeId, boolean>> = {
   cave: false, // underground — no snow
   tidal: true,
   alpine: true,
+  // §migration — the open estuary mud takes a winter frost-wash (reinforces the thronged-winter identity).
+  estuary: true,
 };
 
 /**
@@ -241,6 +243,31 @@ export const SEASONAL_NOTE: Record<SeasonalTag, string> = {
 };
 
 /**
+ * §migration — THE HEADCOUNT LEVER (the estuary's crux; the ONE new spawn mechanic). The D1b
+ * `seasonalAbundance` above is the COMPOSITION axis — a relative lottery WEIGHT (which species is drawn)
+ * on a fixed, season-blind pool. It can NEVER make a place look emptier, because the pool always
+ * saturates to SPAWN.maxAnimals. "Empty summer vs thronged winter" is a SECOND, ORTHOGONAL axis —
+ * absolute HEADCOUNT — which nothing varied by season until now.
+ *
+ * This per-biome seasonal scalar modulates the EFFECTIVE active cap (see `effectiveCap` in Spawn.ts).
+ * ⚠️ THE SPINE: it scales the cap DOWN, NEVER up (every value ≤ 1 → ≤ SPAWN.maxAnimals; the pool ARRAY
+ * stays size maxAnimals — no new allocation), and the floor SEASONAL_POP_MIN_ACTIVE keeps it ≥ 2 (the
+ * mudflat is NEVER literally empty → catch never locked out → with the season-independent eligibility +
+ * the abundance floor, every species stays findable even in a 2-slot summer). A biome OMITTED here reads
+ * `?? 1` → its cap is exactly SPAWN.maxAnimals (today's behaviour, byte-unchanged for every existing biome).
+ */
+export const BIOME_SEASONAL_POP: Partial<Record<BiomeId, Record<Season, number>>> = {
+  // The estuary's whole identity: near-bare summer (a few resident stragglers on open mud), a thronged
+  // autumn/winter (clouds of Arctic migrant waders). round(12 × ·): spring 6, summer 2, autumn 10, winter 12.
+  estuary: { spring: 0.5, summer: 0.2, autumn: 0.85, winter: 1.0 },
+};
+
+/** ⚠️ The never-empty FLOOR on the effective active cap — the headcount lever never drops a biome below
+ *  this many active animals (so the mudflat is never literally empty; catch + always-findable hold even
+ *  at the dramatic summer setting). The structural anti-lockout guarantee for the headcount axis. */
+export const SEASONAL_POP_MIN_ACTIVE = 2;
+
+/**
  * §4.6 D1c-i — SEASONAL COVER/FLORA re-dress (render). The cover props re-TINT by season (reusing the
  * D1a seasonalGrade — gold autumn, frost-washed winter, fresh spring; ⚠️ summer is the IDENTITY → the
  * existing baselines don't move). Per-biome + honest: only FOLIAGE biomes (grass/ferns/reeds) re-tint;
@@ -263,6 +290,7 @@ export const SEASONAL_FLORA: Partial<Record<BiomeId, { foliage: boolean; bloom: 
   alpine: { foliage: false, bloom: false }, // ⚠️ AUSTERE year-round — bare scree, never bloom
   hedgerow: { foliage: true, bloom: false }, // §hedgerow — bramble/hawthorn golds + berries in autumn
   copse: { foliage: true, bloom: false }, // §hedgerow — hazel understory golds (a deciduous coppice)
+  estuary: { foliage: false, bloom: false }, // §migration — open mud: no cover-foliage to re-tint (the ground still grades)
 };
 
 /** §4.6 D1c-i — the seasonal dressing prims/toggles (no magic numbers). Sparse + tasteful. */
@@ -441,7 +469,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Saltmarsh',
     bounds: cell(PITCH * 2, PITCH * 3), // east of the Coast — [60,100] x [100,140]
     unlocked: false,
-    adjacent: ['coast'],
+    adjacent: ['coast', 'estuary'], // §migration — the open estuary mudflats abut the saltmarsh to the east (symmetric)
     tier: 6,
     prereq: 'coast',
     color: 0x5e6850, // muted olive-mud — brackish saltmarsh / mudflat
@@ -492,6 +520,22 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     tier: 2, // a step beyond the corridor
     prereq: 'hedgerow',
     color: 0x2a4420, // dappled coppice floor — a warm, shaded woodland-edge green
+  },
+  // §migration — the estuary MIGRATION HUB: the great tidal mudflats EAST of the saltmarsh, the British
+  // end of the East Atlantic Flyway. A proven full-cell, full-edge fork-node at cell(PITCH*3, PITCH*3) =
+  // [100,140] x [100,140], one cell out to sea past the Tidal saltmarsh. ⚠️ A normal square cell on a
+  // full shared edge → the computeUnlockedRects FULL-EDGE assumption HOLDS → ZERO clamp change (the
+  // proven node, NOT the hedgerow ribbon). Tier 7 (past the tier-6 Tidal), prereq 'tidal'. Its IDENTITY
+  // is dramatic seasonal HEADCOUNT (BIOME_SEASONAL_POP): near-bare in summer, thronged in winter.
+  estuary: {
+    id: 'estuary',
+    displayName: 'Estuary',
+    bounds: cell(PITCH * 3, PITCH * 3), // east of the Tidal — [100,140] x [100,140]
+    unlocked: false,
+    adjacent: ['tidal'],
+    tier: 7,
+    prereq: 'tidal',
+    color: 0x4a5648, // wet grey-brown mudflat (cooler + darker than the tidal's olive saltmarsh)
   },
 };
 
@@ -713,7 +757,16 @@ export type SpeciesId =
   | 'whitethroat'
   // §hedgerow — the HAZEL COPSE (the remnant the corridor reaches): the load-bearing dormouse + a warbler.
   | 'dormouse'
-  | 'blackcap';
+  | 'blackcap'
+  // §migration — the ESTUARY migration hub. DRAMATIC Arctic-flyway winter visitors (the clouds-in-winter
+  // cast) + load-bearing year-round RESIDENTS (the lone summer stragglers who hold the bare mudflat).
+  | 'bartailedgodwit'
+  | 'greyplover'
+  | 'wigeon'
+  | 'pintail'
+  | 'sanderling'
+  | 'shelduck'
+  | 'ringedplover';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -844,6 +897,14 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'whitethroat',
   'dormouse',
   'blackcap',
+  // §migration — the estuary flyway cast: dramatic winter visitors + the load-bearing residents.
+  'bartailedgodwit',
+  'greyplover',
+  'wigeon',
+  'pintail',
+  'sanderling',
+  'shelduck',
+  'ringedplover',
 ];
 
 /**
@@ -1265,6 +1326,58 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'The grey male wears a black cap (the female’s is chestnut); it sings a clear rising phrase from cover and increasingly stays to winter in Britain on garden berries and feeders.',
     status: 'Increasing — the blackcap is spreading and now winters here in growing numbers, one of the clearer winners as the climate warms.',
+  },
+  // §migration — the ESTUARY roster. The status prose carries the honest shorebird-decline stakes: the
+  // estuary is a STOPOVER on the East Atlantic Flyway, not a home; stopover loss, reclamation and coastal
+  // squeeze (sea-level rise pinning the mud against hard sea-walls) run down the whole chain.
+  bartailedgodwit: {
+    fieldNote:
+      'A long, slightly up-tilted bill probes the open mud deep for lugworms and shellfish by day. The headline migrant of the flats — find it among the winter throng on the bare estuary.',
+    behaviour:
+      'A tall, long-legged wader that feeds head-down across the falling tide, then gathers into great roosts as the water returns — wary, and quick to lift in a wheeling pack.',
+    status: '⚠️ Near-threatened — the bar-tailed godwit flies in from the Arctic tundra to winter here; it depends utterly on undisturbed estuary mud, and the flyway’s stopovers are being lost.',
+  },
+  greyplover: {
+    fieldNote:
+      'A stocky silver-grey plover that runs, stops and tilts to seize a worm, working the open mud alone and well-spaced by day. A high-Arctic bird, here only in the cold months.',
+    behaviour:
+      'It feeds by sight in the classic plover run-and-pause, holding a feeding territory on the flat and giving a plaintive three-note whistle; in flight a black “armpit” marks it out.',
+    status: 'A high-Arctic breeder that winters on British estuaries — amber-listed; like all the flyway waders it rises or falls with the health of the mud it depends on.',
+  },
+  wigeon: {
+    fieldNote:
+      'A grazing duck that crops eel-grass and saltmarsh greens in close-packed rafts, whistling as it goes. Look for the chestnut head and the cream crown out on the flats by day.',
+    behaviour:
+      'Sociable and restless, wigeon graze the marsh and mud in tight flocks that whirl up together at a disturbance; the drake’s clear “wheeoo” whistle carries across the estuary.',
+    status: 'A widespread and numerous winter visitor in internationally important numbers — Britain’s estuaries and grazing marshes are a global stronghold, doing well where the flats are protected.',
+  },
+  pintail: {
+    fieldNote:
+      'An elegant long-necked dabbling duck that up-ends in the shallow creeks for seeds and small life by day. The drake’s needle tail and chocolate head pick it out among the winter wildfowl.',
+    behaviour:
+      'A graceful, wary surface-feeder that tips tail-up to reach the bottom of a creek, keeping to the open water and lifting early at any approach — among the shyer ducks of the flats.',
+    status: '⚠️ A scarce and amber-listed winter visitor — the pintail gathers at just a few key estuaries, so the loss of any one wintering site bears heavily on the small British total.',
+  },
+  sanderling: {
+    fieldNote:
+      'A small, pale wader that chases the wave-edge on twinkling black legs, snatching tiny prey from the wet sand as the water falls back. Watch the tide-line by day for the clockwork runner.',
+    behaviour:
+      'The most restless of the small waders — it sprints in and out with each wash of the tide in a busy, mechanical run, then bursts up into a fast low flock along the shore.',
+    status: 'A long-distance migrant from the high Arctic, wintering on open sandy shores — amber-listed; it needs undisturbed beaches and flats, increasingly squeezed by people and the rising sea.',
+  },
+  shelduck: {
+    fieldNote:
+      'A big, boldly pied goose-like duck that sweeps the wet mud bill-down for tiny snails and shellfish by day. A year-round bird of the estuary — present even when the migrants have gone.',
+    behaviour:
+      'It feeds with a side-to-side scything of the bill across the soft mud, nests in old burrows, and gathers in family parties on the open flat — one of the resident anchors of the estuary.',
+    status: 'A resident and widespread estuary breeder — amber-listed; common enough to hold the summer mudflat, but still tied to the health of the intertidal flats it feeds on.',
+  },
+  ringedplover: {
+    fieldNote:
+      'A small, neat plover with a black collar and a stubby orange-and-black bill, running and pausing on the shingle and the mud-edge by day. A resident of the shore, here all year round.',
+    behaviour:
+      'It feeds in the plover run-and-pause and, at the nest, leads an intruder away with a broken-wing display dragged across the open ground; loose flocks gather on the flats in winter.',
+    status: '⚠️ A declining resident and passage wader — disturbance of its open shingle nesting shores has pushed it onto the red list, even as it holds on along the quieter estuary edges.',
   },
 };
 
@@ -2315,6 +2428,137 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     profile:
       'The rich, fluty warbler of the coppice and scrub — “the northern nightingale”. It takes insects in summer and berries in autumn, and increasingly winters in British gardens.',
   },
+  // §migration — the ESTUARY migration hub (tier 7). ⚠️ DRAMATIC winter visitors (seasonTag) — their
+  // composition swing (D1b) RIDES the headcount swing (BIOME_SEASONAL_POP) so winter reads as a throng of
+  // Arctic migrants, summer as a near-bare flat. All gait BIRD, wary, fly to flee (no fleesToWater). The
+  // proven 5 diets only (shellfish/insects/greens/seeds — the Tidal #71 pattern). No new bait.
+  bartailedgodwit: {
+    id: 'bartailedgodwit',
+    gait: 'bird',
+    displayName: 'Bar-tailed Godwit',
+    biome: 'estuary',
+    spawnWeight: 5,
+    baseFleeSpeed: 3.7,
+    detectionRadius: 3.6,
+    activityWindow: 'day',
+    tier: 6, // §migration — the difficulty CLASS (waders, like the Tidal); the biome's ACCESS depth is tier 7
+    baseCatchRate: 0.34,
+    bait: 'shellfish', // probes deep for lugworms + shellfish
+    color: 0xa6815a, // warm russet-brown winter wader
+    size: 0.34,
+    profile:
+      'A tall wader with a long, slightly up-tilted bill, probing the open mud for worms and shellfish — the headline Arctic migrant of the flats. ⚠️ Near-threatened; it depends on undisturbed estuary mud.',
+    seasonTag: 'winter-visitor', // §migration — flies from the Arctic tundra to winter here; scarce-not-gone in summer
+  },
+  greyplover: {
+    id: 'greyplover',
+    gait: 'bird',
+    displayName: 'Grey Plover',
+    biome: 'estuary',
+    spawnWeight: 4,
+    baseFleeSpeed: 3.8,
+    detectionRadius: 3.8,
+    activityWindow: 'day',
+    tier: 6, // §migration — the difficulty CLASS (waders, like the Tidal); the biome's ACCESS depth is tier 7
+    baseCatchRate: 0.32,
+    bait: 'insects', // worms + small inverts, hunted by sight
+    color: 0x9a9a96, // silver-grey
+    size: 0.3,
+    profile:
+      'A stocky silver-grey plover that runs, stops and tilts to seize a worm on the open mud — a high-Arctic breeder here only in the cold months. Amber-listed, tied to the health of the flats.',
+    seasonTag: 'winter-visitor', // §migration — a high-Arctic breeder wintering on the estuary; scarce-not-gone in summer
+  },
+  wigeon: {
+    id: 'wigeon',
+    gait: 'bird',
+    displayName: 'Wigeon',
+    biome: 'estuary',
+    spawnWeight: 5,
+    baseFleeSpeed: 3.4,
+    detectionRadius: 3.4,
+    activityWindow: 'day',
+    tier: 6, // §migration — the difficulty CLASS (waders, like the Tidal); the biome's ACCESS depth is tier 7
+    baseCatchRate: 0.42, // a grazing duck in close rafts — less wary than the waders
+    bait: 'greens', // crops eel-grass + saltmarsh greens
+    color: 0x9c5a3c, // chestnut head, cream crown
+    size: 0.4,
+    profile:
+      'A grazing duck that crops eel-grass and saltmarsh greens in whistling rafts — a winter visitor in internationally important numbers. Britain’s estuaries are a global stronghold.',
+    seasonTag: 'winter-visitor', // §migration — a winter wildfowl visitor in great numbers; scarce-not-gone in summer
+  },
+  pintail: {
+    id: 'pintail',
+    gait: 'bird',
+    displayName: 'Pintail',
+    biome: 'estuary',
+    spawnWeight: 3,
+    baseFleeSpeed: 3.9,
+    detectionRadius: 4.0, // the shyest of the estuary wildfowl
+    activityWindow: 'day',
+    tier: 6, // §migration — the difficulty CLASS (waders, like the Tidal); the biome's ACCESS depth is tier 7
+    baseCatchRate: 0.28,
+    bait: 'seeds', // up-ends for seeds + small life in the creeks
+    color: 0x6a5a4a, // chocolate head, long needle tail
+    size: 0.42,
+    profile:
+      'An elegant long-necked dabbling duck that up-ends in the shallow creeks for seeds — the drake’s needle tail marks it out. ⚠️ A scarce, amber-listed winter visitor gathering at just a few estuaries.',
+    seasonTag: 'winter-visitor', // §migration — a scarce winter visitor to the key estuaries; scarce-not-gone in summer
+  },
+  sanderling: {
+    id: 'sanderling',
+    gait: 'bird',
+    displayName: 'Sanderling',
+    biome: 'estuary',
+    spawnWeight: 4,
+    baseFleeSpeed: 3.6,
+    detectionRadius: 3.2,
+    activityWindow: 'day',
+    tier: 6, // §migration — the difficulty CLASS (waders, like the Tidal); the biome's ACCESS depth is tier 7
+    baseCatchRate: 0.4,
+    bait: 'insects', // tiny prey snatched from the wet sand
+    color: 0xdcdcd6, // very pale, almost white
+    size: 0.24,
+    profile:
+      'A small, pale wader that chases the wave-edge on twinkling black legs — a long-distance migrant from the high Arctic. Amber-listed; it needs undisturbed shores, squeezed by people and the rising sea.',
+    seasonTag: 'winter-visitor', // §migration — a high-Arctic migrant wintering on open shores; scarce-not-gone in summer
+  },
+  // §migration — the RESIDENTS (NO seasonTag → flat 1.0): the load-bearing stragglers who hold the bare
+  // summer mudflat (the 2-slot summer surfaces mostly THESE). ⚠️ The shelduck is the ANTI-LOCKOUT valve —
+  // the highest base rate of the estuary roster, catchable bait-less (a reliable bare catch in any season).
+  shelduck: {
+    id: 'shelduck',
+    gait: 'bird',
+    displayName: 'Shelduck',
+    biome: 'estuary',
+    spawnWeight: 5,
+    baseFleeSpeed: 3.0, // big + relatively approachable — the easy estuary catch
+    detectionRadius: 2.8,
+    activityWindow: 'day',
+    tier: 6, // §migration — the difficulty CLASS (waders, like the Tidal); the biome's ACCESS depth is tier 7
+    baseCatchRate: 0.5, // EASY — the resident valve; catchable bare, present year-round (anti-lockout)
+    bait: 'shellfish', // scythes the mud for tiny snails + shellfish
+    color: 0xe8e8ec, // boldly pied white (the chestnut band + green head are accents)
+    size: 0.44,
+    profile:
+      'A big, boldly pied estuary duck that scythes the wet mud for snails and shellfish — a year-round resident, present even when the migrants have gone. It holds the summer mudflat.',
+  },
+  ringedplover: {
+    id: 'ringedplover',
+    gait: 'bird',
+    displayName: 'Ringed Plover',
+    biome: 'estuary',
+    spawnWeight: 4,
+    baseFleeSpeed: 3.5,
+    detectionRadius: 3.2,
+    activityWindow: 'day',
+    tier: 6, // §migration — the difficulty CLASS (waders, like the Tidal); the biome's ACCESS depth is tier 7
+    baseCatchRate: 0.44,
+    bait: 'insects', // small inverts of the shingle + mud-edge
+    color: 0xb09a7a, // sandy-brown with a black collar
+    size: 0.26,
+    profile:
+      'A small, neat plover with a black collar, running and pausing on the shingle and mud-edge — a resident of the shore, here all year. ⚠️ Red-listed: disturbance of its open nesting shores has pushed it down.',
+  },
 };
 
 // ===========================================================================
@@ -2429,6 +2673,14 @@ export const SPECIES_BEHAVIOR: Partial<Record<SpeciesId, { budget?: EthogramBudg
   knot: { budget: ETHOGRAM.budgets.wader },
   turnstone: { budget: ETHOGRAM.budgets.wader },
   goldenplover: { budget: ETHOGRAM.budgets.wader },
+  // §migration — the estuary waders (stand-scan then feed) + the grazing/dabbling wildfowl (crop + lift).
+  bartailedgodwit: { budget: ETHOGRAM.budgets.wader },
+  greyplover: { budget: ETHOGRAM.budgets.wader },
+  sanderling: { budget: ETHOGRAM.budgets.wader },
+  shelduck: { budget: ETHOGRAM.budgets.wader },
+  ringedplover: { budget: ETHOGRAM.budgets.wader },
+  wigeon: { budget: ETHOGRAM.budgets.grazer },
+  pintail: { budget: ETHOGRAM.budgets.grazer },
   // Songbirds — perch + rest, brief foraging forays.
   robin: { budget: ETHOGRAM.budgets.songbird },
   linnet: { budget: ETHOGRAM.budgets.songbird },
@@ -2555,6 +2807,10 @@ export const HIDING_SPOTS: readonly HidingSpotDef[] = [
   { biome: 'copse', x: -11, y: -38, radius: 2.2, kind: 'ferns' },
   { biome: 'copse', x: 12, y: -58, radius: 2.4, kind: 'ferns' },
   { biome: 'copse', x: 2, y: -50, radius: 1.8, kind: 'ferns' },
+  // §migration — the ESTUARY is an OPEN mudflat (≤ OPEN_BIOME_COVER_MAX → the throwing-net biome, like the
+  // coast): a SINGLE saltmarsh tussock at the landward edge is its only cover. The flat reads bare — the
+  // legibility is trivial (open mud), and the swing (bare summer / thronged winter) is the render story.
+  { biome: 'estuary', x: 108, y: 108, radius: 2.0, kind: 'grass' },
 ];
 
 /** The portable HIDE (Nets & Gear slice C) — naturalist gear you DEPLOY at your
@@ -2608,6 +2864,12 @@ export const WATER: readonly WaterDef[] = [
   { biome: 'tidal', x: 88, y: 112, radius: 5 },
   { biome: 'tidal', x: 92, y: 128, radius: 5 },
   { biome: 'tidal', x: 74, y: 132, radius: 4 },
+  // §migration — the ESTUARY: broad tidal SHEETS along the seaward (east/outer) edge (the #55 discs reused
+  // as the open water; barrier/slide/flee verbatim). Sited E/N so the landward mudflat (the play space,
+  // x≈100-126 by the tidal seam) stays dry to roam — the waders work the exposed flat, the water at its edge.
+  { biome: 'estuary', x: 134, y: 116, radius: 9 },
+  { biome: 'estuary', x: 132, y: 132, radius: 9 },
+  { biome: 'estuary', x: 118, y: 136, radius: 7 },
 ];
 
 /** Frog flee-to-water steering (slice W): how strongly a fleeing frog's heading is
@@ -2756,6 +3018,7 @@ export const SUPPLY_POSTS: readonly SupplyPostDef[] = [
   { biome: 'cave', x: 70, y: 84, radius: 2.5 }, // a dry cavern floor, clear of the pool + the stalagmites
   { biome: 'tidal', x: 68, y: 122, radius: 2.5 }, // on a dry marsh hummock, clear of the tidal pools
   { biome: 'alpine', x: 110, y: 30, radius: 2.5 }, // on the open scree, clear of the single boulder cluster
+  { biome: 'estuary', x: 112, y: 112, radius: 2.5 }, // on the landward mud, clear of the seaward tidal sheets + the tussock
 ];
 
 /** Closing the Field Supply steps the player OUT the door (−y), this far PAST the
@@ -3764,6 +4027,49 @@ export const SPECIES_MODEL: Record<
     beakLengthR: 0.42,
     crestHeightR: 0.25,
   },
+  // §migration — the estuary flyway cast (all the proven 'bird' kind; the body colour is the def's).
+  bartailedgodwit: {
+    kind: 'bird',
+    accent: 0x2a2018, // dark-tipped long bill
+    beakLengthR: 0.85, // the long, up-tilted godwit bill (the longest of the roster)
+    crestHeightR: 0.1,
+  },
+  greyplover: {
+    kind: 'bird',
+    accent: 0x2a2a2e, // black face/belly accent
+    beakLengthR: 0.32, // a short, stout plover bill
+    crestHeightR: 0.1,
+  },
+  wigeon: {
+    kind: 'bird',
+    accent: 0xe8d28a, // the cream forehead-blaze
+    beakLengthR: 0.42,
+    crestHeightR: 0.18,
+  },
+  pintail: {
+    kind: 'bird',
+    accent: 0x5a4030, // chocolate head
+    beakLengthR: 0.44,
+    crestHeightR: 0.12,
+  },
+  sanderling: {
+    kind: 'bird',
+    accent: 0x2a2a2e, // black bill + legs (the pale body makes them pop)
+    beakLengthR: 0.34,
+    crestHeightR: 0.1,
+  },
+  shelduck: {
+    kind: 'bird',
+    accent: 0xc0392b, // the bright red bill + chestnut breast-band
+    beakLengthR: 0.42,
+    crestHeightR: 0.16,
+  },
+  ringedplover: {
+    kind: 'bird',
+    accent: 0xe07a1a, // the orange-and-black bill
+    beakLengthR: 0.28, // a short, stubby plover bill
+    crestHeightR: 0.1,
+  },
 } as const;
 
 // ===========================================================================
@@ -3844,6 +4150,10 @@ export const MISSION_ORDER: readonly string[] = [
   'hedgerow-survey',
   'hedgerow-edge',
   'copse-dormouse',
+  // §migration — the ESTUARY hub (terminal → standalone side-quests, like the copse): the survey + the
+  // migration-NAMED flyway beat. The unlock itself is owned by the unlock-the-estuary research project.
+  'estuary-survey',
+  'estuary-flyway',
   // §4.1b research challenges (standalone — don't gate unlocks / the win). NON-FORCED
   // conditions (§4.1b-fix): the meadow round-the-clock foragers at NIGHT.
   'research-mouse-night',
@@ -3863,6 +4173,7 @@ export const MISSION_ORDER: readonly string[] = [
   'research-dipper-insects',
   // §4.2 — the TIDAL's by-PLAY mastery gate (the 5th-diet biome; a species+bait challenge, no phase).
   'research-turnstone-insects',
+  'research-knot-shellfish',
   // §4.2 — the ALPINE's by-PLAY mastery gate (the difficulty-ceiling biome; a species+bait challenge).
   'research-grouse-greens',
 ];
@@ -3995,6 +4306,27 @@ export const MISSIONS: Record<string, MissionDef> = {
     requirement: { kind: 'catch-species', species: 'dormouse', count: 1 },
     rewardPoints: 30,
     standalone: true, // the copse is terminal (unlocks nothing) — a connectivity challenge, not a gating set
+  },
+  // §migration — the ESTUARY hub's side-quests (terminal biome → standalone, like the copse). P2: migration
+  // as a PLACE. The survey steps you out onto the open mud; the flyway beat NAMES the migration (turning
+  // the felt headcount swing into a learned fact — these birds have come from the Arctic for the winter).
+  'estuary-survey': {
+    id: 'estuary-survey',
+    biome: 'estuary',
+    title: 'Out onto the Open Mud',
+    description: 'Past the saltmarsh the land opens into the great tidal flats, where the whole flyway gathers. Catch 4 animals out on the estuary.',
+    requirement: { kind: 'catch-in-biome', biome: 'estuary', count: 4 },
+    rewardPoints: 30,
+    standalone: true, // the estuary is terminal (unlocks nothing) — a hub side-quest, not a gating set
+  },
+  'estuary-flyway': {
+    id: 'estuary-flyway',
+    biome: 'estuary',
+    title: 'Come from the Arctic',
+    description: 'The bar-tailed godwit that throngs the winter mud was on the tundra in summer — it flew the East Atlantic Flyway to be here. Catch the bar-tailed godwit.',
+    requirement: { kind: 'catch-species', species: 'bartailedgodwit', count: 1 },
+    rewardPoints: 25,
+    standalone: true, // the migration-named teaching beat — a hub side-quest, not a gating set
   },
   // §4.1b RESEARCH challenges — standalone applied-knowledge side-quests. The clue
   // describes TRAITS (the player identifies the species from the #45 cards); the
@@ -4184,6 +4516,22 @@ export const MISSIONS: Record<string, MissionDef> = {
     standalone: true,
     hint: 'Not quite — set out INSECT bait for the shore’s stone-turner, the small creatures it levers from under the weed.',
   },
+  // §migration — the ESTUARY mastery gate (the #92 pattern). SPECIES + BAIT, no phase. The ACTIVITY is in
+  // the prereq TIDAL → the #37 breadcrumb, never a wall. NON-FORCED via BAIT: the knot is catchable
+  // bait-less, so requiring its REAL diet (shellfish — the tiny molluscs it probes from the mud) is a
+  // deliberate field-craft choice (#48 inverse). unlock-the-estuary wraps it (R2).
+  'research-knot-shellfish': {
+    id: 'research-knot-shellfish',
+    biome: 'tidal',
+    title: 'Research: The Smoke over the Mud',
+    description:
+      'A grey wader of the great flocks, probing the estuary mud for tiny shellfish by day — it winters here in tens of thousands from the high Arctic. Identify it from your field guide, then prove you know its table: catch one over SHELLFISH bait.',
+    requirement: { kind: 'research', species: 'knot', bait: 'shellfish', count: 1 },
+    rewardPoints: RESEARCH.rewardPoints,
+    creditReward: RESEARCH.creditReward,
+    standalone: true,
+    hint: 'Not quite — set out SHELLFISH bait for the mudflat’s great grey flocks, the tiny molluscs the knot probes from the mud.',
+  },
   // §4.2 — the ALPINE/MONTANE multi-condition mastery gate (the #92 unblock) — the hardest endgame gate.
   // SPECIES + BAIT, no phase. The ACTIVITY is in the prereq MOOR → the #37 breadcrumb, never a wall.
   // NON-FORCED via BAIT: the red grouse is catchable bait-less, so requiring its REAL diet (greens — it
@@ -4217,6 +4565,7 @@ export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, readonly BiomeId[]>> = {
   riverbank: ['coast', 'cave'], // §4.2 — the Riverbank forks: the sea (Coast) AND underground (Cave)
   coast: ['tidal'], // §4.2 — the Coast's first arm: the estuary/saltmarsh (a single-successor extension)
   moor: ['alpine'], // §4.2 — the Moor's first arm: the alpine summit (a single-successor extension; was a terminus)
+  tidal: ['estuary'], // §migration — the Tidal's first arm: the open estuary mudflats (was a terminus; research-gated)
 };
 
 /** §4.1c ESCALATING knowledge gates: in ADDITION to the catch-set, a biome's unlock
@@ -4491,6 +4840,20 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     knowledgeRequirement: 'research-grouse-greens', // by PLAY only — the non-forced species+bait catch
     reward: { kind: 'biome-access', biome: 'alpine' },
   },
+  // §migration — ESTUARY access (R2's pattern), the TIDAL's first arm (a single-successor extension — the
+  // open mudflats east of the saltmarsh, tier 7). cost 0 (the Estuary species are win-required → anti-wall).
+  // knowledgeRequirement = research-knot-shellfish, a NON-FORCED species+bait challenge (#92) — double-
+  // enforced with isUnlockGateMet (the tidal set + this gate). The activity is tidal study (you're there by now).
+  'unlock-the-estuary': {
+    id: 'unlock-the-estuary',
+    area: 'estuary',
+    name: 'Estuary Access',
+    blurb: 'Press east past the saltmarsh to the great tidal flats, learn the knot’s table, and the open estuary opens.',
+    cost: 0,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'tidal', count: 4 },
+    knowledgeRequirement: 'research-knot-shellfish', // by PLAY only — the non-forced species+bait catch
+    reward: { kind: 'biome-access', biome: 'estuary' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
@@ -4509,6 +4872,7 @@ export const RESEARCH_ORDER: readonly string[] = [
   'study-the-shellfish-eaters', // §4.2 — the 5th-diet bait (OPTIONAL sink, never required)
   'unlock-the-tidal', // §4.2 — the saltmarsh/estuary (the Coast's first arm)
   'unlock-the-alpine', // §4.2 — the alpine summit (the Moor's first arm; the difficulty ceiling)
+  'unlock-the-estuary', // §migration — the open estuary mudflats (the Tidal's first arm; tier 7)
 ];
 
 // ===========================================================================

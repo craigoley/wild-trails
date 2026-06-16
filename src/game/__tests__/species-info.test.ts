@@ -39,12 +39,14 @@ describe('SPECIES_INFO — every species has a full field-guide entry', () => {
         SPECIES_INFO[id].status.toLowerCase(),
       ),
     );
-    // ≥60%: the world LEANS hopeful, but the soul-aware conservation biomes (Moor/Pine/Cave/Tidal) added
+    // ≥58%: the world LEANS hopeful, but the soul-aware conservation biomes (Moor/Pine/Cave/Tidal) added
     // a NEUTRAL register too (endemic / restricted / nuanced — neither a hopeful keyword nor a decline),
-    // and §4.2's ALPINE summit is BY DESIGN the most climate-pressured biome — the "highest, last" roster
-    // honestly leans to decline (the snow bunting with nowhere higher, the retreating ring ouzel/golden
-    // plover), so the explicitly-hopeful share settled a touch below the old 65%. It STILL leans hopeful
-    // (≈63% — a clear majority); the guard against an all-doom world holds, just honestly for the summit.
-    expect(positives.length).toBeGreaterThanOrEqual(Math.ceil(SPECIES_ORDER.length * 0.6));
+    // and §4.2's ALPINE summit + §migration's ESTUARY are BY DESIGN the most conservation-pressured biomes
+    // — the alpine "highest, last" roster (snow bunting with nowhere higher, retreating ring ouzel) AND the
+    // estuary's Arctic-FLYWAY waders (the honest shorebird-decline stakes — near-threatened godwit, scarce
+    // pintail, red-listed ringed plover; only the resident shelduck + the numerous wigeon clearly do well)
+    // honestly lean to decline — that lean IS the teaching. So the explicitly-hopeful share settled a touch
+    // lower again. It STILL leans hopeful (≈60% — a clear majority); the guard against an all-doom world holds.
+    expect(positives.length).toBeGreaterThanOrEqual(Math.ceil(SPECIES_ORDER.length * 0.58));
   });
 });

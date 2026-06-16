@@ -176,6 +176,19 @@ export function completeAlpineGate(j: Journal): void {
   reconcileResearchUnlocks(j);
 }
 
+/**
+ * §migration — unlock the ESTUARY migration hub (the open mudflats: the Tidal's first arm, a single-
+ * successor extension off the previously-terminal saltmarsh; tier 7). Gated on a NON-FORCED SPECIES+BAIT
+ * mastery challenge by play (research-knot-shellfish — a knot over SHELLFISH bait, its real diet; NO
+ * phase) + the tidal activity. cost 0 (anti-wall). The route reads Coast → Tidal → open Estuary.
+ */
+export function completeEstuaryGate(j: Journal): void {
+  applyCatch(j, { species: 'knot', biome: 'tidal', phase: 'day', bait: 'shellfish' } as CatchEvent);
+  startResearch(j, 'unlock-the-estuary');
+  for (let i = 0; i < 4; i++) evaluateResearch(j, ev('dunlin', 'tidal', 'day')); // catch-in-tidal ×4
+  reconcileResearchUnlocks(j);
+}
+
 /** Catch the remaining roster (rabbit + the alpine three + the Riverbank four + the Coast five +
  *  the Moor five) so the dex fills for the win. rabbit@night doubles as the second night-forager
  *  challenge. */
@@ -239,4 +252,13 @@ export function catchRemainingSpecies(j: Journal): void {
   applyCatch(j, ev('whitethroat', 'hedgerow', 'day')); // 4th hedgerow catch → survey; + hedgerow-edge
   applyCatch(j, ev('dormouse', 'copse', 'night')); // copse-dormouse + finds the dormouse
   applyCatch(j, ev('blackcap', 'copse', 'day'));
+  // §migration — the ESTUARY hub roster. The 4 estuary catches complete estuary-survey (catch-in-biome ×4);
+  // the bar-tailed godwit completes estuary-flyway (both standalone — the estuary is terminal). Fills the dex.
+  applyCatch(j, ev('bartailedgodwit', 'estuary', 'day')); // + estuary-flyway (the migration-named beat)
+  applyCatch(j, ev('greyplover', 'estuary', 'day'));
+  applyCatch(j, ev('wigeon', 'estuary', 'day'));
+  applyCatch(j, ev('pintail', 'estuary', 'day')); // 4th estuary catch → estuary-survey
+  applyCatch(j, ev('sanderling', 'estuary', 'day'));
+  applyCatch(j, ev('shelduck', 'estuary', 'day')); // the resident valve
+  applyCatch(j, ev('ringedplover', 'estuary', 'day'));
 }

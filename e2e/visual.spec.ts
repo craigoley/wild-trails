@@ -42,6 +42,13 @@ const scenes = [
   { name: 'hedgerow-corridor', query: `?seed=${SEED}&freeze=1&unlock=all&at=0,-24&season=summer` },
   // §hedgerow — the isolated HAZEL COPSE (the remnant the corridor reaches): a sparse stand + a glade.
   { name: 'hazel-copse', query: `?seed=${SEED}&freeze=1&unlock=all&at=0,-48&season=summer` },
+  // §migration — the ESTUARY migration hub (the open mudflat east of the saltmarsh; the player on the
+  // landward flat at 120,116, the seaward tidal sheets behind). Summer is the IDENTITY grade (like the
+  // others). ⚠️ NOTE the dramatic empty-summer/thronged-winter HEADCOUNT swing is a LIVE-sim effect (the
+  // spawn cap), NOT visible in a frozen capture — so these scenes pin the open-mud LAYOUT + the seasonal
+  // GROUND grade (summer mud vs the winter frost-wash); the throng itself is Craig's DEVICE gate.
+  { name: 'estuary-mudflat', query: `?seed=${SEED}&freeze=1&unlock=all&at=120,116&season=summer` },
+  { name: 'estuary-winter', query: `?seed=${SEED}&freeze=1&unlock=all&at=120,116&season=winter` },
   // §4.6 D1a — the 4-SEASON meadow set: the seasonal re-grade on ONE representative scene (the meadow,
   // same seed/freeze as meadow-day-start). Summer ≈ meadow-day-start (identity), so these THREE are the
   // additive seasonal baselines (seeded after Craig approves the look). Eyeball: does each read as its
