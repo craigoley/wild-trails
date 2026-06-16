@@ -92,3 +92,16 @@ this one) so the guard passes and the review/merge fires.
 It does **not** unblock feel work (e.g. the Nets B1 glide-smoothness, frog-aliveness,
 Highlands open-vs-barren) — that's **in-canvas feel**, beyond the canvas wall. L2 is a
 parallel, permanent **render-regression** safety net; the **playtest** is still Craig's.
+
+## Reseed log
+
+In-container baseline seeds (the dispatched `e2e-visual.yml --update-snapshots` runs). Each adds
+ONLY the new scenes' `*-linux.png`; existing baselines are byte-identical (deterministic) so they
+never re-commit — a diff against `main` showing only the new files confirms no existing scene moved.
+
+- **2026-06-16 — hedgerow + estuary** (the two new biomes, both device-confirmed): seeded
+  `hedgerow-corridor`, `hazel-copse` (§148) + `estuary-mudflat`, `estuary-winter` (§150). Diff vs
+  `main` = those 4 files only (no existing baseline overwritten — the additive biomes left every
+  prior scene untouched). The estuary scenes pin the open-mud layout + the seasonal ground grade
+  (the dramatic empty/thronged headcount swing is a live-sim effect, confirmed on device, not a
+  frozen capture).
