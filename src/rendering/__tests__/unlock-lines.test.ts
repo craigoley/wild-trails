@@ -12,7 +12,9 @@ describe('unlockLines — the set→biome-unlock legibility (pure, §17.1)', () 
   it('emits one line per gating-set × successor in chain order (the Woodland FORKS to the Pine Forest)', () => {
     const lines = unlockLines(createJournal());
     // §4.2 — the Woodland now forks (Wetland + Pine Forest), so it emits TWO lines (both breadcrumbs).
-    expect(lines.map((l) => l.setBiome)).toEqual(['meadow', 'woodland', 'woodland', 'wetland']);
+    // §hedgerow — the meadow now forks (woodland + the corridor), and the hedgerow gates the copse.
+    expect(lines.map((l) => l.setBiome)).toEqual(['meadow', 'meadow', 'woodland', 'woodland', 'wetland', 'hedgerow']);
+    expect(lines.filter((l) => l.setBiome === 'meadow').map((l) => l.unlocks)).toEqual(['woodland', 'hedgerow']);
     expect(lines.filter((l) => l.setBiome === 'woodland').map((l) => l.unlocks)).toEqual(['wetland', 'pineforest']);
     expect(line(createJournal(), 'meadow').unlocks).toBe('woodland');
     expect(line(createJournal(), 'meadow').unlocksName).toBe('Woodland');

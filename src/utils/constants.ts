@@ -86,7 +86,7 @@ export const WORLD = {
 } as const;
 
 /** The biomes in the world. `meadow` is the starting region. */
-export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave' | 'tidal' | 'alpine';
+export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave' | 'tidal' | 'alpine' | 'hedgerow' | 'copse';
 
 /** Static definition of one biome: its finite bounds, display name, adjacency
  *  in the world graph, initial unlocked state, and ground tint. */
@@ -124,13 +124,17 @@ export interface BiomeDef {
 const CELL = WORLD.halfSize;
 const PITCH = CELL * 2;
 
+/** §hedgerow — the CONNECTOR ribbon's depth on the TRAVEL axis (world units). Thin (a corridor), while
+ *  the ribbon stays FULL-WIDTH (2·CELL) on the SHARED axis so the full-edge clamp assumption holds. */
+const HEDGEROW_DEPTH = 8;
+
 /** A square biome cell of half-size CELL centred at (cx, cy). */
 function cell(cx: number, cy: number): Rect {
   return { minX: cx - CELL, minY: cy - CELL, maxX: cx + CELL, maxY: cy + CELL };
 }
 
 /** Iteration order for the biome graph (deterministic; render + lookup order). */
-export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave', 'tidal', 'alpine'];
+export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave', 'tidal', 'alpine', 'hedgerow', 'copse'];
 
 /**
  * The THROUGH-LINE (§4.3 TL1) — the soul layer's first slice. A biome's "thriving" derives from
@@ -257,6 +261,8 @@ export const SEASONAL_FLORA: Partial<Record<BiomeId, { foliage: boolean; bloom: 
   highlands: { foliage: false, bloom: false }, // rocks — austere stone
   cave: { foliage: false, bloom: false }, // ⚠️ underground — no season, no dressing
   alpine: { foliage: false, bloom: false }, // ⚠️ AUSTERE year-round — bare scree, never bloom
+  hedgerow: { foliage: true, bloom: false }, // §hedgerow — bramble/hawthorn golds + berries in autumn
+  copse: { foliage: true, bloom: false }, // §hedgerow — hazel understory golds (a deciduous coppice)
 };
 
 /** §4.6 D1c-i — the seasonal dressing prims/toggles (no magic numbers). Sparse + tasteful. */
@@ -317,7 +323,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Meadow',
     bounds: cell(0, 0),
     unlocked: true,
-    adjacent: ['woodland', 'wetland'],
+    adjacent: ['woodland', 'wetland', 'hedgerow'], // §hedgerow — the Meadow set forks to the corridor too
     tier: 0, // the starting hub
     color: 0x2f6b3a,
   },
@@ -455,6 +461,37 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     tier: 5, // moor(4)+1; the access ladder depth — NOT the catch difficulty (that's the species)
     prereq: 'moor',
     color: 0x8a8f96, // cold grey scree / bare rock — the exposed summit above the heather
+  },
+  // §hedgerow — the CONNECTOR (the recon's novel topology): a thin, FULL-WIDTH ribbon LINKING the Meadow
+  // (one end) to the isolated Hazel Copse (the other). ⚠️ Full 40 wide on the SHARED (x) axis, thin
+  // (HEDGEROW_DEPTH=8) on the TRAVEL (y) axis → it shares its WHOLE edge with each neighbour, so the
+  // computeUnlockedRects FULL-EDGE assumption HOLDS (zero clamp change; the partial-edge over-permit
+  // warning sidestepped). South of the Meadow: [-20,20] x [-28,-20]. A tree NODE (one prereq) — the chain
+  // meadow → hedgerow → copse is a LINEAR segment, not a cycle. Connectivity is TAUGHT by traversal.
+  hedgerow: {
+    id: 'hedgerow',
+    displayName: 'Hedgerow',
+    bounds: { minX: -CELL, minY: -CELL - HEDGEROW_DEPTH, maxX: CELL, maxY: -CELL }, // [-20,20] x [-28,-20]
+    unlocked: false,
+    adjacent: ['meadow', 'copse'], // the two ends it links
+    tier: 1, // unlocked from the Meadow set (a gentle gate, like the Woodland)
+    prereq: 'meadow',
+    color: 0x3d5a30, // a mixed bramble-and-hawthorn hedge green (distinct from the meadow/woodland)
+  },
+  // §hedgerow — the HAZEL COPSE: the isolated remnant the corridor connects to (the dormouse's true home;
+  // hazel coppice). A small stand SOUTH of the hedgerow — [-20,20] x [-68,-28], full-width on its shared
+  // (north) edge with the ribbon. ⚠️ Reachable ONLY via the hedgerow (its prereq IS the hedgerow) → you
+  // MUST traverse the corridor to reach it (connectivity load-bearing). Distinct from the Woodland/Pine:
+  // a fragmented REMNANT, not a forest.
+  copse: {
+    id: 'copse',
+    displayName: 'Hazel Copse',
+    bounds: cell(0, -(CELL * 2 + HEDGEROW_DEPTH)), // centre (0,-48) → [-20,20] x [-68,-28]
+    unlocked: false,
+    adjacent: ['hedgerow'],
+    tier: 2, // a step beyond the corridor
+    prereq: 'hedgerow',
+    color: 0x2a4420, // dappled coppice floor — a warm, shaded woodland-edge green
   },
 };
 
@@ -668,7 +705,15 @@ export type SpeciesId =
   | 'meadowpipit'
   | 'wheatear'
   | 'goldenplover'
-  | 'ringouzel';
+  | 'ringouzel'
+  // §hedgerow — the CONNECTOR's edge specialists (single-biome; they exist where two habitats meet).
+  | 'bankvole'
+  | 'harvestmouse'
+  | 'yellowhammer'
+  | 'whitethroat'
+  // §hedgerow — the HAZEL COPSE (the remnant the corridor reaches): the load-bearing dormouse + a warbler.
+  | 'dormouse'
+  | 'blackcap';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -792,6 +837,13 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'wheatear',
   'goldenplover',
   'ringouzel',
+  // §hedgerow — the connector's edge specialists + the copse remnant.
+  'bankvole',
+  'harvestmouse',
+  'yellowhammer',
+  'whitethroat',
+  'dormouse',
+  'blackcap',
 ];
 
 /**
@@ -1169,6 +1221,50 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'A dark blackbird-like thrush with a pale gorget that keeps to the broken crags, flushing far ahead with a hard “tac-tac” and a wild chattering song — gone before you close the gap.',
     status: '⚠️ Declining sharply — the ring ouzel is a climate-and-disturbance casualty, retreating up the warming hills with the bare crags it needs running out beneath it.',
+  },
+  // §hedgerow — the CONNECTOR roster. The status notes carry the honest fragmentation stakes: hedgerows
+  // are a Priority Habitat much in poor condition, and the dormouse is a flagship of CONNECTIVITY itself.
+  bankvole: {
+    fieldNote:
+      'The red-brown vole of the hedge bottom works the dense bramble and bank for seeds, nuts and berries by day or night — rarely showing in the open. Look low, where the cover is thickest.',
+    behaviour:
+      'A blunt-faced, chestnut vole that stays in the tangle, scurrying along runs worn through the leaf-litter and freezing at a footfall before vanishing into the roots.',
+    status: 'Common and adaptable — the bank vole holds on wherever a thick hedge or woodland edge survives, a quiet measure of whether the cover is still there.',
+  },
+  harvestmouse: {
+    fieldNote:
+      'Britain’s smallest rodent climbs the tall stems of the hedge and field-margin by day and night, gripping with its tail and gleaning seeds and insects — search the grass-heads and the woven nests slung among them.',
+    behaviour:
+      'A tiny golden mouse that runs the upper stalks like a trapeze, curling its prehensile tail round a stem and building a tennis-ball nest of woven grass a hand’s width up.',
+    status: '⚠️ Declining — the harvest mouse needs tall, undisturbed grass margins and thick hedges; tidy farming and lost field-edges have thinned it across much of its range.',
+  },
+  yellowhammer: {
+    fieldNote:
+      'The lemon-headed bunting sings from the hedge-top through the summer and drops to stubble and spilt grain in winter — watch the highest sprays along the corridor by day.',
+    behaviour:
+      'A bright male sings the same wheezy phrase from a prominent spray for hours; in winter they flock to seed-rich field edges, flushing along the hedge in a loose yellow scatter.',
+    status: '⚠️ Red-listed — the yellowhammer has fallen sharply with the loss of winter stubble and hedgerow seed; it’s a headline casualty of farmland change.',
+  },
+  whitethroat: {
+    fieldNote:
+      'A scratchy-songed scrub warbler bounces up from the bramble to sing, then dives back in — find it by day along the densest, most tangled stretch of the hedge.',
+    behaviour:
+      'Restless and skulking, it cocks its tail and scolds from cover, then makes a short dancing song-flight before dropping back; a summer migrant all the way from the Sahel.',
+    status: 'Recovered — the whitethroat crashed in the 1969 Sahel drought and has since rebuilt, a reminder that fates here are tied to habitats a continent away.',
+  },
+  dormouse: {
+    fieldNote:
+      'The golden sleeper of the hazel coppice opens a hazelnut with a neat round hole and travels ONLY along connected hedges — it won’t cross open field, so the corridor IS its lifeline. A night animal.',
+    behaviour:
+      'It moves through the canopy by night, rarely touching the ground, and curls into a tight torpid ball through cold spells and the long winter hibernation — slow to find, never chased.',
+    status: '⚠️ Vulnerable and declining — a flagship for HABITAT CONNECTIVITY: as hedges are grubbed out and copses cut off, dormouse populations wink out one isolated wood at a time.',
+  },
+  blackcap: {
+    fieldNote:
+      'A rich fluty warbler — “the northern nightingale” — sings from the coppice and scrub by day, taking insects in summer and berries in autumn. Listen for the song deep in the stand.',
+    behaviour:
+      'The grey male wears a black cap (the female’s is chestnut); it sings a clear rising phrase from cover and increasingly stays to winter in Britain on garden berries and feeders.',
+    status: 'Increasing — the blackcap is spreading and now winters here in growing numbers, one of the clearer winners as the climate warms.',
   },
 };
 
@@ -2113,6 +2209,112 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     profile:
       'The shy “mountain blackbird” of the crags, a white crescent on its breast, flushing far ahead with a hard “tac-tac” — the wariest bird of the tops. ⚠️ Declining sharply, a climate-and-disturbance casualty.',
   },
+  // §hedgerow — the HEDGEROW edge specialists (tier 1-2; an early biome off the Meadow). The bank vole is
+  // the ANTI-LOCKOUT valve (slow, common, high base rate — catchable bait-less).
+  bankvole: {
+    id: 'bankvole',
+    gait: 'walk',
+    displayName: 'Bank Vole',
+    biome: 'hedgerow',
+    spawnWeight: 6,
+    baseFleeSpeed: 2.6, // slow — the easy hedgerow catch (the anti-lockout floor)
+    detectionRadius: 2.4,
+    activityWindow: 'any',
+    tier: 1,
+    baseCatchRate: 0.6, // EASY — catchable bare; the corridor's reliable starter
+    bait: 'seeds',
+    color: 0x8a5a3c, // chestnut-red back
+    size: 0.4,
+    profile:
+      'The chestnut-red vole of the hedge bottom — bank voles run the dense cover of bramble and bank, eating seeds, berries and nuts. They rarely venture into the open field.',
+  },
+  harvestmouse: {
+    id: 'harvestmouse',
+    gait: 'walk',
+    displayName: 'Harvest Mouse',
+    biome: 'hedgerow',
+    spawnWeight: 4,
+    baseFleeSpeed: 2.8,
+    detectionRadius: 2.6,
+    activityWindow: 'any',
+    tier: 2,
+    baseCatchRate: 0.46,
+    bait: 'seeds',
+    color: 0xc69a5a, // golden-russet
+    size: 0.32, // Britain's smallest rodent
+    profile:
+      'Britain’s tiniest rodent, weighing less than a 2p coin — the harvest mouse climbs the tall grass and hedge stems by day, weaving a woven nest among them and gleaning seeds.',
+  },
+  yellowhammer: {
+    id: 'yellowhammer',
+    gait: 'bird',
+    displayName: 'Yellowhammer',
+    biome: 'hedgerow',
+    spawnWeight: 3,
+    baseFleeSpeed: 3.4,
+    detectionRadius: 3.2,
+    activityWindow: 'day',
+    tier: 2,
+    baseCatchRate: 0.4,
+    bait: 'seeds',
+    color: 0xe8c84a, // bright lemon-yellow head
+    size: 0.42,
+    profile:
+      'The bright yellow bunting of the hedge-top, singing its “a-little-bit-of-bread-and-no-cheese” all summer. ⚠️ It has declined steeply as hedges and winter stubble have been lost.',
+  },
+  whitethroat: {
+    id: 'whitethroat',
+    gait: 'bird',
+    displayName: 'Whitethroat',
+    biome: 'hedgerow',
+    spawnWeight: 3,
+    baseFleeSpeed: 3.6,
+    detectionRadius: 3.4,
+    activityWindow: 'day',
+    tier: 2,
+    baseCatchRate: 0.36,
+    bait: 'insects',
+    color: 0xa6936f, // sandy-brown with a white throat
+    size: 0.4,
+    profile:
+      'A restless scrub warbler that scratches out a song from the bramble-top then dives back into the hedge, taking insects in summer and berries in autumn — a long-distance migrant from the Sahel.',
+  },
+  // §hedgerow — the HAZEL COPSE (the remnant the corridor reaches). The dormouse is the LOAD-BEARING
+  // corridor species: it can't cross open ground, so it lives here ONLY because the hedge connects in.
+  dormouse: {
+    id: 'dormouse',
+    gait: 'walk',
+    displayName: 'Hazel Dormouse',
+    biome: 'copse',
+    spawnWeight: 3,
+    baseFleeSpeed: 2.7, // slow, but it's nocturnal + rare — found, not chased
+    detectionRadius: 2.8,
+    activityWindow: 'night', // strictly nocturnal — the honest dormouse
+    tier: 2,
+    baseCatchRate: 0.42, // the prize, but never a wall (catchable bare with patience)
+    bait: 'seeds', // hazelnuts (+ berries) — maps to seeds
+    color: 0xd8a657, // golden-orange fur
+    size: 0.36,
+    profile:
+      'The golden, furry-tailed sleeper of the hazel coppice — it gnaws a neat round hole in hazelnuts and won’t cross open ground, travelling only along connected hedges. ⚠️ A vulnerable, declining Priority Species.',
+  },
+  blackcap: {
+    id: 'blackcap',
+    gait: 'bird',
+    displayName: 'Blackcap',
+    biome: 'copse',
+    spawnWeight: 3,
+    baseFleeSpeed: 3.5,
+    detectionRadius: 3.2,
+    activityWindow: 'day',
+    tier: 2,
+    baseCatchRate: 0.4,
+    bait: 'insects',
+    color: 0x4a4a52, // grey with a black cap (the male)
+    size: 0.42,
+    profile:
+      'The rich, fluty warbler of the coppice and scrub — “the northern nightingale”. It takes insects in summer and berries in autumn, and increasingly winters in British gardens.',
+  },
 };
 
 // ===========================================================================
@@ -2343,6 +2545,16 @@ export const HIDING_SPOTS: readonly HidingSpotDef[] = [
   // this single 'rocks' foothold is the apex's mastery loop (close in from it, the net does the rest).
   // The TAME snow-bunting valve needs no cover at all (wariness, not cover, is the dial). Reuses 'rocks'.
   { biome: 'alpine', x: 120, y: 40, radius: 2.2, kind: 'rocks' },
+  // §hedgerow — the corridor IS cover (a dense hedge): 3 grass-tangle spots along the thin ribbon
+  // (x∈[-20,20], y∈[-28,-20]) → NOT an "open" biome (the opposite of the highlands). Small radii fit the
+  // 8-deep ribbon; they hug the SIDES so the traversable centre lane reads clear.
+  { biome: 'hedgerow', x: -12, y: -24, radius: 1.8, kind: 'grass' },
+  { biome: 'hedgerow', x: 12, y: -24, radius: 1.8, kind: 'grass' },
+  { biome: 'hedgerow', x: 0, y: -25, radius: 1.6, kind: 'grass' },
+  // §hedgerow — the Hazel Copse (x∈[-20,20], y∈[-68,-28]): 3 understory-fern spots (a shaded coppice).
+  { biome: 'copse', x: -11, y: -38, radius: 2.2, kind: 'ferns' },
+  { biome: 'copse', x: 12, y: -58, radius: 2.4, kind: 'ferns' },
+  { biome: 'copse', x: 2, y: -50, radius: 1.8, kind: 'ferns' },
 ];
 
 /** The portable HIDE (Nets & Gear slice C) — naturalist gear you DEPLOY at your
@@ -2488,6 +2700,37 @@ export const PINE_RENDER = {
   /** Canopy: a single tall cone (the conifer silhouette), this fraction of the trunk-top radius. */
   canopyRadius: 0.62,
   canopyColor: 0x223f2c, // deep needle-green (a touch lighter than the ground so it reads)
+} as const;
+
+/** §hedgerow — the HEDGE that LINES the corridor: a dense row of low bramble/hawthorn bushes across the
+ *  ribbon, with a clear central LANE (a gap you walk through, meadow ↔ copse). ⚠️ Pine #109 legibility:
+ *  the entities ship depthTest:false (they composite OVER world props), so a bush can NEVER hide a catch;
+ *  and the lane keeps the traversable centre clear. Instanced (one draw call), deterministic (a sin-hash). */
+export const HEDGE_RENDER = {
+  gridN: 11, // candidate columns across the 40-wide ribbon (dense — it's a hedge)
+  rowsN: 3, // candidate rows across the thin (8-deep) band
+  jitter: 0.5, // positional jitter (fraction of a grid step; a sin-hash, not RNG)
+  laneHalf: 6.0, // half-width of the clear central walk-through gap (|x| < laneHalf kept bush-free)
+  minHeight: 1.1, // hedge height band (world units) — a low wall of green, ~the player's height
+  maxHeight: 1.6,
+  bushRadius: 1.0, // a rounded bush canopy (× height-scaled)
+  color: 0x35562a, // a bramble/hawthorn green (a touch darker than the hedgerow ground)
+} as const;
+
+/** §hedgerow — the HAZEL COPSE: a small isolated stand of multi-stem hazel (a rounded canopy on a short
+ *  stem), with a CLEARING at the centre (the play space). Distinct from the conifer Pine + the dense
+ *  Woodland — a sparse deciduous REMNANT. Instanced + deterministic; entities draw over it. */
+export const COPSE_RENDER = {
+  gridN: 6,
+  jitter: 0.46,
+  clearingRadius: 6.0, // a clear coppice glade at the cell centre (the play space)
+  minHeight: 1.8,
+  maxHeight: 2.6,
+  trunkRadius: 0.07,
+  trunkFraction: 0.34,
+  trunkColor: 0x6a5236, // pale hazel bark
+  canopyRadius: 0.95, // a broad rounded deciduous canopy (a sphere, not a cone)
+  canopyColor: 0x35602c, // fresh hazel-leaf green (lighter + warmer than the conifer)
 } as const;
 
 /** A Field Supply post — a walk-in building (§12 1b-revise). One per biome; it only
@@ -3478,6 +3721,49 @@ export const SPECIES_MODEL: Record<
     beakLengthR: 0.5, // a thrush bill
     crestHeightR: 0.1,
   },
+  // §hedgerow — the connector roster (reusing the proven mouse/bird kinds; the body colour is the def's).
+  bankvole: {
+    kind: 'mouse',
+    accent: 0xc98a5a, // paler chestnut belly
+    earHeightR: 0.18, // vole — small, hidden ears (blunter than a mouse)
+    earRadiusR: 0.2,
+    tailLengthR: 0.9, // a short vole tail (half a mouse's)
+    tailRadiusR: 0.06,
+  },
+  harvestmouse: {
+    kind: 'mouse',
+    accent: 0xf2dcae, // pale buff belly
+    earHeightR: 0.26,
+    earRadiusR: 0.24,
+    tailLengthR: 2.0, // a long prehensile tail
+    tailRadiusR: 0.04,
+  },
+  yellowhammer: {
+    kind: 'bird',
+    accent: 0xfff0a0, // bright lemon head accent
+    beakLengthR: 0.45,
+    crestHeightR: 0.15,
+  },
+  whitethroat: {
+    kind: 'bird',
+    accent: 0xf4f1ea, // the white throat patch
+    beakLengthR: 0.4,
+    crestHeightR: 0.2,
+  },
+  dormouse: {
+    kind: 'mouse',
+    accent: 0xf6d79a, // golden belly
+    earHeightR: 0.28,
+    earRadiusR: 0.3, // rounder ears than a field mouse
+    tailLengthR: 1.6,
+    tailRadiusR: 0.12, // a thick, FURRY tail (the dormouse signature)
+  },
+  blackcap: {
+    kind: 'bird',
+    accent: 0x1c1c22, // the black cap
+    beakLengthR: 0.42,
+    crestHeightR: 0.25,
+  },
 } as const;
 
 // ===========================================================================
@@ -3554,6 +3840,10 @@ export const MISSION_ORDER: readonly string[] = [
   'wetland-survey',
   'wetland-dawn',
   'wetland-day',
+  // §hedgerow — the connector chain (an early branch off the Meadow): the corridor set unlocks the copse.
+  'hedgerow-survey',
+  'hedgerow-edge',
+  'copse-dormouse',
   // §4.1b research challenges (standalone — don't gate unlocks / the win). NON-FORCED
   // conditions (§4.1b-fix): the meadow round-the-clock foragers at NIGHT.
   'research-mouse-night',
@@ -3674,6 +3964,37 @@ export const MISSIONS: Record<string, MissionDef> = {
     description: 'Mallards dabble on the open water by day. Catch the mallard.',
     requirement: { kind: 'catch-species', species: 'mallard', count: 1 },
     rewardPoints: 20,
+  },
+  // §hedgerow — the CONNECTOR set (non-standalone → completing it unlocks the Hazel Copse). The set
+  // teaches connectivity by PLAY: survey the corridor, then catch an edge specialist that only the hedge
+  // holds. The unlock COPY names the route to the copse beyond.
+  'hedgerow-survey': {
+    id: 'hedgerow-survey',
+    biome: 'hedgerow',
+    title: 'Follow the Hedge',
+    description: 'A hedge-line runs south from the meadow — a living corridor. Catch 4 animals along the hedgerow.',
+    requirement: { kind: 'catch-in-biome', biome: 'hedgerow', count: 4 },
+    rewardPoints: 25,
+  },
+  'hedgerow-edge': {
+    id: 'hedgerow-edge',
+    biome: 'hedgerow',
+    title: 'Where Two Worlds Meet',
+    description: 'The whitethroat scratches its song from the bramble — an edge bird, here only because field meets wood. Catch the whitethroat.',
+    requirement: { kind: 'catch-species', species: 'whitethroat', count: 1 },
+    rewardPoints: 20,
+  },
+  // §hedgerow — the COPSE's load-bearing CONNECTIVITY beat (P1: the map IS the lesson). The dormouse
+  // can't cross open ground; it reached this cut-off copse ONLY along the hedge corridor — and you reach
+  // it the same way (the copse's prereq IS the hedgerow). A night animal.
+  'copse-dormouse': {
+    id: 'copse-dormouse',
+    biome: 'copse',
+    title: 'The Creature the Corridor Carries',
+    description: 'The hazel dormouse won’t cross the open field — it travelled the hedge to this isolated copse, just as you did. Find it by night among the hazel.',
+    requirement: { kind: 'catch-species', species: 'dormouse', count: 1 },
+    rewardPoints: 30,
+    standalone: true, // the copse is terminal (unlocks nothing) — a connectivity challenge, not a gating set
   },
   // §4.1b RESEARCH challenges — standalone applied-knowledge side-quests. The clue
   // describes TRAITS (the player identifies the species from the #45 cards); the
@@ -3888,7 +4209,8 @@ export const MISSIONS: Record<string, MissionDef> = {
 // 2D). The existing biomes keep single-element arrays (behaviour-neutral); the Highlands forks to
 // BOTH the Riverbank and the Moor. Every consumer iterates the array.
 export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, readonly BiomeId[]>> = {
-  meadow: ['woodland'],
+  meadow: ['woodland', 'hedgerow'], // §hedgerow — the Meadow set forks to the Woodland AND the corridor
+  hedgerow: ['copse'], // §hedgerow — the corridor's set opens the isolated Hazel Copse (the linear chain)
   woodland: ['wetland', 'pineforest'], // §4.2 — the BRANCH: the Woodland set unlocks BOTH (pine is research-gated)
   wetland: ['highlands'],
   highlands: ['riverbank', 'moor'], // §4.2 — the 1st BRANCH: the Highlands set unlocks BOTH

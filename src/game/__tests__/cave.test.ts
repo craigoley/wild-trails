@@ -122,7 +122,7 @@ describe('Cave — ⚠️ the BRANCH (additive: the existing Riverbank→Coast a
   it('the Riverbank set forks to BOTH the Coast AND the Cave; the Coast arm stays first', () => {
     expect(BIOME_SET_UNLOCK.riverbank).toEqual(['coast', 'cave']); // the fork (existing arm first)
     // Every OTHER link unchanged (incl. the Woodland + Highlands forks from earlier slices):
-    expect(BIOME_SET_UNLOCK.meadow).toEqual(['woodland']);
+    expect(BIOME_SET_UNLOCK.meadow).toEqual(['woodland', 'hedgerow']); // §hedgerow — the meadow set now forks to the corridor too
     expect(BIOME_SET_UNLOCK.woodland).toEqual(['wetland', 'pineforest']);
     expect(BIOME_SET_UNLOCK.highlands).toEqual(['riverbank', 'moor']);
   });
