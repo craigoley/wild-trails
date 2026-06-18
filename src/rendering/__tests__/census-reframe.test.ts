@@ -77,15 +77,16 @@ describe('census reframe — ⚠️ the honest status SENTENCES are byte-UNTOUCH
   it('the emotional anchors are byte-identical — the reframe changes the FRAME, never the fact', () => {
     // If any of these sentences ever drifts, the reframe has overstepped from frame to fact. Pin the
     // exact bytes (em-dashes + curly quotes included) for the declining gull, the recovering seal,
-    // and the near-threatened curlew — the lines that carry the weight.
+    // and the near-threatened curlew — the lines that carry the weight. (Bytes updated by the
+    // Americanize Layer-A2 pass — the FACT is unchanged; only the UK-specificity was dropped.)
     expect(SPECIES_INFO.herringgull.status).toBe(
-      'Surprisingly red-listed and in decline — the bold “town gull” masks a real fall in our wild seabird colonies.',
+      'Surprisingly, a bird in serious decline — the bold “town gull” masks a real fall in wild seabird colonies.',
     );
     expect(SPECIES_INFO.greyseal.status).toBe(
-      'A conservation success — Britain now safeguards nearly half the world’s grey seals, back from the brink.',
+      'A conservation success — strong protection has brought the grey seal back from the brink.',
     );
     expect(SPECIES_INFO.curlew.status).toBe(
-      'Near-threatened and falling fast — and Britain is a global stronghold, so the curlew is the upland’s biggest single stake.',
+      'Near-threatened and falling fast — and these uplands are a global stronghold, so the curlew is the upland’s biggest single stake.',
     );
   });
 

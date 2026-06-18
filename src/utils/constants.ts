@@ -1033,8 +1033,8 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'A bankside grazer of slow, clear rivers — the water vole crops waterside grasses, reeds and sedges along the bank. Watch the green margins by day.',
     behaviour:
-      '“Ratty” of The Wind in the Willows — at the first alarm it dives off the bank into the water with a loud “plop” and swims for cover.',
-    status: 'Britain’s fastest-declining mammal — but where clean banks are kept safe from American mink, the water vole bounces back.',
+      'At the first alarm it dives off the bank into the water with a loud “plop” and swims for cover.',
+    status: 'One of the fastest-declining mammals anywhere — but where clean banks are kept safe from American mink, the water vole bounces back.',
   },
   greywagtail: {
     fieldNote:
@@ -1047,7 +1047,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'A streambed hunter of fast rivers — the dipper prises caddis and mayfly larvae from the riverbed by day.',
     behaviour:
-      'The only British songbird that swims — it walks UNDERWATER against the current, then bobs on a midstream rock, white bib flashing.',
+      'The only songbird that swims — it walks UNDERWATER against the current, then bobs on a midstream rock, white bib flashing.',
     status: 'A sign of clean water — dippers thrive only where fast rivers stay unpolluted and full of insect life.',
   },
   kingfisher: {
@@ -1070,7 +1070,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'A small finch of the coastal scrub and dunes — the linnet picks seeds from low plants by day. Watch the rough ground above the beach.',
     behaviour:
       'Flocks twist and turn together over the dunes; the breeding male flushes rose-pink on the breast and forehead.',
-    status: 'Red-listed and in decline — the loss of seeding plants on farmland and coast has hit the linnet hard.',
+    status: 'In serious decline — the loss of seeding plants on farmland and coast has hit the linnet hard.',
   },
   brentgoose: {
     fieldNote:
@@ -1091,14 +1091,14 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'A big, bold gull of the coast — the herring gull takes fish and scavenges the shore by day.',
     behaviour:
       'Loud and clever, it patrols the tideline and harbors; the pink-legged adult drops shellfish onto rocks to crack them.',
-    status: 'Surprisingly red-listed and in decline — the bold “town gull” masks a real fall in our wild seabird colonies.',
+    status: 'Surprisingly, a bird in serious decline — the bold “town gull” masks a real fall in wild seabird colonies.',
   },
   greyseal: {
     fieldNote:
       'A fish-hunter of the open sea — the grey seal hauls out on the rocks by day and hunts fish offshore.',
     behaviour:
       'Curious and powerful; at the first alarm it slides off the rocks into the sea and is gone, hunting underwater on a single long breath.',
-    status: 'A conservation success — Britain now safeguards nearly half the world’s grey seals, back from the brink.',
+    status: 'A conservation success — strong protection has brought the grey seal back from the brink.',
   },
   // Moor (§4.2) — the 1st BRANCHED biome; HONEST conservation status, the real upland spectrum.
   twite: {
@@ -1106,14 +1106,14 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'The moorland linnet — a small upland finch that picks seeds from low moorland plants by day. Watch the rough heather and grass for restless little flocks.',
     behaviour:
       'A streaky brown finch with a pink rump and a nasal “tweet” call; it flocks over the open moor and nests low in the heather.',
-    status: 'Red-listed and declining — the twite has lost the seeding plants of the hay meadows and rough ground it depends on.',
+    status: 'In serious decline — the twite has lost the seeding plants of the hay meadows and rough ground it depends on.',
   },
   stonechat: {
     fieldNote:
       'The gorse-top sentinel — the stonechat hawks insects from a low perch over the heath by day. Look for it bobbing on the tallest sprig.',
     behaviour:
       'It scolds with a hard “tac-tac” like two stones knocked together; the male wears a black head, white collar and a burnt-orange breast.',
-    status: 'A genuine recovery story — the stonechat is doing well, spreading back across our heaths and moors.',
+    status: 'A genuine recovery story — the stonechat is doing well, spreading back across the heaths and moors.',
   },
   redgrouse: {
     fieldNote:
@@ -1126,12 +1126,12 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'The voice of the moor — the curlew probes the soft ground for insects and worms by day with its long downcurved bill. Its bubbling call IS the upland spring.',
     behaviour:
-      'Our largest wader, streaky brown with a huge sickle bill; it rises with a haunting rippling cry and circles wide over its nesting ground.',
-    status: 'Near-threatened and falling fast — and Britain is a global stronghold, so the curlew is the upland’s biggest single stake.',
+      'One of the largest waders, streaky brown with a huge sickle bill; it rises with a haunting rippling cry and circles wide over its nesting ground.',
+    status: 'Near-threatened and falling fast — and these uplands are a global stronghold, so the curlew is the upland’s biggest single stake.',
   },
   reddeer: {
     fieldNote:
-      'The monarch of the moor — the red deer grazes grasses, heather and shoots over the open hill by day. Britain’s largest wild land mammal.',
+      'The monarch of the moor — the red deer grazes grasses, heather and shoots over the open hill by day. The largest wild land mammal of these hills.',
     behaviour:
       'It moves in wary herds and freezes at the faintest scent before flowing away over the slope; the autumn stag roars across the glen and carries great branching antlers.',
     status: 'A success with caveats — red deer have recovered so well that in places there are now too many for the hill to bear.',
@@ -1148,7 +1148,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'A tiny restless tit of the conifers — the coal tit takes seeds and insects from the pine needles by day, often hanging upside-down at the twig-tips.',
     behaviour:
-      'The smallest of our tits, with a black cap and a white nape-patch; it hoards seeds in bark crevices and flits ceaselessly through the canopy.',
+      'The smallest of the tits, with a black cap and a white nape-patch; it hoards seeds in bark crevices and flits ceaselessly through the canopy.',
     status: 'Doing well — the coal tit is a common, adaptable bird at home in conifer woods across the country.',
   },
   crestedtit: {
@@ -1180,7 +1180,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'A tiny bat of the cave roosts — the pipistrelle flits after midges and gnats in the dark, at any hour. The endless underground night keeps it on no surface clock.',
     behaviour:
       'Small enough to fit in a matchbox, it hunts on fast, jerky wingbeats, catching hundreds of insects an hour by echolocation — a stream of clicks too high for us to hear.',
-    status: 'Doing well — the common pipistrelle is our most numerous bat, at home in caves, roofs and trees alike.',
+    status: 'Doing well — the common pipistrelle is the most numerous bat, at home in caves, roofs and trees alike.',
   },
   daubentonbat: {
     fieldNote:
@@ -1201,13 +1201,13 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'The hanging sentinel — the greater horseshoe bat roosts wrapped in its wings in the deep cave, hawking beetles and moths in the dark. It keeps no day or night.',
     behaviour:
       'It echolocates through its strange horseshoe-shaped nose-leaf and hangs in the open (not crammed in crevices); a few warm caves hold almost the whole population.',
-    status: '⚠️ Rare and strictly protected — the greater horseshoe has lost most of its British range, hanging on in a handful of southwestern caves. A real stake.',
+    status: '⚠️ Rare and strictly protected — the greater horseshoe has lost most of its range, hanging on in a handful of scattered caves. A real stake.',
   },
   eel: {
     fieldNote:
       'A mystery of the dark water — the European eel hunts the underground pool for small fish and creatures at any hour, a serpentine shadow in the black.',
     behaviour:
-      'Born in the far-off Sargasso Sea, it drifts thousands of miles to our rivers and caves, then one day slips back across the whole Atlantic to spawn and die — no one has ever seen it breed.',
+      'Born in the far-off Sargasso Sea, it drifts thousands of miles to rivers and caves, then one day slips back across the whole Atlantic to spawn and die — no one has ever seen it breed.',
     status: '⚠️ Critically endangered — the European eel has crashed by over 90%, and its long secret journey makes it desperately hard to protect.',
   },
   // Tidal/Saltmarsh (§4.2) — HONEST status; the real estuary-wader stakes (declines) + the avocet recovery.
@@ -1216,14 +1216,14 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'The commonest small wader of the mud — the dunlin probes the wet flats for tiny worms and insects by day, in restless feeding flocks. Watch the tideline.',
     behaviour:
       'A sparrow-sized wader with a slightly down-curved bill; great flocks wheel low over the estuary as one, flashing dark-then-pale, a black belly-patch in summer.',
-    status: 'Common on the winter mud, but declining as a British breeder where the wet uplands and marshes it nests on are drained.',
+    status: 'Common on the winter mud, but declining as a breeder where the wet uplands and marshes it nests on are drained.',
   },
   oystercatcher: {
     fieldNote:
       'The pied “sea-pie” — the oystercatcher hammers and prises open cockles and mussels with its stout orange bill by day. The bird of the cockle beds, home at last.',
     behaviour:
       'Boldly black-and-white with a long carrot-orange bill and a loud piping “kleep”; it learns either to hammer shells open or to stab them, a skill passed from parent to chick.',
-    status: 'Amber-listed and in recent decline — fewer cockle beds and disturbed shores have pushed our noisy familiar shorebird down.',
+    status: 'A species of conservation concern, in recent decline — fewer cockle beds and disturbed shores have pushed this noisy familiar shorebird down.',
   },
   redshank: {
     fieldNote:
@@ -1237,7 +1237,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'The elegant up-curved bill — the avocet sweeps its slender bill side-to-side through the shallow brackish water, sifting tiny shrimps and insects by day.',
     behaviour:
       'Striking black-and-white with long blue-gray legs; it sweeps the water like a scythe and fiercely mobs anything that nears its nest on the open mud.',
-    status: 'A conservation success — extinct as a British breeder, the avocet returned by itself and recovered so well it became the RSPB’s own emblem.',
+    status: 'A conservation success — once locally extinct as a breeder, the avocet returned by itself and recovered so well it became a symbol of wildlife conservation.',
   },
   knot: {
     fieldNote:
@@ -1250,7 +1250,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
   // climate with NOWHERE HIGHER to go. The tame snow bunting is the floor; the wary ring ouzel the apex.
   snowbunting: {
     fieldNote:
-      'The snowflake of the summit — the snow bunting picks seeds from the bare scree by day, so confiding it will feed at a walker’s feet. The highest-nesting bird in Britain.',
+      'The snowflake of the summit — the snow bunting picks seeds from the bare scree by day, so confiding it will feed at a walker’s feet. The highest-nesting bird of these mountains.',
     behaviour:
       'A white-winged little bunting that flickers over the boulders like blown snow; almost tame on the tops, it barely lifts as you approach — it has learned no fear up here.',
     status: '⚠️ A tiny, vulnerable summit population — a handful of pairs cling to the very highest tops, and as the snowline retreats there is nowhere higher for them to go.',
@@ -1294,7 +1294,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
   },
   harvestmouse: {
     fieldNote:
-      'Britain’s smallest rodent climbs the tall stems of the hedge and field-margin by day and night, gripping with its tail and gleaning seeds and insects — search the grass-heads and the woven nests slung among them.',
+      'One of the world’s smallest rodents climbs the tall stems of the hedge and field-margin by day and night, gripping with its tail and gleaning seeds and insects — search the grass-heads and the woven nests slung among them.',
     behaviour:
       'A tiny golden mouse that runs the upper stalks like a trapeze, curling its prehensile tail round a stem and building a tennis-ball nest of woven grass a hand’s width up.',
     status: '⚠️ Declining — the harvest mouse needs tall, undisturbed grass margins and thick hedges; tidy farming and lost field-edges have thinned it across much of its range.',
@@ -1304,7 +1304,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'The lemon-headed bunting sings from the hedge-top through the summer and drops to stubble and spilt grain in winter — watch the highest sprays along the corridor by day.',
     behaviour:
       'A bright male sings the same wheezy phrase from a prominent spray for hours; in winter they flock to seed-rich field edges, flushing along the hedge in a loose yellow scatter.',
-    status: '⚠️ Red-listed — the yellowhammer has fallen sharply with the loss of winter stubble and hedgerow seed; it’s a headline casualty of farmland change.',
+    status: '⚠️ In serious decline — the yellowhammer has fallen sharply with the loss of winter stubble and hedgerow seed; it’s a headline casualty of farmland change.',
   },
   whitethroat: {
     fieldNote:
@@ -1324,7 +1324,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'A rich fluty warbler — “the northern nightingale” — sings from the coppice and scrub by day, taking insects in summer and berries in autumn. Listen for the song deep in the stand.',
     behaviour:
-      'The gray male wears a black cap (the female’s is chestnut); it sings a clear rising phrase from cover and increasingly stays to winter in Britain on garden berries and feeders.',
+      'The gray male wears a black cap (the female’s is chestnut); it sings a clear rising phrase from cover and increasingly stays to winter here on garden berries and feeders.',
     status: 'Increasing — the blackcap is spreading and now winters here in growing numbers, one of the clearer winners as the climate warms.',
   },
   // §migration — the ESTUARY roster. The status prose carries the honest shorebird-decline stakes: the
@@ -1342,35 +1342,35 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'A stocky silver-gray plover that runs, stops and tilts to seize a worm, working the open mud alone and well-spaced by day. A high-Arctic bird, here only in the cold months.',
     behaviour:
       'It feeds by sight in the classic plover run-and-pause, holding a feeding territory on the flat and giving a plaintive three-note whistle; in flight a black “armpit” marks it out.',
-    status: 'A high-Arctic breeder that winters on British estuaries — amber-listed; like all the flyway waders it rises or falls with the health of the mud it depends on.',
+    status: 'A high-Arctic breeder that winters on these estuaries — a species of conservation concern; like all the flyway waders it rises or falls with the health of the mud it depends on.',
   },
   wigeon: {
     fieldNote:
       'A grazing duck that crops eel-grass and saltmarsh greens in close-packed rafts, whistling as it goes. Look for the chestnut head and the cream crown out on the flats by day.',
     behaviour:
       'Sociable and restless, wigeon graze the marsh and mud in tight flocks that whirl up together at a disturbance; the drake’s clear “wheeoo” whistle carries across the estuary.',
-    status: 'A widespread and numerous winter visitor in internationally important numbers — Britain’s estuaries and grazing marshes are a global stronghold, doing well where the flats are protected.',
+    status: 'A widespread and numerous winter visitor in internationally important numbers — these estuaries and grazing marshes are a global stronghold, doing well where the flats are protected.',
   },
   pintail: {
     fieldNote:
       'An elegant long-necked dabbling duck that up-ends in the shallow creeks for seeds and small life by day. The drake’s needle tail and chocolate head pick it out among the winter wildfowl.',
     behaviour:
       'A graceful, wary surface-feeder that tips tail-up to reach the bottom of a creek, keeping to the open water and lifting early at any approach — among the shyer ducks of the flats.',
-    status: '⚠️ A scarce and amber-listed winter visitor — the pintail gathers at just a few key estuaries, so the loss of any one wintering site bears heavily on the small British total.',
+    status: '⚠️ A scarce winter visitor of conservation concern — the pintail gathers at just a few key estuaries, so the loss of any one wintering site bears heavily on the small regional total.',
   },
   sanderling: {
     fieldNote:
       'A small, pale wader that chases the wave-edge on twinkling black legs, snatching tiny prey from the wet sand as the water falls back. Watch the tide-line by day for the clockwork runner.',
     behaviour:
       'The most restless of the small waders — it sprints in and out with each wash of the tide in a busy, mechanical run, then bursts up into a fast low flock along the shore.',
-    status: 'A long-distance migrant from the high Arctic, wintering on open sandy shores — amber-listed; it needs undisturbed beaches and flats, increasingly squeezed by people and the rising sea.',
+    status: 'A long-distance migrant from the high Arctic, wintering on open sandy shores — a species of conservation concern; it needs undisturbed beaches and flats, increasingly squeezed by people and the rising sea.',
   },
   shelduck: {
     fieldNote:
       'A big, boldly pied goose-like duck that sweeps the wet mud bill-down for tiny snails and shellfish by day. A year-round bird of the estuary — present even when the migrants have gone.',
     behaviour:
       'It feeds with a side-to-side scything of the bill across the soft mud, nests in old burrows, and gathers in family parties on the open flat — one of the resident anchors of the estuary.',
-    status: 'A resident and widespread estuary breeder — amber-listed; common enough to hold the summer mudflat, but still tied to the health of the intertidal flats it feeds on.',
+    status: 'A resident and widespread estuary breeder — a species of conservation concern; common enough to hold the summer mudflat, but still tied to the health of the intertidal flats it feeds on.',
   },
   ringedplover: {
     fieldNote:
@@ -1627,7 +1627,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x9aa3ad,
     size: 0.46,
     profile:
-      "Britain's only native hare of the high tops, the mountain hare turns blue-gray then white in winter for camouflage. It can bound away faster than almost anything on the hill.",
+      'A native hare of the high tops, the mountain hare turns blue-gray then white in winter for camouflage. It can bound away faster than almost anything on the hill.',
   },
   dotterel: {
     id: 'dotterel',
@@ -1683,7 +1683,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x6b5a45,
     size: 0.4,
     profile:
-      'The water vole — “Ratty” of The Wind in the Willows — grazes bankside grasses, then dives off the bank with a plop when startled. Britain’s fastest-declining mammal.',
+      'The water vole grazes bankside grasses, then dives off the bank with a plop when startled. One of the fastest-declining mammals anywhere.',
     // §55 reuse: the vole leaps INTO the river when startled (like the frog) — out of the
     // hand net's reach; the dip-net (B1) is the answer again (the Riverbank synergy).
     fleesToWater: true,
@@ -1721,7 +1721,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x4a3f38,
     size: 0.3,
     profile:
-      'The only British songbird that swims: the dipper walks underwater along the riverbed hunting larvae, then bobs on a midstream rock, white bib flashing. A sign of clean, fast water.',
+      'The only songbird that swims: the dipper walks underwater along the riverbed hunting larvae, then bobs on a midstream rock, white bib flashing. A sign of clean, fast water.',
   },
   // --- Riverbank fish-eaters (§4.1.5) — the FISH diet. Catchable BAIT-LESS (hard); fish bait
   //     (research-gated) makes them easier, never required (anti-lockout). ---
@@ -1781,7 +1781,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x9a5a4a,
     size: 0.3,
     profile:
-      'A small finch of coastal scrub and dunes, eating seeds from low plants. The breeding male flushes rose-pink — but it is red-listed, hit hard by the loss of seeding ground.',
+      'A small finch of coastal scrub and dunes, eating seeds from low plants. The breeding male flushes rose-pink — but it is in serious decline, hit hard by the loss of seeding ground.',
   },
   brentgoose: {
     id: 'brentgoose',
@@ -1833,7 +1833,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xe6e8ec,
     size: 0.4,
     profile:
-      'A big, bold gull that takes fish and scavenges the shore — and, surprisingly, a red-listed bird in decline: the town gull masks a real fall in our wild seabird colonies.',
+      'A big, bold gull that takes fish and scavenges the shore — and, surprisingly, a bird in serious decline: the town gull masks a real fall in wild seabird colonies.',
   },
   greyseal: {
     id: 'greyseal',
@@ -1851,7 +1851,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xb0a89a,
     size: 0.56,
     profile:
-      'A powerful sea hunter that hauls out on the rocks and hunts fish offshore on a single long breath. A conservation success — Britain safeguards nearly half the world’s grey seals.',
+      'A powerful sea hunter that hauls out on the rocks and hunts fish offshore on a single long breath. A conservation success — strong protection has brought the grey seal back from the brink.',
     // §55 reuse: the seal slides INTO the sea to escape — the apex water-diver; the dip-net's
     // biggest moment (across the open sea).
     fleesToWater: true,
@@ -1875,7 +1875,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x7a5a3a,
     size: 0.28,
     profile:
-      'The moorland linnet — a small upland finch with a pink rump, picking seeds from low moorland plants in restless flocks. Red-listed, hit by the loss of its seeding ground.',
+      'The moorland linnet — a small upland finch with a pink rump, picking seeds from low moorland plants in restless flocks. In serious decline, hit by the loss of its seeding ground.',
   },
   stonechat: {
     id: 'stonechat',
@@ -1926,7 +1926,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xa88a5a,
     size: 0.42,
     profile:
-      'The voice of the moor — our largest wader, probing the soft ground with a huge sickle bill and rising with a haunting bubbling cry. Near-threatened, and Britain is its global stronghold.',
+      'The voice of the moor — one of the largest waders, probing the soft ground with a huge sickle bill and rising with a haunting bubbling cry. Near-threatened, and these uplands are its global stronghold.',
   },
   reddeer: {
     id: 'reddeer',
@@ -1982,7 +1982,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x5a5048, // dark cap, buff body
     size: 0.24,
     profile:
-      'The smallest of our tits — a restless conifer specialist with a black cap and a white nape-patch, hoarding seeds in the bark. Common and at home across our pinewoods.',
+      'The smallest of the tits — a restless conifer specialist with a black cap and a white nape-patch, hoarding seeds in the bark. Common and at home across the pinewoods.',
   },
   crestedtit: {
     id: 'crestedtit',
@@ -2057,7 +2057,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x4a3a2e,
     size: 0.22,
     profile:
-      'Our smallest, commonest bat — it flits after midges on fast jerky wingbeats, catching hundreds an hour by echolocation. In the cave’s dark it keeps no surface hours.',
+      'The smallest and commonest bat — it flits after midges on fast jerky wingbeats, catching hundreds an hour by echolocation. In the cave’s dark it keeps no surface hours.',
   },
   daubentonbat: {
     id: 'daubentonbat',
@@ -2167,7 +2167,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x2a2a2e, // pied black-and-white (the orange bill is the model accent)
     size: 0.36,
     profile:
-      'The pied “sea-pie”, hammering open cockles and mussels with its stout orange bill — the bird of the cockle beds, home at last. Amber-listed and in recent decline.',
+      'The pied “sea-pie”, hammering open cockles and mussels with its stout orange bill — the bird of the cockle beds, home at last. A species of conservation concern, in recent decline.',
   },
   redshank: {
     id: 'redshank',
@@ -2201,7 +2201,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xe6e8ec,
     size: 0.36,
     profile:
-      'The elegant up-curved bill, sweeping the shallows for tiny shrimps and insects on long blue-gray legs. A conservation success — back from British extinction, the RSPB’s emblem.',
+      'The elegant up-curved bill, sweeping the shallows for tiny shrimps and insects on long blue-gray legs. A conservation success — back from local extinction, a symbol of wildlife conservation.',
   },
   knot: {
     id: 'knot',
@@ -2246,7 +2246,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xe8e8ec, // snow-white plumage (the dark wing-tips are the model accent)
     size: 0.22,
     profile:
-      'The snowflake of the summit, so confiding it feeds at a walker’s feet — the highest-nesting bird in Britain. ⚠️ A tiny vulnerable population with nowhere higher to go as the snowline retreats.',
+      'The snowflake of the summit, so confiding it feeds at a walker’s feet — the highest-nesting bird of these mountains. ⚠️ A tiny vulnerable population with nowhere higher to go as the snowline retreats.',
   },
   meadowpipit: {
     id: 'meadowpipit',
@@ -2356,7 +2356,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xc69a5a, // golden-russet
     size: 0.32, // Britain's smallest rodent
     profile:
-      'Britain’s tiniest rodent, weighing less than a 2p coin — the harvest mouse climbs the tall grass and hedge stems by day, weaving a woven nest among them and gleaning seeds.',
+      'One of the world’s tiniest rodents, weighing less than a small coin — the harvest mouse climbs the tall grass and hedge stems by day, weaving a woven nest among them and gleaning seeds.',
   },
   yellowhammer: {
     id: 'yellowhammer',
@@ -2409,7 +2409,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xd8a657, // golden-orange fur
     size: 0.36,
     profile:
-      'The golden, furry-tailed sleeper of the hazel coppice — it gnaws a neat round hole in hazelnuts and won’t cross open ground, traveling only along connected hedges. ⚠️ A vulnerable, declining Priority Species.',
+      'The golden, furry-tailed sleeper of the hazel coppice — it gnaws a neat round hole in hazelnuts and won’t cross open ground, traveling only along connected hedges. ⚠️ A vulnerable, declining species — a conservation priority.',
   },
   blackcap: {
     id: 'blackcap',
@@ -2426,7 +2426,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x4a4a52, // grey with a black cap (the male)
     size: 0.42,
     profile:
-      'The rich, fluty warbler of the coppice and scrub — “the northern nightingale”. It takes insects in summer and berries in autumn, and increasingly winters in British gardens.',
+      'The rich, fluty warbler of the coppice and scrub — “the northern nightingale”. It takes insects in summer and berries in autumn, and increasingly winters in gardens.',
   },
   // §migration — the ESTUARY migration hub (tier 7). ⚠️ DRAMATIC winter visitors (seasonTag) — their
   // composition swing (D1b) RIDES the headcount swing (BIOME_SEASONAL_POP) so winter reads as a throng of
@@ -2465,7 +2465,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x9a9a96, // silver-grey
     size: 0.3,
     profile:
-      'A stocky silver-gray plover that runs, stops and tilts to seize a worm on the open mud — a high-Arctic breeder here only in the cold months. Amber-listed, tied to the health of the flats.',
+      'A stocky silver-gray plover that runs, stops and tilts to seize a worm on the open mud — a high-Arctic breeder here only in the cold months. A species of conservation concern, tied to the health of the flats.',
     seasonTag: 'winter-visitor', // §migration — a high-Arctic breeder wintering on the estuary; scarce-not-gone in summer
   },
   wigeon: {
@@ -2483,7 +2483,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x9c5a3c, // chestnut head, cream crown
     size: 0.4,
     profile:
-      'A grazing duck that crops eel-grass and saltmarsh greens in whistling rafts — a winter visitor in internationally important numbers. Britain’s estuaries are a global stronghold.',
+      'A grazing duck that crops eel-grass and saltmarsh greens in whistling rafts — a winter visitor in internationally important numbers. These estuaries are a global stronghold.',
     seasonTag: 'winter-visitor', // §migration — a winter wildfowl visitor in great numbers; scarce-not-gone in summer
   },
   pintail: {
@@ -2501,7 +2501,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x6a5a4a, // chocolate head, long needle tail
     size: 0.42,
     profile:
-      'An elegant long-necked dabbling duck that up-ends in the shallow creeks for seeds — the drake’s needle tail marks it out. ⚠️ A scarce, amber-listed winter visitor gathering at just a few estuaries.',
+      'An elegant long-necked dabbling duck that up-ends in the shallow creeks for seeds — the drake’s needle tail marks it out. ⚠️ A scarce winter visitor of conservation concern, gathering at just a few estuaries.',
     seasonTag: 'winter-visitor', // §migration — a scarce winter visitor to the key estuaries; scarce-not-gone in summer
   },
   sanderling: {
@@ -2519,7 +2519,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xdcdcd6, // very pale, almost white
     size: 0.24,
     profile:
-      'A small, pale wader that chases the wave-edge on twinkling black legs — a long-distance migrant from the high Arctic. Amber-listed; it needs undisturbed shores, squeezed by people and the rising sea.',
+      'A small, pale wader that chases the wave-edge on twinkling black legs — a long-distance migrant from the high Arctic. A species of conservation concern; it needs undisturbed shores, squeezed by people and the rising sea.',
     seasonTag: 'winter-visitor', // §migration — a high-Arctic migrant wintering on open shores; scarce-not-gone in summer
   },
   // §migration — the RESIDENTS (NO seasonTag → flat 1.0): the load-bearing stragglers who hold the bare
@@ -2557,7 +2557,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xb09a7a, // sandy-brown with a black collar
     size: 0.26,
     profile:
-      'A small, neat plover with a black collar, running and pausing on the shingle and mud-edge — a resident of the shore, here all year. ⚠️ Red-listed: disturbance of its open nesting shores has pushed it down.',
+      'A small, neat plover with a black collar, running and pausing on the shingle and mud-edge — a resident of the shore, here all year. ⚠️ In serious decline: disturbance of its open nesting shores has pushed it down.',
   },
 };
 
