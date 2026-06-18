@@ -22,8 +22,8 @@
       property="og:description"
       content="Find, study, and care for the wildlife of a living landscape"
     />
-    <meta property="og:url" content="https://wild-trails-lovat.vercel.app/" />
-    <meta property="og:image" content="https://wild-trails-lovat.vercel.app/og-image.png" />
+    <meta property="og:url" content="https://wild-trails-game.vercel.app/" />
+    <meta property="og:image" content="https://wild-trails-game.vercel.app/og-image.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -36,7 +36,7 @@
       name="twitter:description"
       content="Find, study, and care for the wildlife of a living landscape"
     />
-    <meta name="twitter:image" content="https://wild-trails-lovat.vercel.app/og-image.png" />
+    <meta name="twitter:image" content="https://wild-trails-game.vercel.app/og-image.png" />
     <meta name="twitter:image:alt" content="Wild Trails — a naturalist leaf over a deep forest-green field" />
 
     <!-- PWA manifest -->
@@ -47,9 +47,104 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Wild Trails" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Canonical: the confirmed production domain (Vercel also serves auto-generated
+         preview URLs; point crawlers at the one true URL). -->
+    <link rel="canonical" href="https://wild-trails-game.vercel.app/" />
+
+    <!-- Critical reserve: a full-viewport fixed box from first paint so the canvas
+         mounting later causes NO layout shift (CLS). Mirrors src/style.css exactly —
+         a reserve only, it does not change the canvas render. -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #0d1f12;
+      }
+      #app {
+        position: fixed;
+        inset: 0;
+      }
+    </style>
+
+    <!-- Structured data for crawlers + AI/GEO bots (the canvas is opaque to them).
+         Static in the initial HTML so it is read without executing JS. US-framed. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": "Wild Trails",
+        "description": "Find, study, and care for the wildlife of a living landscape. Wild Trails is a gentle naturalist's game: explore a world that changes with the seasons, watch real animals behave as they do in the wild, and learn how a living ecosystem fits together.",
+        "url": "https://wild-trails-game.vercel.app/",
+        "image": "https://wild-trails-game.vercel.app/og-image.png",
+        "inLanguage": "en",
+        "genre": ["Educational", "Simulation"],
+        "applicationCategory": "Game",
+        "gamePlatform": "Web Browser",
+        "operatingSystem": "Any (modern web browser)",
+        "browserRequirements": "Requires JavaScript and WebGL.",
+        "keywords": "wildlife, nature, conservation, ecology, animals, naturalist, educational game, simulation",
+        "about": [
+          { "@type": "Thing", "name": "Wildlife" },
+          { "@type": "Thing", "name": "Nature conservation" },
+          { "@type": "Thing", "name": "Ecology" }
+        ],
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
   </head>
   <body>
-    <div id="app"></div>
+    <div
+      id="app"
+      role="application"
+      aria-label="Wild Trails — an interactive naturalist wildlife game. Find, study, and care for the wildlife of a living landscape."
+    >
+      <!-- Fallback for crawlers, AI bots, and no-JavaScript visitors. A <noscript>
+           is inert when JavaScript is enabled (browsers never render its contents),
+           so it never shows during normal play — the canvas replaces it on boot. -->
+      <noscript>
+        <main
+          style="
+            position: fixed;
+            inset: 0;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: #0d1f12;
+            color: #e8efe2;
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+          "
+        >
+          <div style="max-width: 42rem">
+            <h1 style="margin: 0 0 0.75rem; font-size: 1.9rem; color: #f0ead6">Wild Trails</h1>
+            <p style="margin: 0 0 1rem; font-size: 1.2rem; color: #bcd6ad">
+              Find, study, and care for the wildlife of a living landscape.
+            </p>
+            <p style="margin: 0 0 1rem">
+              Wild Trails is a gentle naturalist's game: explore a world that changes with the
+              seasons, watch real animals behave as they do in the wild, and learn how a living
+              ecosystem fits together.
+            </p>
+            <p style="margin: 0 0 1rem">
+              Track creatures across meadows, woods, wetlands, coasts, and more — study them,
+              understand them, and help the wild thrive.
+            </p>
+            <p style="margin: 0; color: #9bbf8c">
+              Wild Trails runs in your browser — enable JavaScript to play.
+            </p>
+          </div>
+        </main>
+      </noscript>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
