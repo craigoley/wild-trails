@@ -1,0 +1,4 @@
+# Wild Trails — https://wild-trails-game.vercel.app/
+# A single-page browser game. Crawl freely.
+User-agent: *
+Allow: /
