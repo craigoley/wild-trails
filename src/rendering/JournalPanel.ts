@@ -160,7 +160,7 @@ export class JournalPanel {
       `<span>Habitat: ${BIOMES[def.biome].displayName}</span>` +
       `<span>${def.biome === 'cave' ? CAVE_ACTIVITY_LABEL : ACTIVITY_LABEL[def.activityWindow]}</span>` +
       `</div>` +
-      `<div class="card-section"><span class="card-label">Behaviour</span>${info.behaviour}</div>` +
+      `<div class="card-section"><span class="card-label">Behavior</span>${info.behaviour}</div>` +
       `<div class="card-section card-funfact"><span class="card-label">Did you know</span>${def.profile}</div>` +
       // §4.3 census reframe — the label is a field-note observation ("In the wild"), not a system
       // field ("Status"). The honest sentence (info.status) is UNTOUCHED — only the frame shifts.

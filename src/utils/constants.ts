@@ -931,7 +931,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'A round-the-clock seed-eater of the meadow — the field mouse forages day and night among the grass stems for seeds and grain. There is no wrong hour to find one in the long grass.',
     behaviour:
-      'Darts in quick bursts between cover with its cheeks stuffed with seeds, climbing grass stalks and tunnelling runways through the thatch.',
+      'Darts in quick bursts between cover with its cheeks stuffed with seeds, climbing grass stalks and tunneling runways through the thatch.',
     status: 'Common and thriving — meadows and field margins full of seeding grasses keep mice everywhere.',
     researchNote:
       'Field study: active in short bursts around the clock rather than by day or night, the field mouse caches seeds in scattered larders and can find its way home across surprising distances. A female may raise several litters between spring and autumn — the engine the meadow runs on.',
@@ -1012,8 +1012,8 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'A dusk grazer of the high moor — the mountain hare crops heather and grasses as the light fades on the open tops. Watch the slopes at dusk.',
     behaviour:
-      'Rests in a shallow scrape by day and feeds at dusk and dawn; it can bound away faster than almost anything on the hill, and turns blue-grey then white in winter.',
-    status: 'At home on the high moor — mountain hares thrive where heather is managed and cold winters favour their pale coat.',
+      'Rests in a shallow scrape by day and feeds at dusk and dawn; it can bound away faster than almost anything on the hill, and turns blue-gray then white in winter.',
+    status: 'At home on the high moor — mountain hares thrive where heather is managed and cold winters favor their pale coat.',
   },
   dotterel: {
     fieldNote:
@@ -1084,13 +1084,13 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'A stout little wader of the tideline — the turnstone flips over seaweed and stones for sandhoppers and small invertebrates by day.',
     behaviour:
       'Works the strandline in busy, restless parties, levering over weed and shells with its short strong bill to grab what hides beneath.',
-    status: 'Common on rocky and sandy shores in winter — a hardy, adaptable little traveller.',
+    status: 'Common on rocky and sandy shores in winter — a hardy, adaptable little traveler.',
   },
   herringgull: {
     fieldNote:
       'A big, bold gull of the coast — the herring gull takes fish and scavenges the shore by day.',
     behaviour:
-      'Loud and clever, it patrols the tideline and harbours; the pink-legged adult drops shellfish onto rocks to crack them.',
+      'Loud and clever, it patrols the tideline and harbors; the pink-legged adult drops shellfish onto rocks to crack them.',
     status: 'Surprisingly red-listed and in decline — the bold “town gull” masks a real fall in our wild seabird colonies.',
   },
   greyseal: {
@@ -1236,7 +1236,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'The elegant up-curved bill — the avocet sweeps its slender bill side-to-side through the shallow brackish water, sifting tiny shrimps and insects by day.',
     behaviour:
-      'Striking black-and-white with long blue-grey legs; it sweeps the water like a scythe and fiercely mobs anything that nears its nest on the open mud.',
+      'Striking black-and-white with long blue-gray legs; it sweeps the water like a scythe and fiercely mobs anything that nears its nest on the open mud.',
     status: 'A conservation success — extinct as a British breeder, the avocet returned by itself and recovered so well it became the RSPB’s own emblem.',
   },
   knot: {
@@ -1266,8 +1266,8 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'The bobbing white-rump of the stony tops — the northern wheatear flicks between boulders after insects by day, a long-haul migrant up from Africa for the brief hill summer.',
     behaviour:
-      'A neat grey-and-buff chat that bounds along the ground and bobs on a rock, flashing a bright white rump as it flies; it nests deep in the scree and rabbit burrows.',
-    status: 'A widespread summer migrant of the high tops, but declining — one of the long-distance travellers being squeezed at both ends of its journey.',
+      'A neat gray-and-buff chat that bounds along the ground and bobs on a rock, flashing a bright white rump as it flies; it nests deep in the scree and rabbit burrows.',
+    status: 'A widespread summer migrant of the high tops, but declining — one of the long-distance travelers being squeezed at both ends of its journey.',
   },
   goldenplover: {
     fieldNote:
@@ -1324,7 +1324,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'A rich fluty warbler — “the northern nightingale” — sings from the coppice and scrub by day, taking insects in summer and berries in autumn. Listen for the song deep in the stand.',
     behaviour:
-      'The grey male wears a black cap (the female’s is chestnut); it sings a clear rising phrase from cover and increasingly stays to winter in Britain on garden berries and feeders.',
+      'The gray male wears a black cap (the female’s is chestnut); it sings a clear rising phrase from cover and increasingly stays to winter in Britain on garden berries and feeders.',
     status: 'Increasing — the blackcap is spreading and now winters here in growing numbers, one of the clearer winners as the climate warms.',
   },
   // §migration — the ESTUARY roster. The status prose carries the honest shorebird-decline stakes: the
@@ -1339,7 +1339,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
   },
   greyplover: {
     fieldNote:
-      'A stocky silver-grey plover that runs, stops and tilts to seize a worm, working the open mud alone and well-spaced by day. A high-Arctic bird, here only in the cold months.',
+      'A stocky silver-gray plover that runs, stops and tilts to seize a worm, working the open mud alone and well-spaced by day. A high-Arctic bird, here only in the cold months.',
     behaviour:
       'It feeds by sight in the classic plover run-and-pause, holding a feeding territory on the flat and giving a plaintive three-note whistle; in flight a black “armpit” marks it out.',
     status: 'A high-Arctic breeder that winters on British estuaries — amber-listed; like all the flyway waders it rises or falls with the health of the mud it depends on.',
@@ -1530,7 +1530,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x44444a,
     size: 0.6,
     profile:
-      'Badgers live underground in setts and come out at night to snuffle for earthworms, their favourite food. Their bold black-and-white striped face is a warning to leave them be.',
+      'Badgers live underground in setts and come out at night to snuffle for earthworms, their favorite food. Their bold black-and-white striped face is a warning to leave them be.',
   },
   roedeer: {
     id: 'roedeer',
@@ -1627,7 +1627,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x9aa3ad,
     size: 0.46,
     profile:
-      "Britain's only native hare of the high tops, the mountain hare turns blue-grey then white in winter for camouflage. It can bound away faster than almost anything on the hill.",
+      "Britain's only native hare of the high tops, the mountain hare turns blue-gray then white in winter for camouflage. It can bound away faster than almost anything on the hill.",
   },
   dotterel: {
     id: 'dotterel',
@@ -1645,7 +1645,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xa9763f,
     size: 0.3,
     profile:
-      'Dotterel nest on the highest, stoniest ground of all. Unusually, it is the female who is brighter coloured — the male sits on the eggs and raises the chicks alone.',
+      'Dotterel nest on the highest, stoniest ground of all. Unusually, it is the female who is brighter colored — the male sits on the eggs and raises the chicks alone.',
     seasonTag: 'summer-visitor', // §4.6 D1b — a summer visitor to the high tops (its status says so); scarce-not-gone in winter
   },
   // --- Riverbank (§4.2) — flowing water; tier 4-5, the dip-net's biome. ---
@@ -1798,7 +1798,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x33312e,
     size: 0.42,
     profile:
-      'A small, dark winter goose that grazes the eelgrass and saltmarsh of the shallow coast, travelling in loose chattering flocks low over the water.',
+      'A small, dark winter goose that grazes the eelgrass and saltmarsh of the shallow coast, traveling in loose chattering flocks low over the water.',
     seasonTag: 'winter-visitor', // §4.6 D1b — a winter visitor in good numbers (its status says so); scarce-not-gone in summer
   },
   turnstone: {
@@ -2201,7 +2201,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xe6e8ec,
     size: 0.36,
     profile:
-      'The elegant up-curved bill, sweeping the shallows for tiny shrimps and insects on long blue-grey legs. A conservation success — back from British extinction, the RSPB’s emblem.',
+      'The elegant up-curved bill, sweeping the shallows for tiny shrimps and insects on long blue-gray legs. A conservation success — back from British extinction, the RSPB’s emblem.',
   },
   knot: {
     id: 'knot',
@@ -2219,7 +2219,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x9a958a,
     size: 0.3,
     profile:
-      'The smoke over the mudflats — a grey wader in flocks tens of thousands strong, probing for tiny shellfish. ⚠️ Near-threatened; it depends on a handful of estuaries, so losing one hits all.',
+      'The smoke over the mudflats — a gray wader in flocks tens of thousands strong, probing for tiny shellfish. ⚠️ Near-threatened; it depends on a handful of estuaries, so losing one hits all.',
     seasonTag: 'winter-visitor', // §4.6 D1b — flies from the high Arctic to winter here (its profile says so); scarce-not-gone in summer
   },
   // --- Alpine/Montane (§4.2) — the difficulty CEILING. Pure DATA: difficulty = tuning EXISTING knobs
@@ -2409,7 +2409,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xd8a657, // golden-orange fur
     size: 0.36,
     profile:
-      'The golden, furry-tailed sleeper of the hazel coppice — it gnaws a neat round hole in hazelnuts and won’t cross open ground, travelling only along connected hedges. ⚠️ A vulnerable, declining Priority Species.',
+      'The golden, furry-tailed sleeper of the hazel coppice — it gnaws a neat round hole in hazelnuts and won’t cross open ground, traveling only along connected hedges. ⚠️ A vulnerable, declining Priority Species.',
   },
   blackcap: {
     id: 'blackcap',
@@ -2465,7 +2465,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x9a9a96, // silver-grey
     size: 0.3,
     profile:
-      'A stocky silver-grey plover that runs, stops and tilts to seize a worm on the open mud — a high-Arctic breeder here only in the cold months. Amber-listed, tied to the health of the flats.',
+      'A stocky silver-gray plover that runs, stops and tilts to seize a worm on the open mud — a high-Arctic breeder here only in the cold months. Amber-listed, tied to the health of the flats.',
     seasonTag: 'winter-visitor', // §migration — a high-Arctic breeder wintering on the estuary; scarce-not-gone in summer
   },
   wigeon: {
@@ -4302,7 +4302,7 @@ export const MISSIONS: Record<string, MissionDef> = {
     id: 'copse-dormouse',
     biome: 'copse',
     title: 'The Creature the Corridor Carries',
-    description: 'The hazel dormouse won’t cross the open field — it travelled the hedge to this isolated copse, just as you did. Find it by night among the hazel.',
+    description: 'The hazel dormouse won’t cross the open field — it traveled the hedge to this isolated copse, just as you did. Find it by night among the hazel.',
     requirement: { kind: 'catch-species', species: 'dormouse', count: 1 },
     rewardPoints: 30,
     standalone: true, // the copse is terminal (unlocks nothing) — a connectivity challenge, not a gating set
@@ -4525,12 +4525,12 @@ export const MISSIONS: Record<string, MissionDef> = {
     biome: 'tidal',
     title: 'Research: The Smoke over the Mud',
     description:
-      'A grey wader of the great flocks, probing the estuary mud for tiny shellfish by day — it winters here in tens of thousands from the high Arctic. Identify it from your field guide, then prove you know its table: catch one over SHELLFISH bait.',
+      'A gray wader of the great flocks, probing the estuary mud for tiny shellfish by day — it winters here in tens of thousands from the high Arctic. Identify it from your field guide, then prove you know its table: catch one over SHELLFISH bait.',
     requirement: { kind: 'research', species: 'knot', bait: 'shellfish', count: 1 },
     rewardPoints: RESEARCH.rewardPoints,
     creditReward: RESEARCH.creditReward,
     standalone: true,
-    hint: 'Not quite — set out SHELLFISH bait for the mudflat’s great grey flocks, the tiny molluscs the knot probes from the mud.',
+    hint: 'Not quite — set out SHELLFISH bait for the mudflat’s great gray flocks, the tiny molluscs the knot probes from the mud.',
   },
   // §4.2 — the ALPINE/MONTANE multi-condition mastery gate (the #92 unblock) — the hardest endgame gate.
   // SPECIES + BAIT, no phase. The ACTIVITY is in the prereq MOOR → the #37 breadcrumb, never a wall.
