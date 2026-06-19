@@ -62,7 +62,7 @@ describe('Moor — the roster (honest diets + HONEST conservation status)', () =
     expect(SPECIES_INFO.curlew.status.toLowerCase()).toContain('threatened'); // the hero card — near-threatened
     expect(SPECIES_INFO.twite.status.toLowerCase()).toContain('decline'); // in serious decline (the status says so)
     expect(SPECIES_INFO.stonechat.status.toLowerCase()).toContain('recovery'); // a genuine recovery
-    expect(SPECIES_INFO.redgrouse.fieldNote.toLowerCase()).toContain('nowhere else'); // British endemic
+    expect(SPECIES_INFO.redgrouse.fieldNote.toLowerCase()).toContain('heather'); // the heather grouse (de-Britished: no "endemic" claim)
   });
 
   it('CJ2 gaits by tag: the four moor birds are BIRD, the red deer WALKs (each a real profile)', () => {

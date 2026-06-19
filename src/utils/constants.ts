@@ -423,7 +423,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
   // §4.1c challenge + a NEW multi-condition mastery challenge (the #92 unblock).
   moor: {
     id: 'moor',
-    displayName: 'Moor',
+    displayName: 'Heath',
     bounds: cell(PITCH * 2, PITCH), // east of the Highlands — [60,100] x [20,60]
     unlocked: false,
     adjacent: ['highlands', 'cave', 'alpine'], // §4.2 — the cave abuts N; the alpine summit abuts E (the Moor's first arm)
@@ -1117,10 +1117,10 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
   },
   redgrouse: {
     fieldNote:
-      'The bird of the heather — the red grouse crops young heather shoots by day and is found nowhere else on Earth. Watch the open moor at your feet.',
+      'The bird of the heather — the red grouse crops young heather shoots by day, a grouse of the open moor. Watch the open ground at your feet.',
     behaviour:
       'It bursts up underfoot with a loud “go-back, go-back, go-back”, then glides low on stiff wings; the male flashes a red comb over each eye.',
-    status: 'A British endemic of the managed moor — its fortunes rise and fall with how the heather uplands are kept.',
+    status: 'A grouse of the managed moor — its fortunes rise and fall with how the heather uplands are kept.',
   },
   curlew: {
     fieldNote:
@@ -1142,7 +1142,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'A chunky finch of the pine tops — the crossbill prises seeds from conifer cones by day with its crossed bill. Listen for the “chip-chip” of a feeding flock overhead.',
     behaviour:
       'Its uniquely crossed mandibles lever the cone scales apart; the male is brick-red, the female olive-green, and they wander the forest wherever the cones are ripe.',
-    status: 'The Scottish crossbill is Britain’s ONLY endemic bird — found nowhere else on Earth, tied entirely to the old pinewoods.',
+    status: 'A nomadic specialist of the conifer forests — the red crossbill wanders the northern woods wherever the cone crop is rich. Common, but ever on the move.',
   },
   coaltit: {
     fieldNote:
@@ -1156,14 +1156,14 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'A pinewood specialist — the crested tit gleans insects and spiders from the old pines by day, working the trunks and the mossy boughs.',
     behaviour:
       'It wears a small speckled crest and trills a soft purring call; it nests in rotten pine stumps, so it needs old, untidy forest to thrive.',
-    status: 'Restricted and special — in Britain the crested tit lives ONLY in the Caledonian pinewoods of the Scottish Highlands.',
+    status: 'Restricted and special — the crested tit clings to old conifer forests, tied to mature stands with the rotten stumps it needs to nest.',
   },
   capercaillie: {
     fieldNote:
       'The giant of the forest — the capercaillie crops pine shoots and blaeberry on the woodland floor by day. A turkey-sized grouse, the soul of the old pinewood.',
     behaviour:
       'The huge black male fans his tail and gurgles a strange clicking song at his spring lek; he can burst up through the canopy on thunderous wings.',
-    status: '⚠️ On the brink in Scotland — fewer than a thousand birds remain, and the capercaillie could be lost from Britain a second time. The pinewood’s biggest stake.',
+    status: '⚠️ On the brink across much of its range — local populations have crashed to a few hundred birds, lost from whole forests. The pinewood’s biggest stake.',
   },
   pinemarten: {
     fieldNote:
@@ -1909,7 +1909,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x8a3a2a,
     size: 0.4,
     profile:
-      'The bird of the heather, cropping young shoots and bursting up underfoot with a loud “go-back, go-back”. A British endemic — found nowhere else on Earth.',
+      'The bird of the heather, cropping young shoots and bursting up underfoot with a loud “go-back, go-back”. The reddish moorland form of the willow ptarmigan, a grouse of the heather uplands.',
   },
   curlew: {
     id: 'curlew',
@@ -1952,7 +1952,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   crossbill: {
     id: 'crossbill',
     gait: 'bird',
-    displayName: 'Scottish Crossbill',
+    displayName: 'Red Crossbill',
     biome: 'pineforest',
     // The Pine VALVE (0.55): a calm seed-eater of the cones — catchable bait-less (anti-lockout).
     spawnWeight: 6,
@@ -1965,7 +1965,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xb5432e, // the brick-red male
     size: 0.3,
     profile:
-      'A chunky finch that levers conifer seeds from cones with its uniquely crossed bill. Britain’s ONLY endemic bird — the Scottish crossbill lives nowhere else on Earth.',
+      'A chunky finch that levers conifer seeds from cones with its uniquely crossed bill. The red crossbill roams the conifer forests of the world, drifting wherever the cones ripen.',
   },
   coaltit: {
     id: 'coaltit',
@@ -1999,7 +1999,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x8a7a5a,
     size: 0.25,
     profile:
-      'A pinewood specialist with a small speckled crest, gleaning insects from the old pines and nesting in rotten stumps. In Britain it lives ONLY in the Caledonian forest.',
+      'A pinewood specialist with a small speckled crest, gleaning insects from the old pines and nesting in rotten stumps. It clings to mature conifer forest, scarce wherever the old stands are lost.',
   },
   capercaillie: {
     id: 'capercaillie',
@@ -2017,7 +2017,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x2c2c33, // the great black male
     size: 0.52,
     profile:
-      'A turkey-sized grouse that crops pine shoots and blaeberry on the forest floor. ⚠️ On the brink in Scotland — fewer than a thousand remain; it could be lost a second time.',
+      'A turkey-sized grouse that crops pine shoots and blaeberry on the forest floor. ⚠️ On the brink across much of its range — local populations have crashed, lost from whole forests.',
   },
   pinemarten: {
     id: 'pinemarten',
@@ -4542,7 +4542,7 @@ export const MISSIONS: Record<string, MissionDef> = {
     biome: 'moor',
     title: 'Research: The Bird of the Heather',
     description:
-      'A plump red-brown game bird that crops young heather shoots by day and is found nowhere else on Earth. Identify it from your field guide, then prove you know its table: catch one over GREENS bait.',
+      'A plump red-brown game bird that crops young heather shoots by day, bursting up from the heather underfoot. Identify it from your field guide, then prove you know its table: catch one over GREENS bait.',
     requirement: { kind: 'research', species: 'redgrouse', bait: 'greens', count: 1 },
     rewardPoints: RESEARCH.rewardPoints,
     creditReward: RESEARCH.creditReward,
