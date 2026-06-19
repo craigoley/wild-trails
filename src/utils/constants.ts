@@ -1561,7 +1561,10 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     detectionRadius: 4.2,
     activityWindow: 'day',
     tier: 3,
-    baseCatchRate: 0.24,
+    // The Wetland VALVE (0.50 → ~0.59 bait-less, the proven anti-lockout valve rate, like the
+    // dunlin/snow-bunting/twite): a common, calm dabbling duck — catchable bait-less so the Wetland is
+    // never a bait-gated wall (the frog stays the harder catch). Still below the Meadow valves (the ramp holds).
+    baseCatchRate: 0.5,
     bait: 'greens',
     color: 0x2f5d3a,
     size: 0.5,
@@ -1590,20 +1593,21 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     // reach; the dip-net (B1) is the answer. (The mallard bursts into flight instead.)
     fleesToWater: true,
   },
-  // --- Highlands (tier 4 — alpine high-tops, below the Wetland floor 0.20) ------
+  // --- Highlands (tier 4 — alpine high-tops) ------
   ptarmigan: {
     id: 'ptarmigan',
     gait: 'bird',
     displayName: 'Rock Ptarmigan',
     biome: 'highlands',
     spawnWeight: 5,
-    // A ground grouse — relies on camouflage, then flushes; moderate flee, but a
-    // tier-4 catch rate (0.18, below the frog's 0.20).
+    // The Highlands VALVE (0.50 → ~0.59 bait-less, the proven anti-lockout valve rate): a calm ground
+    // grouse that relies on camouflage then flushes — catchable bait-less so the Highlands access gate is
+    // never a bait-gated wall (the mountain hare + dotterel stay the hard catches). Still below the Meadow valves.
     baseFleeSpeed: 4.2,
     detectionRadius: 4.0,
     activityWindow: 'day',
     tier: 4,
-    baseCatchRate: 0.18,
+    baseCatchRate: 0.5,
     bait: 'greens',
     color: 0xb8b4a4,
     size: 0.36,

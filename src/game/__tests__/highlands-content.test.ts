@@ -98,13 +98,21 @@ describe('Highlands content — the unlock chain (pure data)', () => {
 });
 
 describe('Highlands content — tier-4 difficulty + the alpine roster', () => {
-  it('the alpine species sit BELOW the wetland frog (0.20), strictly ordered, all > 0', () => {
-    const tail = ['frog', 'ptarmigan', 'mountainhare', 'dotterel'] as const;
+  it('the Highlands has an anti-lockout VALVE (ptarmigan) + a hard tail below the wetland frog (0.20)', () => {
+    // §quick-wins (balance, per the gameplay-arc review #162): the ptarmigan is now the Highlands'
+    // anti-lockout VALVE (0.50, the proven bait-less valve rate), so the access gate is never bait-walled.
+    // The mountain hare + dotterel stay the HARD tail (still below the wetland frog floor). The ptarmigan
+    // is no longer part of the descending hard tail (it's a valve).
+    expect(SPECIES.ptarmigan.baseCatchRate).toBeGreaterThanOrEqual(0.5); // the Highlands valve
+    const tail = ['frog', 'mountainhare', 'dotterel'] as const; // the HARD species still descend below the frog
     for (let i = 0; i < tail.length - 1; i++) {
       expect(SPECIES[tail[i]].baseCatchRate).toBeGreaterThan(SPECIES[tail[i + 1]].baseCatchRate);
     }
+    for (const id of ['mountainhare', 'dotterel'] as const) {
+      expect(SPECIES[id].baseCatchRate).toBeLessThan(SPECIES.frog.baseCatchRate); // the hard tail below the wetland floor
+    }
     for (const id of ALPINE) {
-      expect(SPECIES[id].baseCatchRate).toBeLessThan(SPECIES.frog.baseCatchRate);
+      // tier / biome / flee / catchable hold for ALL three (incl. the valve) — only the valve's RATE changed.
       expect(SPECIES[id].baseCatchRate).toBeGreaterThan(0); // catchable, not clamped out
       expect(SPECIES[id].tier).toBe(4);
       expect(SPECIES[id].biome).toBe('highlands');
