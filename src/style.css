@@ -1175,6 +1175,24 @@ body.modal-open .touch-stick-thumb {
   border-left: 1px solid #a87f55;
   border-right: 1px solid #a87f55;
 }
+/* §savanna — the 6th diet: a small red meat chunk (a rounded cut + a paler bone end). */
+.icon-meat {
+  background: #b04a3a;
+  width: 11px;
+  height: 8px;
+  border-radius: 40% 55% 55% 40% / 60% 60% 40% 40%;
+  margin: 4px 3px;
+}
+.icon-meat::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  right: -1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ece0cf; /* the bone end */
+}
 
 /* ?debug=1 readout — top left, monospace, unobtrusive. */
 .hud-debug {

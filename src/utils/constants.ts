@@ -86,7 +86,7 @@ export const WORLD = {
 } as const;
 
 /** The biomes in the world. `meadow` is the starting region. */
-export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave' | 'tidal' | 'alpine' | 'hedgerow' | 'copse' | 'estuary' | 'desert';
+export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave' | 'tidal' | 'alpine' | 'hedgerow' | 'copse' | 'estuary' | 'desert' | 'savanna';
 
 /** Static definition of one biome: its finite bounds, display name, adjacency
  *  in the world graph, initial unlocked state, and ground tint. */
@@ -134,7 +134,7 @@ function cell(cx: number, cy: number): Rect {
 }
 
 /** Iteration order for the biome graph (deterministic; render + lookup order). */
-export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave', 'tidal', 'alpine', 'hedgerow', 'copse', 'estuary', 'desert'];
+export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave', 'tidal', 'alpine', 'hedgerow', 'copse', 'estuary', 'desert', 'savanna'];
 
 /**
  * The THROUGH-LINE (§4.3 TL1) — the soul layer's first slice. A biome's "thriving" derives from
@@ -211,6 +211,8 @@ export const SNOW_BIOMES: Partial<Record<BiomeId, boolean>> = {
   estuary: true,
   // §desert — the hot Sonoran desert does NOT snow (a warm-climate biome; the honest-omission discipline).
   desert: false,
+  // §savanna — the tropical East-African savanna does NOT snow (a warm-climate biome).
+  savanna: false,
 };
 
 /**
@@ -575,10 +577,28 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Sonoran Desert',
     bounds: cell(0, PITCH * 3), // west of the Coast — [-20,20] x [100,140]
     unlocked: false,
-    adjacent: ['coast', 'pineforest'], // shares its E edge with the Coast (the prereq) + its S edge with the Pine Forest (render-only breadcrumb)
+    adjacent: ['coast', 'pineforest', 'savanna'], // shares its E edge with the Coast (the prereq) + its S edge with the Pine Forest + its N edge with the Savanna (render-only breadcrumbs)
     tier: 6, // a parallel arm off the Coast (tier 5) — like the Moor off the Highlands
     prereq: 'coast',
     color: 0xc9a05a, // warm ochre sand — the FIRST non-temperate ground tone (a confident departure from the greens)
+  },
+  // §savanna — the AFRICAN SAVANNA (worldwide rebalance R1): the first AFRICAN biome + the most iconic
+  // world fauna (lion/zebra/giraffe). A vast OPEN grassland NORTH of the Desert — the arid sand grades into
+  // the great grass plains (a real desert→savanna ecological transition, the Sahel). A full-cell full-edge
+  // successor off the Desert → ZERO clamp change (the proven node, like the Desert off the Coast). OPEN
+  // terrain (≤ OPEN_BIOME_COVER_MAX cover → the throwing-net biome; legible — sparse acacia only). Its
+  // identity is the open-plain FOOD WEB (the lion apex over the grazing herds) + the great migration. The
+  // first regional-cluster member ("Africa" — R0's labels are a separate slice). The 6th MEAT diet (the
+  // lion's real prey) ships here.
+  savanna: {
+    id: 'savanna',
+    displayName: 'African Savanna',
+    bounds: cell(0, PITCH * 4), // north of the Desert — [-20,20] x [140,180]
+    unlocked: false,
+    adjacent: ['desert'], // shares its S edge with the Desert (the prereq) — the warm-lands cluster
+    tier: 7, // a single-successor extension off the Desert (tier 6), research-gated like the Estuary
+    prereq: 'desert',
+    color: 0xc2b85a, // golden dry savanna grass — a YELLOW-gold straw, distinct from BOTH the temperate greens AND the desert's red-ochre sand
   },
 };
 
@@ -817,7 +837,15 @@ export type SpeciesId =
   | 'jackrabbit'
   | 'cottontail'
   | 'kangaroorat'
-  | 'kitfox';
+  | 'kitfox'
+  // §savanna — the African savanna roster (real co-occurring Serengeti fauna: the apex + the grazing herds)
+  | 'lion'
+  | 'zebra'
+  | 'wildebeest'
+  | 'gazelle'
+  | 'giraffe'
+  | 'elephant'
+  | 'ostrich';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -832,7 +860,7 @@ export type GaitKind = 'walk' | 'hop' | 'bird' | 'swim';
 /** Bait types = animal diets. The right bait for a species' diet calms it and
  *  lures it closer; the wrong bait does nothing (the diet-learning mechanic).
  *  `fish` (§4.1.5) is the 4th diet — RESEARCH-GATED (the kingfisher + otter eat it). */
-export type BaitId = 'seeds' | 'greens' | 'insects' | 'fish' | 'shellfish';
+export type BaitId = 'seeds' | 'greens' | 'insects' | 'fish' | 'shellfish' | 'meat';
 
 /**
  * Static definition of one species. The two axes the design keeps INDEPENDENT:
@@ -964,6 +992,14 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'cottontail',
   'kangaroorat',
   'kitfox',
+  // §savanna — the Serengeti roster
+  'lion',
+  'zebra',
+  'wildebeest',
+  'gazelle',
+  'giraffe',
+  'elephant',
+  'ostrich',
 ];
 
 /**
@@ -1488,6 +1524,57 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'Huge ears find prey by sound in the dark and shed heat by day; it dens underground against the heat, and is so wary it melts away at the faintest disturbance.',
     status: 'Holding on — the kit fox does well in undisturbed open desert, but loses ground to development and the loss of the burrowing prey it lives on.',
+  },
+  // §savanna — the SERENGETI roster (US-framed, iconic, accessible: size comparisons + the FOOD-WEB +
+  // the great migration). The apex lion over the grazing herds — predator-prey, seen.
+  lion: {
+    fieldNote:
+      'The great hunter of the plains — the lion is the apex predator of the savanna, hunting zebra and wildebeest across the open grass after dark. A big cat the weight of three grown people, it sits at the top of the food web.',
+    behaviour:
+      'Lions live in family prides and hunt as a team — the lionesses drive the herd while the maned male guards the ground; they rest up to twenty hours a day and hunt in the cool of night.',
+    status: '⚠️ Vulnerable — lions have lost most of their range to farms and herders; the great prides hang on in the protected parks, the savanna’s biggest conservation stake.',
+  },
+  zebra: {
+    fieldNote:
+      'The striped grazer of the herds — the zebra crops the savanna grass by day in big, watchful herds, rarely far from the wildebeest it travels beside. The size of a small horse, its stripes dazzle the hunting lion.',
+    behaviour:
+      'No two zebras share the same stripe pattern; they graze in family bands, taking turns to watch for lions, and kick hard with a powerful back leg when cornered.',
+    status: 'Doing well where the plains are protected — the zebra is the abundant prey-base of the savanna, moving in great herds with the rains.',
+  },
+  wildebeest: {
+    fieldNote:
+      'The marcher of the great migration — over a million wildebeest cross the savanna each year, following the rains to fresh grass by day. A big, bearded grazer, it is the engine of the herd.',
+    behaviour:
+      'Wildebeest move in enormous columns and calve all at once, so the lions cannot take them all; they swim the flooded rivers en masse — the savanna’s greatest spectacle.',
+    status: 'Abundant on the protected plains — the wildebeest’s great migration is one of the wonders of the natural world, and the herds feed the whole savanna food web.',
+  },
+  gazelle: {
+    fieldNote:
+      'The sprinter of the open grass — the gazelle nibbles the short savanna grass by day, always ready to bolt. About the size of a medium dog, it springs and zig-zags to outrun the cheetah.',
+    behaviour:
+      'It “stots” — bouncing high on stiff legs to tell a predator it has been spotted and not to bother chasing; it grazes right out in the open, trusting its speed over any cover.',
+    status: 'Common across the plains — the gazelle is fast, alert, and abundant, a key prey for the cheetah and the lion alike.',
+  },
+  giraffe: {
+    fieldNote:
+      'The tallest animal on Earth — the giraffe browses the thorny acacia trees by day, reaching leaves no other animal can. As tall as a two-story house, it spots danger right across the plain.',
+    behaviour:
+      'Its long neck has the very same seven bones as yours, just huge; a longer black tongue strips acacia leaves past the thorns. It drinks rarely, splaying its front legs to reach the water.',
+    status: 'Quietly declining — the giraffe has slipped from much of its old range as the savanna is cleared; the gentle giant needs its acacia woodland kept standing.',
+  },
+  elephant: {
+    fieldNote:
+      'The giant of the savanna — the African elephant roams by day and night, tearing up grass and stripping trees with its trunk. The biggest land animal alive — heavier than four cars — it shapes the whole plain.',
+    behaviour:
+      'Elephants live in herds led by the oldest female, who remembers the way to water through a drought; the trunk holds some forty thousand muscles, used to feed, drink, greet, and dig.',
+    status: '⚠️ Vulnerable — elephants are hunted for ivory and squeezed by farms; protecting them protects the whole savanna, for the elephant is its great gardener.',
+  },
+  ostrich: {
+    fieldNote:
+      'The biggest bird on Earth — the ostrich strides the open savanna by day, pecking up seeds, shoots and the odd insect. Far too heavy to fly, it runs faster than a racehorse on two long legs.',
+    behaviour:
+      'It cannot fly, but sprints at forty miles an hour and kicks hard enough to fend off a lion; it lays the largest egg of any bird, about the size of two dozen chicken eggs.',
+    status: 'Common across the plains — the ostrich is at home on the open grassland, its great speed and sharp eyes keeping it a step ahead of the hunters.',
   },
 };
 
@@ -2801,6 +2888,137 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     profile:
       'The smallest fox in North America, built for the desert — oversized ears to hear prey and shed heat, fur on its paw-pads against the hot sand, and little need to drink, taking its water from the prey it catches.',
   },
+  // §savanna — the SERENGETI roster (worldwide R1). All biome:'savanna', tier 6 (the difficulty class; the
+  // biome's access depth is tier 7). The grazing herds are 'day' (the prey-base); the LION hunts at night
+  // (the new MEAT diet); the ELEPHANT is 'any' (active round the clock) — so every phase has ≥1 eligible
+  // species (D1b no-exclusion: dawn/night = elephant, +lion at night). Anti-lockout valve = the zebra
+  // (greens, a calm common grazer, catchable bait-less). Real co-occurring East-African-plain fauna only
+  // (the blender forbidden: NO meerkat [Kalahari], no non-co-occurring padding).
+  lion: {
+    id: 'lion',
+    gait: 'walk',
+    displayName: 'Lion',
+    biome: 'savanna',
+    // The Savanna APEX (0.16): the wariest, hardest catch — the food-web keystone. The new MEAT diet eases
+    // it (a lion eats meat — honest); catchable bait-less (> 0), never gated. Hunts at night.
+    spawnWeight: 2,
+    baseFleeSpeed: 4.6,
+    detectionRadius: 4.4,
+    activityWindow: 'night',
+    tier: 6,
+    baseCatchRate: 0.16,
+    bait: 'meat', // §savanna — the 6th diet: a lion eats large prey (honest — the kit-fox 'insects' proxy doesn't stretch to a lion)
+    color: 0xc99a52, // tawny tan
+    size: 0.5,
+    profile:
+      'A grown male can weigh as much as three people and roar so loud it carries five miles. The pride hunts as a team — the lionesses do most of the work, driving the herd toward the others waiting in the grass.',
+  },
+  zebra: {
+    id: 'zebra',
+    gait: 'walk',
+    displayName: 'Zebra',
+    biome: 'savanna',
+    // The Savanna VALVE (0.55 → ~0.59 bait-less, the proven anti-lockout valve rate): a calm, common herd
+    // grazer — catchable bait-less so the savanna is never bait-walled (the lion stays the hard catch).
+    spawnWeight: 6,
+    baseFleeSpeed: 4.2,
+    detectionRadius: 3.4,
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.55,
+    bait: 'greens',
+    color: 0xdcd6c8, // pale (the black-and-white stripes read as a light equid at the low-poly scale)
+    size: 0.55,
+    profile:
+      'Every zebra’s stripes are unique, like a fingerprint. In a galloping herd the stripes blur together so a chasing lion can’t fix on a single animal — safety in a moving dazzle.',
+  },
+  wildebeest: {
+    id: 'wildebeest',
+    gait: 'walk',
+    displayName: 'Wildebeest',
+    biome: 'savanna',
+    spawnWeight: 5,
+    baseFleeSpeed: 4.4,
+    detectionRadius: 3.6,
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.46,
+    bait: 'greens',
+    color: 0x5a5048, // dark grey-brown, a black beard
+    size: 0.54,
+    profile:
+      'More than a million wildebeest march the same great loop every year, chasing the rain for fresh grass — the largest land-animal migration on Earth. They all give birth within a few weeks, so the predators can’t take them all.',
+  },
+  gazelle: {
+    id: 'gazelle',
+    gait: 'walk',
+    displayName: 'Gazelle',
+    biome: 'savanna',
+    // Fast + skittish (the fastest flee, still below the player's maxSpeed 6 — catchable on foot).
+    spawnWeight: 6,
+    baseFleeSpeed: 5.2,
+    detectionRadius: 4.2,
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.4,
+    bait: 'greens',
+    color: 0xc69a5a, // tan-fawn, a dark side-stripe
+    size: 0.38,
+    profile:
+      'When it spots a hunter, a gazelle “stots” — pronking high into the air on stiff legs. It’s a message: I’ve seen you, and I’m fit enough to outrun you, so don’t waste your energy.',
+  },
+  giraffe: {
+    id: 'giraffe',
+    gait: 'walk',
+    displayName: 'Giraffe',
+    biome: 'savanna',
+    spawnWeight: 4,
+    baseFleeSpeed: 4.0,
+    detectionRadius: 3.8, // tall — it sees far
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.42,
+    bait: 'greens', // browses acacia leaves
+    color: 0xd9a441, // giraffe tan-orange
+    size: 0.5, // ⚠️ modest — the 'giraffe' model's tall legs + long neck amplify the on-screen height
+    profile:
+      'A giraffe’s neck has exactly seven bones — the same number as in your neck, just much bigger. Its tongue is nearly two feet long and dark blue-black, to strip acacia leaves past the thorns without sunburn.',
+  },
+  elephant: {
+    id: 'elephant',
+    gait: 'walk',
+    displayName: 'African Elephant',
+    biome: 'savanna',
+    // 'any' — elephants forage day AND night (round the clock); this holds the dawn/night floor (D1b).
+    spawnWeight: 3,
+    baseFleeSpeed: 3.4, // big + slow to flee, but very aware
+    detectionRadius: 3.8,
+    activityWindow: 'any',
+    tier: 6,
+    baseCatchRate: 0.4,
+    bait: 'greens',
+    color: 0x8a8a86, // grey
+    size: 0.62, // the biggest in the game; the 'elephant' model reads big via bulk, not height
+    profile:
+      'An elephant’s trunk has around forty thousand muscles — more than your whole body — and can pick up a single blade of grass or push over a tree. The herd is led by the oldest female, who remembers where the water is.',
+  },
+  ostrich: {
+    id: 'ostrich',
+    gait: 'bird',
+    displayName: 'Ostrich',
+    biome: 'savanna',
+    spawnWeight: 5,
+    baseFleeSpeed: 5.0, // a very fast runner
+    detectionRadius: 4.0,
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.44,
+    bait: 'seeds', // pecks seeds, shoots + the odd insect — the savanna's granivore
+    color: 0x33312e, // the dark male body (pale neck/legs are the model accent)
+    size: 0.5,
+    profile:
+      'The biggest bird alive can’t fly, but it sprints at forty miles an hour — faster than a racehorse — and a single kick can kill a lion. It lays the largest egg of any bird, about two dozen chicken eggs in one shell.',
+  },
 };
 
 // ===========================================================================
@@ -2931,6 +3149,15 @@ export const SPECIES_BEHAVIOR: Partial<Record<SpeciesId, { budget?: EthogramBudg
   cottontail: { budget: ETHOGRAM.budgets.grazer },
   kangaroorat: { budget: ETHOGRAM.budgets.darter },
   kitfox: { budget: ETHOGRAM.budgets.ambusher },
+  // §savanna — D2: the wary apex hunter (ambusher, high vigilance); the grazing herds graze with
+  // vigilance-lifts (grazer) — the proven archetype budgets, reused.
+  lion: { budget: ETHOGRAM.budgets.ambusher },
+  zebra: { budget: ETHOGRAM.budgets.grazer },
+  wildebeest: { budget: ETHOGRAM.budgets.grazer },
+  gazelle: { budget: ETHOGRAM.budgets.grazer },
+  giraffe: { budget: ETHOGRAM.budgets.grazer },
+  elephant: { budget: ETHOGRAM.budgets.grazer },
+  ostrich: { budget: ETHOGRAM.budgets.grazer },
   wigeon: { budget: ETHOGRAM.budgets.grazer },
   pintail: { budget: ETHOGRAM.budgets.grazer },
   // Songbirds — perch + rest, brief foraging forays.
@@ -3067,6 +3294,10 @@ export const HIDING_SPOTS: readonly HidingSpotDef[] = [
   // biome; legibility is free on open sand, like the estuary — NOT the pine/hedgerow hiding problem).
   { biome: 'desert', x: -9, y: 112, radius: 2.0, kind: 'rocks' },
   { biome: 'desert', x: 10, y: 130, radius: 2.0, kind: 'rocks' },
+  // §savanna — the OPEN grass plain: just TWO sparse cover spots (≤ OPEN_BIOME_COVER_MAX → the throwing-net
+  // biome; legibility is free on the open plain — the acacia trees are atmosphere, not cover).
+  { biome: 'savanna', x: -8, y: 152, radius: 2.0, kind: 'grass' },
+  { biome: 'savanna', x: 9, y: 170, radius: 2.0, kind: 'grass' },
 ];
 
 /** The portable HIDE (Nets & Gear slice C) — naturalist gear you DEPLOY at your
@@ -3275,6 +3506,29 @@ export const DESERT_RENDER = {
   },
 } as const;
 
+/** §savanna — the AFRICAN SAVANNA scatter: SPARSE iconic flat-topped acacia trees on a deterministic
+ *  jittered grid. An acacia = a thin tall trunk + a WIDE FLAT canopy disc (the umbrella crown — the
+ *  unmistakable savanna silhouette). Instanced (2 draw calls); matrices set once, no per-frame cost.
+ *  Like the desert, FAR sparser than the pine scatter — the open plain reads easily (legibility is
+ *  free). Static; the locked fog veils it until the savanna opens. ⚠️ ATMOSPHERE ONLY — not cover,
+ *  not collision; entities draw OVER it (a tree can never hide a catch). Deterministic (a sin-hash). */
+export const SAVANNA_RENDER = {
+  gridN: 3,
+  jitter: 0.6,
+  /** Acacia height band (world units) — tall iconic trees that FRAME the open plain. */
+  minHeight: 4.5,
+  maxHeight: 6.5,
+  /** Trunk: a thin tall cylinder; height is this fraction of the total, the crown sits on top. */
+  trunkRadius: 0.18,
+  trunkFraction: 0.78, // most of the height is bare trunk → the high flat umbrella read
+  trunkColor: 0x6b5340, // acacia bark brown
+  /** Canopy: a WIDE FLAT disc (a squashed cylinder) — the umbrella crown. radius in world units. */
+  canopyRadius: 2.2,
+  canopyThickness: 0.55, // flat (a disc, not a ball) — the flat-topped silhouette
+  canopyColor: 0x5a6b3a, // dusty acacia green
+  skipThreshold: 0.18, // hash < this → skip (thins the 3×3 grid to ~5–9 trees)
+} as const;
+
 /** A Field Supply post — a walk-in building (§12 1b-revise). One per biome; it only
  *  exists (renders + opens) once the biome is unlocked. Walking into `radius`
  *  (a proximity zone, NOT a wall — no collision) opens the Field Supply panel. */
@@ -3404,11 +3658,11 @@ export const STARTER_TOOL: ToolId = 'net';
 /** Bait deltas — the diet-learning lure. Correct bait (matches a species' diet)
  *  calms it toward the catch ceiling AND lures it to APPROACH; wrong bait does
  *  nothing. Bait is a consumable with an in-memory count. */
-export const BAIT_ORDER: readonly BaitId[] = ['seeds', 'greens', 'insects', 'fish', 'shellfish'];
+export const BAIT_ORDER: readonly BaitId[] = ['seeds', 'greens', 'insects', 'fish', 'shellfish', 'meat'];
 
 /** Baits that are RESEARCH-GATED (§4.1.5): they start at 0 (locked) and become buyable only
  *  once their unlocking research completes. The 3 original diets are always stocked. */
-export const RESEARCH_GATED_BAITS: readonly BaitId[] = ['fish', 'shellfish']; // §4.2 — shellfish gated, never required (anti-lockout)
+export const RESEARCH_GATED_BAITS: readonly BaitId[] = ['fish', 'shellfish', 'meat']; // §4.2 — shellfish gated; §savanna — meat gated; both NEVER required (anti-lockout)
 
 /** Starting count for a bait: the 3 original diets start stocked; a research-gated bait
  *  (fish) starts at 0 — you don't begin with bait you can't use until you've studied it. */
@@ -3417,7 +3671,7 @@ export function startingBaitCount(id: BaitId): number {
 }
 
 /** The procedural diet-icon glyph a bait chip draws (CSS shapes, zero assets). */
-export type BaitIconKind = 'seeds' | 'leaf' | 'insect' | 'fish' | 'shell';
+export type BaitIconKind = 'seeds' | 'leaf' | 'insect' | 'fish' | 'shell' | 'meat';
 
 /** Tray DISPLAY metadata per bait — a short label + which procedural icon to
  *  draw. Diet legibility (§5): the icon teaches "what this bait IS". */
@@ -3427,6 +3681,7 @@ export const BAIT_DISPLAY: Record<BaitId, { label: string; icon: BaitIconKind }>
   insects: { label: 'Insects', icon: 'insect' },
   fish: { label: 'Fish', icon: 'fish' },
   shellfish: { label: 'Shellfish', icon: 'shell' }, // §4.2 — the 5th diet (the oystercatcher's cockles/mussels)
+  meat: { label: 'Meat', icon: 'meat' }, // §savanna — the 6th diet (the lion's real prey; honest for an apex predator)
 };
 
 export const BAIT = {
@@ -3692,7 +3947,15 @@ export const LIGHTING = {
 // ===========================================================================
 
 /** Which procedural shape a species is built from. */
-export type ModelKind = 'mouse' | 'rabbit' | 'bird' | 'hedgehog' | 'squirrel' | 'frog';
+export type ModelKind =
+  | 'mouse'
+  | 'rabbit'
+  | 'bird'
+  | 'hedgehog'
+  | 'squirrel'
+  | 'frog'
+  | 'giraffe'
+  | 'elephant';
 
 /** Low-poly segment count for spheres/cones/cylinders (kept low for facets). */
 export const MODEL_SEGMENTS = 8;
@@ -4361,6 +4624,16 @@ export const SPECIES_MODEL: Record<
   cottontail: { kind: 'rabbit', accent: 0xe0cdb0, earHeightR: 0.5, earRadiusR: 0.16 },
   kangaroorat: { kind: 'mouse', accent: 0xf0dcb0, earHeightR: 0.3, tailLengthR: 0.95, tailRadiusR: 0.08 }, // the long balancing tail
   kitfox: { kind: 'mouse', accent: 0xe0d0b0, earHeightR: 0.6, tailLengthR: 0.8, tailRadiusR: 0.14 }, // oversized ears + a fox brush
+  // §savanna — the SERENGETI models. The 4-legged grazers + the lion reuse the generic 'mouse' quadruped
+  // (scaled + colored — reads as a savanna mammal); the GIRAFFE + ELEPHANT use the NEW dedicated kinds (the
+  // long neck / the trunk + ears — the iconic silhouettes); the ostrich reuses 'bird' (a big flightless bird).
+  lion: { kind: 'mouse', accent: 0x8a6a3a, tailLengthR: 0.7, tailRadiusR: 0.08 }, // a big tawny cat (the mane is the accent tone)
+  zebra: { kind: 'mouse', accent: 0x33312e, tailLengthR: 0.6, tailRadiusR: 0.08 }, // pale equid, dark mane/stripe accent
+  wildebeest: { kind: 'mouse', accent: 0x2e2a26, tailLengthR: 0.7, tailRadiusR: 0.07 }, // dark, a black beard accent
+  gazelle: { kind: 'mouse', accent: 0xf0e8d8, earHeightR: 0.4, tailLengthR: 0.4 }, // fawn, a white belly/rump accent
+  giraffe: { kind: 'giraffe', accent: 0x9a6a3a }, // the long-neck build; brown acacia-patch accent
+  elephant: { kind: 'elephant', accent: 0xe8e0d0 }, // the bulk + trunk + ear build; pale-tusk accent
+  ostrich: { kind: 'bird', accent: 0xe0d8c8, beakLengthR: 0.3, crestHeightR: 0.1 }, // a big flightless bird; pale neck/legs accent
 } as const;
 
 // ===========================================================================
@@ -4448,6 +4721,9 @@ export const MISSION_ORDER: readonly string[] = [
   // §desert — the Sonoran side-quests (a terminal biome → standalone, like the estuary)
   'desert-survey',
   'desert-nocturne',
+  // §savanna — the Serengeti side-quests (a terminal biome → standalone, like the desert)
+  'savanna-survey',
+  'savanna-hunt',
   // §4.1b research challenges (standalone — don't gate unlocks / the win). NON-FORCED
   // conditions (§4.1b-fix): the meadow round-the-clock foragers at NIGHT.
   'research-mouse-night',
@@ -4641,6 +4917,26 @@ export const MISSIONS: Record<string, MissionDef> = {
     requirement: { kind: 'research', species: 'kangaroorat', phase: 'night', count: 1 },
     rewardPoints: 25,
     standalone: true, // the nocturnality-named teaching beat — find them at night (they avoid the heat)
+  },
+  // §savanna — the Serengeti side-quests (the savanna is terminal → standalone). The hunt beat NAMES the
+  // food web: the grazing herds feed by day, the lion hunts them after dark — predator and prey, seen.
+  'savanna-survey': {
+    id: 'savanna-survey',
+    biome: 'savanna',
+    title: 'Onto the Plains',
+    description: 'North of the desert the land opens into a vast sea of golden grass, dotted with flat-topped acacia — the African Savanna, alive with the great herds. Catch 4 animals out on the plains.',
+    requirement: { kind: 'catch-in-biome', biome: 'savanna', count: 4 },
+    rewardPoints: 30,
+    standalone: true, // the savanna is terminal (unlocks nothing) — a hub side-quest, not a gating set
+  },
+  'savanna-hunt': {
+    id: 'savanna-hunt',
+    biome: 'savanna',
+    title: 'The Hunter Wakes',
+    description: 'By day the plains belong to the grazing herds — but after dark the lion goes hunting. The great cat at the top of the food web is out at NIGHT. Come back at night and catch the lion.',
+    requirement: { kind: 'research', species: 'lion', phase: 'night', count: 1 },
+    rewardPoints: 25,
+    standalone: true, // the food-web teaching beat — the apex predator hunts at night
   },
   // §4.1b RESEARCH challenges — standalone applied-knowledge side-quests. The clue
   // describes TRAITS (the player identifies the species from the #45 cards); the
@@ -4878,6 +5174,7 @@ export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, readonly BiomeId[]>> = {
   highlands: ['riverbank', 'moor'], // §4.2 — the 1st BRANCH: the Highlands set unlocks BOTH
   riverbank: ['coast', 'cave'], // §4.2 — the Riverbank forks: the sea (Coast) AND underground (Cave)
   coast: ['tidal', 'desert'], // §4.2 — the saltmarsh/estuary arm; §desert — AND the Sonoran desert (the Coast forks to BOTH, each research-gated by its own unlock-the-X project, like the Riverbank→Coast+Cave)
+  desert: ['savanna'], // §savanna — the Desert's single arm: the African savanna (the desert grades into the great grass plains; research-gated by unlock-the-savanna)
   moor: ['alpine'], // §4.2 — the Moor's first arm: the alpine summit (a single-successor extension; was a terminus)
   tidal: ['estuary'], // §migration — the Tidal's first arm: the open estuary mudflats (was a terminus; research-gated)
 };
@@ -5181,6 +5478,28 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     activityRequirement: { kind: 'catch-in-biome', biome: 'coast', count: 4 },
     reward: { kind: 'biome-access', biome: 'desert' },
   },
+  // §savanna — SAVANNA access (the proven unlock-the-X pattern, like the Desert). cost 0 (win-required →
+  // anti-wall). The desert grades into the great grass plains. Research-gated off the Desert activity.
+  'unlock-the-savanna': {
+    id: 'unlock-the-savanna',
+    area: 'savanna',
+    name: 'Savanna Access',
+    blurb: 'North of the desert the sand gives way to a sea of golden grass — work the desert’s life, and the great African Savanna opens.',
+    cost: 0,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'desert', count: 4 },
+    reward: { kind: 'biome-access', biome: 'savanna' },
+  },
+  // §savanna — the 6th-diet MEAT bait (the proven shellfish-bait pattern: an OPTIONAL sink, never required —
+  // the lion is catchable bait-less, meat just eases it). Study the savanna's hunters → the Field Supply stocks meat.
+  'study-the-savanna-hunters': {
+    id: 'study-the-savanna-hunters',
+    area: 'savanna',
+    name: 'The Hunters',
+    blurb: 'Study the savanna’s great cat until you can match its diet — then the Field Supply stocks meat bait.',
+    cost: 15,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'savanna', count: 4 },
+    reward: { kind: 'bait-access', bait: 'meat' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
@@ -5201,6 +5520,8 @@ export const RESEARCH_ORDER: readonly string[] = [
   'unlock-the-alpine', // §4.2 — the alpine summit (the Moor's first arm; the difficulty ceiling)
   'unlock-the-estuary', // §migration — the open estuary mudflats (the Tidal's first arm; tier 7)
   'unlock-the-desert', // §desert — the Sonoran desert (the Coast's 2nd arm; the first worldwide-by-design biome)
+  'unlock-the-savanna', // §savanna — the African savanna (the Desert's arm; the first worldwide-rebalance biome, R1)
+  'study-the-savanna-hunters', // §savanna — the 6th-diet MEAT bait (OPTIONAL sink, never required)
 ];
 
 // ===========================================================================

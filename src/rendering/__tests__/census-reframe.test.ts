@@ -23,7 +23,7 @@ describe('census reframe — the four chosen word-swaps render (collection → r
     const p = new JournalPanel(document.body);
     p.refresh(createJournal());
     const title = document.querySelector('.journal-title')!.textContent!;
-    expect(title).toContain(`of ${'69'} ${PANEL_LABELS.recordedWord}`); // "… of 62 recorded"
+    expect(title).toContain(`of ${'76'} ${PANEL_LABELS.recordedWord}`); // "… of 62 recorded"
     expect(title).toContain('recorded');
     expect(title).not.toContain('found'); // the collection word is gone
   });

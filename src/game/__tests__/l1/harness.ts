@@ -198,6 +198,15 @@ export function completeDesertGate(j: Journal): void {
   reconcileResearchUnlocks(j);
 }
 
+// §savanna — unlock the AFRICAN SAVANNA (the Desert's arm, research-gated like the Desert). NO knowledge
+// challenge → it gates on the ACTIVITY alone: catch 4 in the Desert (already unlocked by completeDesertGate).
+// cost 0 (anti-wall).
+export function completeSavannaGate(j: Journal): void {
+  startResearch(j, 'unlock-the-savanna');
+  for (let i = 0; i < 4; i++) evaluateResearch(j, ev('cactuswren', 'desert', 'day')); // catch-in-desert ×4
+  reconcileResearchUnlocks(j);
+}
+
 /** Catch the remaining roster (rabbit + the alpine three + the Riverbank four + the Coast five +
  *  the Moor five) so the dex fills for the win. rabbit@night doubles as the second night-forager
  *  challenge. */
@@ -279,4 +288,13 @@ export function catchRemainingSpecies(j: Journal): void {
   applyCatch(j, ev('cottontail', 'desert', 'dusk'));
   applyCatch(j, ev('kangaroorat', 'desert', 'night')); // the bait-less night valve
   applyCatch(j, ev('kitfox', 'desert', 'night'));
+  // §savanna — the Serengeti roster (caught once the savanna is unlocked). The grazing herds by day (the
+  // zebra is the bait-less valve); the LION hunts at night (the new meat diet eases it, never required).
+  applyCatch(j, ev('zebra', 'savanna', 'day')); // the bait-less day valve
+  applyCatch(j, ev('wildebeest', 'savanna', 'day'));
+  applyCatch(j, ev('gazelle', 'savanna', 'day'));
+  applyCatch(j, ev('giraffe', 'savanna', 'day'));
+  applyCatch(j, ev('elephant', 'savanna', 'day')); // 'any'-window — out by day too
+  applyCatch(j, ev('ostrich', 'savanna', 'day'));
+  applyCatch(j, ev('lion', 'savanna', 'night')); // the apex — hunts at night (bait-less, meat eases it)
 }
