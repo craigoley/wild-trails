@@ -42,6 +42,7 @@ import {
   PINE_RENDER,
   HEDGE_RENDER,
   COPSE_RENDER,
+  DESERT_RENDER,
   REED_RENDER,
   ROCK_RENDER,
   SIGN_RENDER,
@@ -505,6 +506,8 @@ export class WorldRenderer {
    *  sim never sees it. Entities draw OVER it, so a saguaro can never hide a catch. Deterministic (a sin-hash,
    *  no RNG) → the L2 capture is stable. */
   private addDesert(): void {
+    const DC = DESERT_RENDER.cactus;
+    const DR = DESERT_RENDER.rock;
     const r = BIOMES.desert.bounds;
     const w = r.maxX - r.minX;
     const d = r.maxY - r.minY;
@@ -513,44 +516,34 @@ export class WorldRenderer {
       return s - Math.floor(s);
     };
 
-    // SAGUARO cacti — sparse 3×3 jittered grid, ~7 columns kept (open desert → legible). Tall green columns.
-    const cactusGridN = 3;
-    const cactusJitter = 0.6;
-    const cactusMinHeight = 5;
-    const cactusMaxHeight = 8;
-    const cactusRadius = 0.4;
-    const cactusColor = 0x4a7c3a;
+    // SAGUARO cacti — sparse jittered grid, ~7 columns kept (open desert → legible). Tall green columns.
     const cacti: { x: number; z: number; h: number }[] = [];
-    for (let gx = 0; gx < cactusGridN; gx++) {
-      for (let gz = 0; gz < cactusGridN; gz++) {
-        const x = r.minX + ((gx + 0.5 + (hash(gx + 1, gz + 1) - 0.5) * cactusJitter) / cactusGridN) * w;
-        const z = r.minY + ((gz + 0.5 + (hash(gx + 7, gz + 3) - 0.5) * cactusJitter) / cactusGridN) * d;
-        // Thin the grid to ~7 saguaros (every cell where the hash clears a gate) — sparse, open desert.
-        if (hash(gx + 17, gz + 19) < 0.2) continue;
-        cacti.push({ x, z, h: cactusMinHeight + hash(gx + 11, gz + 13) * (cactusMaxHeight - cactusMinHeight) });
+    for (let gx = 0; gx < DC.gridN; gx++) {
+      for (let gz = 0; gz < DC.gridN; gz++) {
+        const x = r.minX + ((gx + 0.5 + (hash(gx + 1, gz + 1) - 0.5) * DC.jitter) / DC.gridN) * w;
+        const z = r.minY + ((gz + 0.5 + (hash(gx + 7, gz + 3) - 0.5) * DC.jitter) / DC.gridN) * d;
+        if (hash(gx + 17, gz + 19) < DC.skipThreshold) continue;
+        cacti.push({ x, z, h: DC.minHeight + hash(gx + 11, gz + 13) * (DC.maxHeight - DC.minHeight) });
       }
     }
     const nCactus = cacti.length;
     if (nCactus > 0) {
-      // One InstancedMesh for the trunks; one for the side ARMS (two short arms per saguaro) → 2 draw calls.
-      const trunkGeo = new CylinderGeometry(cactusRadius, cactusRadius, 1, 7);
-      const armGeo = new CylinderGeometry(cactusRadius * 0.8, cactusRadius * 0.8, 1, 7);
-      const cactusMat = new MeshStandardMaterial({ color: cactusColor, roughness: 1 });
+      const trunkGeo = new CylinderGeometry(DC.radius, DC.radius, 1, 7);
+      const armGeo = new CylinderGeometry(DC.radius * 0.8, DC.radius * 0.8, 1, 7);
+      const cactusMat = new MeshStandardMaterial({ color: DC.color, roughness: 1 });
       const trunks = new InstancedMesh(trunkGeo, cactusMat, nCactus);
       const arms = new InstancedMesh(armGeo, cactusMat, nCactus * 2);
       const m = new Matrix4();
-      const armLen = 1.5;
       for (let i = 0; i < nCactus; i++) {
         const c = cacti[i];
         m.makeScale(1, c.h, 1);
         m.setPosition(c.x, c.h / 2, c.z);
         trunks.setMatrixAt(i, m);
-        // Two short upright arms, kicked out to opposite sides at ~60% of the trunk height (a saguaro tell).
         const armY = c.h * 0.6;
-        m.makeScale(1, armLen, 1);
-        m.setPosition(c.x + cactusRadius * 2, armY + armLen / 2, c.z);
+        m.makeScale(1, DC.armLen, 1);
+        m.setPosition(c.x + DC.radius * 2, armY + DC.armLen / 2, c.z);
         arms.setMatrixAt(i * 2, m);
-        m.setPosition(c.x - cactusRadius * 2, armY + armLen / 2, c.z);
+        m.setPosition(c.x - DC.radius * 2, armY + DC.armLen / 2, c.z);
         arms.setMatrixAt(i * 2 + 1, m);
       }
       trunks.instanceMatrix.needsUpdate = true;
@@ -560,30 +553,24 @@ export class WorldRenderer {
     }
 
     // ROCKS / boulders — a few low tan boulders on a sparse jittered grid (offset seeds from the cacti).
-    const rockGridN = 3;
-    const rockJitter = 0.7;
-    const rockMinSize = 0.8;
-    const rockMaxSize = 1.6;
-    const rockColor = 0x9a8a72;
     const rocks: { x: number; z: number; s: number }[] = [];
-    for (let gx = 0; gx < rockGridN; gx++) {
-      for (let gz = 0; gz < rockGridN; gz++) {
-        const x = r.minX + ((gx + 0.5 + (hash(gx + 23, gz + 29) - 0.5) * rockJitter) / rockGridN) * w;
-        const z = r.minY + ((gz + 0.5 + (hash(gx + 31, gz + 37) - 0.5) * rockJitter) / rockGridN) * d;
-        // Thin to ~5 boulders.
-        if (hash(gx + 41, gz + 43) < 0.45) continue;
-        rocks.push({ x, z, s: rockMinSize + hash(gx + 47, gz + 53) * (rockMaxSize - rockMinSize) });
+    for (let gx = 0; gx < DR.gridN; gx++) {
+      for (let gz = 0; gz < DR.gridN; gz++) {
+        const x = r.minX + ((gx + 0.5 + (hash(gx + 23, gz + 29) - 0.5) * DR.jitter) / DR.gridN) * w;
+        const z = r.minY + ((gz + 0.5 + (hash(gx + 31, gz + 37) - 0.5) * DR.jitter) / DR.gridN) * d;
+        if (hash(gx + 41, gz + 43) < DR.skipThreshold) continue;
+        rocks.push({ x, z, s: DR.minSize + hash(gx + 47, gz + 53) * (DR.maxSize - DR.minSize) });
       }
     }
     const nRock = rocks.length;
     if (nRock > 0) {
-      const rockGeo = new IcosahedronGeometry(1, 0); // a low faceted boulder, scaled per instance
-      const rockMat = new MeshStandardMaterial({ color: rockColor, roughness: 1, flatShading: true });
+      const rockGeo = new IcosahedronGeometry(1, 0);
+      const rockMat = new MeshStandardMaterial({ color: DR.color, roughness: 1, flatShading: true });
       const boulders = new InstancedMesh(rockGeo, rockMat, nRock);
       const m = new Matrix4();
       for (let i = 0; i < nRock; i++) {
         const rk = rocks[i];
-        m.makeScale(rk.s, rk.s * 0.6, rk.s); // squash low to the ground (a boulder, not a ball)
+        m.makeScale(rk.s, rk.s * 0.6, rk.s);
         m.setPosition(rk.x, rk.s * 0.3, rk.z);
         boulders.setMatrixAt(i, m);
       }

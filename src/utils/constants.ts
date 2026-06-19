@@ -3247,6 +3247,30 @@ export const COPSE_RENDER = {
   canopyColor: 0x35602c, // fresh hazel-leaf green (lighter + warmer than the conifer)
 } as const;
 
+/** §desert — the SONORAN DESERT scatter: sparse saguaro cacti + low boulders on a deterministic jittered
+ *  grid. Instanced (2–3 draw calls); matrices set once, no per-frame cost. FAR sparser than the pine
+ *  scatter — open desert reads easily (legibility is free). Static; the locked fog veils it until open. */
+export const DESERT_RENDER = {
+  cactus: {
+    gridN: 3,
+    jitter: 0.6,
+    minHeight: 5,
+    maxHeight: 8,
+    radius: 0.4,
+    color: 0x4a7c3a, // saguaro green
+    armLen: 1.5,
+    skipThreshold: 0.2, // hash < this → skip (thins the grid to ~7 saguaros)
+  },
+  rock: {
+    gridN: 3,
+    jitter: 0.7,
+    minSize: 0.8,
+    maxSize: 1.6,
+    color: 0x9a8a72, // warm tan boulder
+    skipThreshold: 0.45, // hash < this → skip (thins to ~5 boulders)
+  },
+} as const;
+
 /** A Field Supply post — a walk-in building (§12 1b-revise). One per biome; it only
  *  exists (renders + opens) once the biome is unlocked. Walking into `radius`
  *  (a proximity zone, NOT a wall — no collision) opens the Field Supply panel. */
