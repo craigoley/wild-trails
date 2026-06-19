@@ -14,11 +14,11 @@ describe('Journal panel — grouped by biome', () => {
   it('renders all 5 biome headers, inside the scroll body, with the overall total kept', () => {
     const p = new JournalPanel(document.body);
     p.refresh(createJournal());
-    expect(document.querySelectorAll('.journal-biome')).toHaveLength(14); // all 14 biomes shown (+ §migration Estuary) (+ §hedgerow Hedgerow + Hazel Copse) (+ Alpine Summit, §4.2)
+    expect(document.querySelectorAll('.journal-biome')).toHaveLength(15); // all 15 biomes (+ §desert Sonoran Desert) shown (+ §migration Estuary) (+ §hedgerow Hedgerow + Hazel Copse) (+ Alpine Summit, §4.2)
     // The grouping lives INSIDE the scroll body — the scroll architecture is untouched.
     expect(document.querySelector('.journal-scroll > .journal-grid > .journal-biome')).not.toBeNull();
     // Overall "X of N" total still in the panel header.
-    expect(document.querySelector('.journal-title')!.textContent).toContain('0 of 62');
+    expect(document.querySelector('.journal-title')!.textContent).toContain('0 of 69');
   });
 
   it('undiscovered species stay "???" (name NOT leaked) under their biome header', () => {

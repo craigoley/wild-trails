@@ -67,7 +67,7 @@ describe('Alpine — the biome (the bare summit; tier 5, low cover, dry; the Moo
     for (const id of ['meadowpipit', 'wheatear', 'goldenplover', 'ringouzel'] as const) {
       expect(SPECIES[id].bait).toBe('insects');
     }
-    expect(SPECIES_ORDER.length).toBe(62); // +5 Alpine +6 §hedgerow chain
+    expect(SPECIES_ORDER.length).toBe(69); // +5 Alpine +6 §hedgerow chain
   });
 
   it('honest climate-pressured status: the snow bunting "nowhere higher"; the declining apex ouzel', () => {
@@ -147,7 +147,7 @@ describe('Alpine — the Moor extension + the #92 gate (additive; species+bait, 
     expect(BIOME_SET_UNLOCK.moor).toEqual(['alpine']); // additive — the Moor was terminal
     expect(isResearchGatedUnlock('alpine')).toBe(true);
     // ⚠️ Every OTHER link unchanged (the earlier forks intact — the branch is purely additive):
-    expect(BIOME_SET_UNLOCK.coast).toEqual(['tidal']);
+    expect(BIOME_SET_UNLOCK.coast).toEqual(['tidal', 'desert']);
     expect(BIOME_SET_UNLOCK.highlands).toEqual(['riverbank', 'moor']);
     expect(BIOME_SET_UNLOCK.riverbank).toEqual(['coast', 'cave']);
     // The Moor has no mission SET of its own (the Moor/Cave pattern) → its set is trivially complete.

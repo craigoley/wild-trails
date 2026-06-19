@@ -189,6 +189,15 @@ export function completeEstuaryGate(j: Journal): void {
   reconcileResearchUnlocks(j);
 }
 
+// §desert — unlock the SONORAN DESERT (the Coast's 2nd arm, research-gated like the Tidal/Cave). NO
+// knowledge challenge (the non-forced slots are spent) → it gates on the ACTIVITY alone: catch 4 on the
+// Coast. The Coast source is already unlocked by completeCoastGate. cost 0 (anti-wall).
+export function completeDesertGate(j: Journal): void {
+  startResearch(j, 'unlock-the-desert');
+  for (let i = 0; i < 4; i++) evaluateResearch(j, ev('linnet', 'coast', 'day')); // catch-in-coast ×4
+  reconcileResearchUnlocks(j);
+}
+
 /** Catch the remaining roster (rabbit + the alpine three + the Riverbank four + the Coast five +
  *  the Moor five) so the dex fills for the win. rabbit@night doubles as the second night-forager
  *  challenge. */
@@ -261,4 +270,13 @@ export function catchRemainingSpecies(j: Journal): void {
   applyCatch(j, ev('sanderling', 'estuary', 'day'));
   applyCatch(j, ev('shelduck', 'estuary', 'day')); // the resident valve
   applyCatch(j, ev('ringedplover', 'estuary', 'day'));
+  // §desert — the Sonoran roster (caught once the desert is unlocked). The day-active hold the floored
+  // midday, the nocturnal/crepuscular cast the cooler hours — the time lever is spawn-cadence, not catch.
+  applyCatch(j, ev('cactuswren', 'desert', 'day')); // the bait-less day valve
+  applyCatch(j, ev('roadrunner', 'desert', 'day'));
+  applyCatch(j, ev('deserttortoise', 'desert', 'day'));
+  applyCatch(j, ev('jackrabbit', 'desert', 'dawn'));
+  applyCatch(j, ev('cottontail', 'desert', 'dusk'));
+  applyCatch(j, ev('kangaroorat', 'desert', 'night')); // the bait-less night valve
+  applyCatch(j, ev('kitfox', 'desert', 'night'));
 }
