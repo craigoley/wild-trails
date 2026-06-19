@@ -103,18 +103,22 @@ describe('Plan #9 — new species spawn gating (biome + time of day)', () => {
   });
 });
 
-describe('Plan #9 — difficulty ordering across all 10 species', () => {
-  it('strictly descends easy -> hard, Wetland below the Woodland band', () => {
+describe('Plan #9 — difficulty ordering + the Wetland anti-lockout valve', () => {
+  it('the early HARD species strictly descend; the Wetland has a VALVE (mallard) + its hard catch (frog)', () => {
+    // §quick-wins (balance, per the gameplay-arc review #162): the mallard is now the Wetland's
+    // anti-lockout VALVE (0.50, the proven bait-less valve rate, like dunlin/snow-bunting), so the
+    // Wetland is no longer bait-gated — it's NO LONGER strictly below the Woodland band. The frog stays
+    // the harder Wetland catch (below the woodland robin). mallard is dropped from the descending ramp
+    // (it's a valve, not the floor); the hard species still descend.
     const order: SpeciesId[] = [
       'hedgehog', 'fieldmouse', 'rabbit', 'redsquirrel',
-      'badger', 'roedeer', 'quail', 'robin', 'mallard', 'frog',
+      'badger', 'roedeer', 'quail', 'robin', 'frog',
     ];
     for (let i = 0; i < order.length - 1; i++) {
       expect(SPECIES[order[i]].baseCatchRate).toBeGreaterThan(SPECIES[order[i + 1]].baseCatchRate);
     }
-    // Wetland (mallard, frog) below the woodland hardest (robin 0.25).
-    expect(SPECIES.mallard.baseCatchRate).toBeLessThan(SPECIES.robin.baseCatchRate);
-    expect(SPECIES.frog.baseCatchRate).toBeLessThan(SPECIES.robin.baseCatchRate);
+    expect(SPECIES.mallard.baseCatchRate).toBeGreaterThanOrEqual(0.5); // the Wetland anti-lockout valve
+    expect(SPECIES.frog.baseCatchRate).toBeLessThan(SPECIES.robin.baseCatchRate); // the frog stays the hard catch
     expect(SPECIES.frog.baseCatchRate).toBeGreaterThan(0); // catchable, not clamped out
   });
 });

@@ -1081,7 +1081,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
   },
   turnstone: {
     fieldNote:
-      'A stout little wader of the tideline — the turnstone flips over seaweed and stones for sandhoppers and small invertebrates by day.',
+      'A stout little shorebird of the tideline — the turnstone flips over seaweed and stones for sandhoppers and small invertebrates by day.',
     behaviour:
       'Works the strandline in busy, restless parties, levering over weed and shells with its short strong bill to grab what hides beneath.',
     status: 'Common on rocky and sandy shores in winter — a hardy, adaptable little traveler.',
@@ -1126,7 +1126,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'The voice of the moor — the curlew probes the soft ground for insects and worms by day with its long downcurved bill. Its bubbling call IS the upland spring.',
     behaviour:
-      'One of the largest waders, streaky brown with a huge sickle bill; it rises with a haunting rippling cry and circles wide over its nesting ground.',
+      'One of the largest shorebirds, streaky brown with a huge sickle bill; it rises with a haunting rippling cry and circles wide over its nesting ground.',
     status: 'Near-threatened and falling fast — and these uplands are a global stronghold, so the curlew is the upland’s biggest single stake.',
   },
   reddeer: {
@@ -1213,9 +1213,9 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
   // Tidal/Saltmarsh (§4.2) — HONEST status; the real estuary-wader stakes (declines) + the avocet recovery.
   dunlin: {
     fieldNote:
-      'The commonest small wader of the mud — the dunlin probes the wet flats for tiny worms and insects by day, in restless feeding flocks. Watch the tideline.',
+      'The commonest small shorebird of the mud — the dunlin probes the wet flats for tiny worms and insects by day, in restless feeding flocks. Watch the tideline.',
     behaviour:
-      'A sparrow-sized wader with a slightly down-curved bill; great flocks wheel low over the estuary as one, flashing dark-then-pale, a black belly-patch in summer.',
+      'A sparrow-sized shorebird with a slightly down-curved bill; great flocks wheel low over the estuary as one, flashing dark-then-pale, a black belly-patch in summer.',
     status: 'Common on the winter mud, but declining as a breeder where the wet uplands and marshes it nests on are drained.',
   },
   oystercatcher: {
@@ -1243,7 +1243,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'The smoke over the mudflats — the knot probes the estuary mud for tiny shellfish and molluscs by day, in flocks tens of thousands strong. The shore’s great spectacle.',
     behaviour:
-      'A dumpy grey wader that gathers in vast tight flocks, wheeling and twisting as one smoke-like cloud over the falling tide; it flies from the high Arctic to winter here.',
+      'A dumpy gray shorebird that gathers in vast tight flocks, wheeling and twisting as one smoke-like cloud over the falling tide; it flies from the high Arctic to winter here.',
     status: '⚠️ Near-threatened and declining — the knot depends on a handful of estuaries, so the loss of any one of them hits the whole flyway.',
   },
   // Alpine/Montane (§4.2) — HONEST status; the real summit stakes: a fauna squeezed upward by a warming
@@ -1334,7 +1334,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'A long, slightly up-tilted bill probes the open mud deep for lugworms and shellfish by day. The headline migrant of the flats — find it among the winter throng on the bare estuary.',
     behaviour:
-      'A tall, long-legged wader that feeds head-down across the falling tide, then gathers into great roosts as the water returns — wary, and quick to lift in a wheeling pack.',
+      'A tall, long-legged shorebird that feeds head-down across the falling tide, then gathers into great roosts as the water returns — wary, and quick to lift in a wheeling pack.',
     status: '⚠️ Near-threatened — the bar-tailed godwit flies in from the Arctic tundra to winter here; it depends utterly on undisturbed estuary mud, and the flyway’s stopovers are being lost.',
   },
   greyplover: {
@@ -1342,7 +1342,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'A stocky silver-gray plover that runs, stops and tilts to seize a worm, working the open mud alone and well-spaced by day. A high-Arctic bird, here only in the cold months.',
     behaviour:
       'It feeds by sight in the classic plover run-and-pause, holding a feeding territory on the flat and giving a plaintive three-note whistle; in flight a black “armpit” marks it out.',
-    status: 'A high-Arctic breeder that winters on these estuaries — a species of conservation concern; like all the flyway waders it rises or falls with the health of the mud it depends on.',
+    status: 'A high-Arctic breeder that winters on these estuaries — a species of conservation concern; like all the flyway shorebirds it rises or falls with the health of the mud it depends on.',
   },
   wigeon: {
     fieldNote:
@@ -1360,9 +1360,9 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
   },
   sanderling: {
     fieldNote:
-      'A small, pale wader that chases the wave-edge on twinkling black legs, snatching tiny prey from the wet sand as the water falls back. Watch the tide-line by day for the clockwork runner.',
+      'A small, pale shorebird that chases the wave-edge on twinkling black legs, snatching tiny prey from the wet sand as the water falls back. Watch the tide-line by day for the clockwork runner.',
     behaviour:
-      'The most restless of the small waders — it sprints in and out with each wash of the tide in a busy, mechanical run, then bursts up into a fast low flock along the shore.',
+      'The most restless of the small shorebirds — it sprints in and out with each wash of the tide in a busy, mechanical run, then bursts up into a fast low flock along the shore.',
     status: 'A long-distance migrant from the high Arctic, wintering on open sandy shores — a species of conservation concern; it needs undisturbed beaches and flats, increasingly squeezed by people and the rising sea.',
   },
   shelduck: {
@@ -1377,7 +1377,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'A small, neat plover with a black collar and a stubby orange-and-black bill, running and pausing on the shingle and the mud-edge by day. A resident of the shore, here all year round.',
     behaviour:
       'It feeds in the plover run-and-pause and, at the nest, leads an intruder away with a broken-wing display dragged across the open ground; loose flocks gather on the flats in winter.',
-    status: '⚠️ A declining resident and passage wader — disturbance of its open shingle nesting shores has pushed it onto the red list, even as it holds on along the quieter estuary edges.',
+    status: '⚠️ A declining resident and passage shorebird — disturbance of its open shingle nesting shores has pushed it onto the red list, even as it holds on along the quieter estuary edges.',
   },
 };
 
@@ -1561,7 +1561,10 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     detectionRadius: 4.2,
     activityWindow: 'day',
     tier: 3,
-    baseCatchRate: 0.24,
+    // The Wetland VALVE (0.50 → ~0.59 bait-less, the proven anti-lockout valve rate, like the
+    // dunlin/snow-bunting/twite): a common, calm dabbling duck — catchable bait-less so the Wetland is
+    // never a bait-gated wall (the frog stays the harder catch). Still below the Meadow valves (the ramp holds).
+    baseCatchRate: 0.5,
     bait: 'greens',
     color: 0x2f5d3a,
     size: 0.5,
@@ -1590,20 +1593,21 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     // reach; the dip-net (B1) is the answer. (The mallard bursts into flight instead.)
     fleesToWater: true,
   },
-  // --- Highlands (tier 4 — alpine high-tops, below the Wetland floor 0.20) ------
+  // --- Highlands (tier 4 — alpine high-tops) ------
   ptarmigan: {
     id: 'ptarmigan',
     gait: 'bird',
     displayName: 'Rock Ptarmigan',
     biome: 'highlands',
     spawnWeight: 5,
-    // A ground grouse — relies on camouflage, then flushes; moderate flee, but a
-    // tier-4 catch rate (0.18, below the frog's 0.20).
+    // The Highlands VALVE (0.50 → ~0.59 bait-less, the proven anti-lockout valve rate): a calm ground
+    // grouse that relies on camouflage then flushes — catchable bait-less so the Highlands access gate is
+    // never a bait-gated wall (the mountain hare + dotterel stay the hard catches). Still below the Meadow valves.
     baseFleeSpeed: 4.2,
     detectionRadius: 4.0,
     activityWindow: 'day',
     tier: 4,
-    baseCatchRate: 0.18,
+    baseCatchRate: 0.5,
     bait: 'greens',
     color: 0xb8b4a4,
     size: 0.36,
@@ -1816,7 +1820,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xb5733f,
     size: 0.28,
     profile:
-      'A stout tideline wader that flips over seaweed and stones with its short strong bill to grab the sandhoppers and small invertebrates hiding beneath.',
+      'A stout tideline shorebird that flips over seaweed and stones with its short strong bill to grab the sandhoppers and small invertebrates hiding beneath.',
   },
   herringgull: {
     id: 'herringgull',
@@ -1926,7 +1930,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xa88a5a,
     size: 0.42,
     profile:
-      'The voice of the moor — one of the largest waders, probing the soft ground with a huge sickle bill and rising with a haunting bubbling cry. Near-threatened, and these uplands are its global stronghold.',
+      'The voice of the moor — one of the largest shorebirds, probing the soft ground with a huge sickle bill and rising with a haunting bubbling cry. Near-threatened, and these uplands are its global stronghold.',
   },
   reddeer: {
     id: 'reddeer',
@@ -2150,7 +2154,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x8a7a68,
     size: 0.24,
     profile:
-      'The commonest small wader of the mud, probing the wet flats for worms and insects in restless flocks. Common in winter, but declining where its wet nesting grounds are drained.',
+      'The commonest small shorebird of the mud, probing the wet flats for worms and insects in restless flocks. Common in winter, but declining where its wet nesting grounds are drained.',
   },
   oystercatcher: {
     id: 'oystercatcher',
@@ -2219,7 +2223,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0x9a958a,
     size: 0.3,
     profile:
-      'The smoke over the mudflats — a gray wader in flocks tens of thousands strong, probing for tiny shellfish. ⚠️ Near-threatened; it depends on a handful of estuaries, so losing one hits all.',
+      'The smoke over the mudflats — a gray shorebird in flocks tens of thousands strong, probing for tiny shellfish. ⚠️ Near-threatened; it depends on a handful of estuaries, so losing one hits all.',
     seasonTag: 'winter-visitor', // §4.6 D1b — flies from the high Arctic to winter here (its profile says so); scarce-not-gone in summer
   },
   // --- Alpine/Montane (§4.2) — the difficulty CEILING. Pure DATA: difficulty = tuning EXISTING knobs
@@ -2447,7 +2451,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xa6815a, // warm russet-brown winter wader
     size: 0.34,
     profile:
-      'A tall wader with a long, slightly up-tilted bill, probing the open mud for worms and shellfish — the headline Arctic migrant of the flats. ⚠️ Near-threatened; it depends on undisturbed estuary mud.',
+      'A tall shorebird with a long, slightly up-tilted bill, probing the open mud for worms and shellfish — the headline Arctic migrant of the flats. ⚠️ Near-threatened; it depends on undisturbed estuary mud.',
     seasonTag: 'winter-visitor', // §migration — flies from the Arctic tundra to winter here; scarce-not-gone in summer
   },
   greyplover: {
@@ -2519,7 +2523,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     color: 0xdcdcd6, // very pale, almost white
     size: 0.24,
     profile:
-      'A small, pale wader that chases the wave-edge on twinkling black legs — a long-distance migrant from the high Arctic. A species of conservation concern; it needs undisturbed shores, squeezed by people and the rising sea.',
+      'A small, pale shorebird that chases the wave-edge on twinkling black legs — a long-distance migrant from the high Arctic. A species of conservation concern; it needs undisturbed shores, squeezed by people and the rising sea.',
     seasonTag: 'winter-visitor', // §migration — a high-Arctic migrant wintering on open shores; scarce-not-gone in summer
   },
   // §migration — the RESIDENTS (NO seasonTag → flat 1.0): the load-bearing stragglers who hold the bare
@@ -4509,7 +4513,7 @@ export const MISSIONS: Record<string, MissionDef> = {
     biome: 'coast',
     title: 'Research: The Stone-Turner',
     description:
-      'A stout little shore wader that flips over seaweed and stones for the invertebrates beneath by day. Identify it from your field guide, then prove you know its table: catch one over INSECT bait.',
+      'A stout little shorebird that flips over seaweed and stones for the invertebrates beneath by day. Identify it from your field guide, then prove you know its table: catch one over INSECT bait.',
     requirement: { kind: 'research', species: 'turnstone', bait: 'insects', count: 1 },
     rewardPoints: RESEARCH.rewardPoints,
     creditReward: RESEARCH.creditReward,
@@ -4525,7 +4529,7 @@ export const MISSIONS: Record<string, MissionDef> = {
     biome: 'tidal',
     title: 'Research: The Smoke over the Mud',
     description:
-      'A gray wader of the great flocks, probing the estuary mud for tiny shellfish by day — it winters here in tens of thousands from the high Arctic. Identify it from your field guide, then prove you know its table: catch one over SHELLFISH bait.',
+      'A gray shorebird of the great flocks, probing the estuary mud for tiny shellfish by day — it winters here in tens of thousands from the high Arctic. Identify it from your field guide, then prove you know its table: catch one over SHELLFISH bait.',
     requirement: { kind: 'research', species: 'knot', bait: 'shellfish', count: 1 },
     rewardPoints: RESEARCH.rewardPoints,
     creditReward: RESEARCH.creditReward,
@@ -5053,7 +5057,7 @@ export const ONBOARDING = {
   beatSec: 4,
   prompts: {
     move: 'Drag to roam — or use WASD / arrow keys.',
-    approach: 'An animal is about! Move closer to it.',
+    approach: 'An animal is nearby! Move closer to it.',
     catch: 'In range — press CATCH (or Space) to try a catch.',
     journal: 'Caught one! Open your Field Journal (J / 📓) to see your find.',
     missions: 'Missions show you what to do next (M / 🎯).',
