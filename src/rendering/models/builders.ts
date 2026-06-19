@@ -155,6 +155,10 @@ export function buildAnimalModel(def: SpeciesDef): Group {
       return buildHedgehog(def);
     case 'frog':
       return buildFrog(def);
+    case 'giraffe':
+      return buildGiraffe(def);
+    case 'elephant':
+      return buildElephant(def);
     default:
       return buildQuadruped(def); // mouse + rabbit + squirrel share the quadruped base
   }
@@ -340,6 +344,136 @@ function buildHedgehog(def: SpeciesDef): Group {
     // Point the cone outward along (dx, dy, dz).
     spike.lookAt(spike.position.x + dx, spike.position.y + dy, spike.position.z + dz);
     spike.rotateX(Math.PI / 2); // cones point +y; align to lookAt's +z
+  }
+  return g;
+}
+
+/** A GIRAFFE: the quadruped base (a compact body on four TALL legs) + a LONG upward-angled NECK rising
+ *  from the shoulders to a small head with two tiny ossicone bumps. The neck is the whole silhouette —
+ *  it reads unmistakably tall-and-long-necked from the iso camera. ⚠️ The OVERALL height is kept legible
+ *  (tall but not absurd): the long neck gives the read, NOT a huge body, so the iso framing still holds.
+ *  Foot-origin (lowest point y=0) + facing +z, like every builder. */
+function buildGiraffe(def: SpeciesDef): Group {
+  const B = ANIMAL_MODEL_BASE;
+  const cfg = SPECIES_MODEL[def.id];
+  const s = def.size;
+  const g = new Group();
+  const body = flatMat(def.color);
+  const accent = flatMat(cfg.accent); // the darker patch/mane + ossicone tone
+
+  // A compact body on TALL legs (the giraffe stands high; the legs do half the height, the neck the rest).
+  const bodyR = s * B.bodyRadiusR * 0.85; // a touch slimmer than the generic quadruped
+  const bodyLen = s * B.bodyLengthR;
+  const legH = s * B.legHeightR * 2.4; // the long legs (tall stance)
+  const headR = s * B.headRadiusR * 0.55; // a small head atop the long neck
+  const bodyY = legH + bodyR;
+
+  // Body capsule, laid along z (the y-axis capsule rotated 90°).
+  const cyl = Math.max(0.001, bodyLen - bodyR * 2);
+  const bodyMesh = add(g, new CapsuleGeometry(bodyR, cyl, 3, SEG), body, 0, bodyY, 0);
+  bodyMesh.rotation.x = Math.PI / 2;
+
+  // Four tall legs at the body corners.
+  const legZ = (bodyLen / 2) * B.legInsetR;
+  const legX = bodyR * 0.8;
+  const legR = s * B.legRadiusR * 0.7; // slender legs
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      add(g, new CylinderGeometry(legR, legR, legH, SEG), body, sx * legX, legH / 2, sz * legZ);
+    }
+  }
+
+  // The LONG NECK — a tall cylinder rising from the shoulders (+z, front), angled upward-and-forward.
+  // It pivots at the shoulder and offsets along its own +y so the base seats on the body and the top
+  // carries the head. The forward tilt is the unmistakable giraffe lean.
+  const neckLen = s * B.bodyLengthR * 1.5; // LONG — the silhouette's whole point
+  const neckR = s * B.bodyRadiusR * 0.3;
+  const neckTilt = -0.5; // radians — lean the neck forward (+z) as it rises
+  const neckPivot = new Group();
+  neckPivot.position.set(0, bodyY + bodyR * 0.4, bodyLen * 0.42); // at the front shoulders
+  neckPivot.rotation.x = neckTilt;
+  add(neckPivot, new CylinderGeometry(neckR, neckR * 1.3, neckLen, SEG), body, 0, neckLen / 2, 0);
+  g.add(neckPivot);
+
+  // The small head at the neck's TOP (a child of the pivot, so it rides the neck's tilt). A short
+  // muzzle juts forward (+z in the neck's frame). Two tiny ossicone bumps (capped cones) on top.
+  const headGroup = new Group();
+  headGroup.position.set(0, neckLen, 0);
+  add(headGroup, new SphereGeometry(headR, SEG, SEG), body, 0, 0, 0);
+  const muzzle = add(headGroup, new ConeGeometry(headR * 0.55, headR * 1.4, SEG), accent, 0, -headR * 0.1, headR * 0.9);
+  muzzle.rotation.x = Math.PI / 2; // point forward (+z)
+  for (const sx of [-1, 1]) {
+    add(headGroup, new ConeGeometry(headR * 0.18, headR * 0.6, 5), accent, sx * headR * 0.35, headR * 0.85, 0);
+  }
+  neckPivot.add(headGroup);
+  return g;
+}
+
+/** An ELEPHANT: a BULKY rounded body on four sturdy legs + a downward-angled TRUNK from the head + two
+ *  big flat EARS (flattened discs) at the head sides. The bulk + trunk + ears read unmistakably from the
+ *  iso camera. ⚠️ Kept legible (big but not towering) — the WIDTH/bulk carries the read, not height, so
+ *  the iso framing still holds. Foot-origin (lowest point y=0) + facing +z, like every builder. */
+function buildElephant(def: SpeciesDef): Group {
+  const B = ANIMAL_MODEL_BASE;
+  const cfg = SPECIES_MODEL[def.id];
+  const s = def.size;
+  const g = new Group();
+  const body = flatMat(def.color);
+  const accent = flatMat(cfg.accent); // tusk/ear-inner tone
+
+  // A BULKY body — a big rounded sphere stretched along z, sat on sturdy legs.
+  const bodyR = s * B.bodyRadiusR * 1.25; // big and round
+  const legH = s * B.legHeightR * 1.15; // sturdy, a bit taller than the generic quadruped
+  const headR = s * B.headRadiusR * 0.9;
+  const bodyY = legH + bodyR * 0.9;
+
+  const bodyMesh = add(g, new SphereGeometry(bodyR, SEG, SEG), body, 0, bodyY, 0);
+  bodyMesh.scale.set(1.1, 1.0, 1.5); // wide + long → the bulk
+
+  // Four sturdy pillar legs at the body corners (thick cylinders — the elephant's columns).
+  const legZ = bodyR * 0.85;
+  const legX = bodyR * 0.7;
+  const legR = s * B.legRadiusR * 1.6; // thick pillars
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      add(g, new CylinderGeometry(legR, legR, legH, SEG), body, sx * legX, legH / 2, sz * legZ);
+    }
+  }
+
+  // The head, low and broad at the front (+z), seated against the body.
+  const headY = bodyY + bodyR * 0.15;
+  const headZ = bodyR * 1.15;
+  add(g, new SphereGeometry(headR, SEG, SEG), body, 0, headY, headZ);
+
+  // The TRUNK — stacked cones drooping DOWN-and-forward from the head front (tapering toward the tip).
+  // A few segments give the curved droop without per-frame work; each tilts a little more downward.
+  const trunkSegs = 4;
+  const trunkSegLen = s * B.snoutLengthR * 0.9;
+  let tz = headZ + headR * 0.7;
+  let ty = headY - headR * 0.2;
+  for (let i = 0; i < trunkSegs; i++) {
+    const t = i / trunkSegs;
+    const segR = headR * (0.34 - t * 0.18); // taper to a thin tip
+    const seg = add(g, new CylinderGeometry(segR, segR * 0.8, trunkSegLen, SEG), body, 0, ty, tz);
+    seg.rotation.x = Math.PI / 2 + (0.5 + t * 0.7); // start near-horizontal, droop more each segment
+    // advance the next segment along the droop (forward + increasingly down).
+    const drop = trunkSegLen * (0.5 + t * 0.5);
+    ty -= drop * 0.7;
+    tz += drop * 0.45;
+  }
+
+  // Two big flat EARS — flattened wide discs at the head sides, angled back a touch (the elephant fan).
+  const earR = headR * 1.3;
+  for (const sx of [-1, 1]) {
+    const ear = add(g, new SphereGeometry(earR, SEG, SEG), body, sx * headR * 1.0, headY + headR * 0.1, headZ - headR * 0.3);
+    ear.scale.set(0.18, 1.05, 1.0); // flat (a thin disc) + tall/broad — the big flapping ear
+    ear.rotation.y = sx * -0.35; // fan slightly back
+  }
+
+  // Two short tusks (accent) angling down-and-forward from below the head.
+  for (const sx of [-1, 1]) {
+    const tusk = add(g, new ConeGeometry(headR * 0.12, headR * 1.1, SEG), accent, sx * headR * 0.45, headY - headR * 0.45, headZ + headR * 0.5);
+    tusk.rotation.x = Math.PI / 2 + 0.5; // point forward + a little down
   }
   return g;
 }

@@ -14,6 +14,7 @@ import {
   completeAlpineGate,
   completeEstuaryGate,
   completeDesertGate,
+  completeSavannaGate,
   catchRemainingSpecies,
 } from './l1/harness';
 import { createJournal } from '../../state/Journal';
@@ -47,6 +48,7 @@ function realisticWin() {
   completeAlpineGate(j);
   completeEstuaryGate(j);
   completeDesertGate(j); // §desert — the Coast's 2nd arm (the first worldwide-by-design biome)
+  completeSavannaGate(j); // §savanna — the Desert's arm (the first worldwide-rebalance biome, R1)
   catchRemainingSpecies(j);
   return j;
 }

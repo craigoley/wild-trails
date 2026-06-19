@@ -67,7 +67,7 @@ describe('Alpine — the biome (the bare summit; tier 5, low cover, dry; the Moo
     for (const id of ['meadowpipit', 'wheatear', 'goldenplover', 'ringouzel'] as const) {
       expect(SPECIES[id].bait).toBe('insects');
     }
-    expect(SPECIES_ORDER.length).toBe(69); // +5 Alpine +6 §hedgerow chain
+    expect(SPECIES_ORDER.length).toBe(76); // +5 Alpine +6 §hedgerow chain
   });
 
   it('honest climate-pressured status: the snow bunting "nowhere higher"; the declining apex ouzel', () => {

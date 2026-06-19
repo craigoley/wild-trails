@@ -15,6 +15,7 @@ import {
   completeAlpineGate,
   completeEstuaryGate,
   completeDesertGate,
+  completeSavannaGate,
   catchRemainingSpecies,
 } from './harness';
 import { createJournal } from '../../../state/Journal';
@@ -155,6 +156,11 @@ describe('L1 Guard 3 — progression-to-win (the unlock chain + the win fires)',
     expect(j.unlockedBiomes).not.toContain('desert');
     completeDesertGate(j);
     expect(j.unlockedBiomes).toContain('desert');
+    // §savanna — the AFRICAN SAVANNA (the first worldwide-rebalance biome, R1) is the Desert's arm,
+    // research-gated by its OWN unlock-the-savanna project (catch-in-desert ×4; NO knowledge challenge).
+    expect(j.unlockedBiomes).not.toContain('savanna');
+    completeSavannaGate(j);
+    expect(j.unlockedBiomes).toContain('savanna');
     // Fill the dex (every roster, incl. the Tidal five + the Alpine five + the Estuary seven) -> the win
     // fires. WIN REACHABLE through every research-gated biome (the cardinal anti-wall pin: no impossible state).
     catchRemainingSpecies(j);

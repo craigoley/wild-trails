@@ -43,6 +43,7 @@ import {
   HEDGE_RENDER,
   COPSE_RENDER,
   DESERT_RENDER,
+  SAVANNA_RENDER,
   REED_RENDER,
   ROCK_RENDER,
   SIGN_RENDER,
@@ -162,6 +163,7 @@ export class WorldRenderer {
     this.addHedgerow(); // §hedgerow — the hedge lining the corridor (a walk-through lane kept clear)
     this.addCopse(); // §hedgerow — the isolated hazel stand (a clearing kept clear)
     this.addDesert(); // §desert — the sparse Sonoran scatter (instanced; the locked fog veils it until open)
+    this.addSavanna(); // §savanna — the sparse acacia scatter (instanced; the locked fog veils it until open)
     this.addGrid(world);
 
     // The locked-region visuals — built from the current unlock state, and
@@ -577,6 +579,62 @@ export class WorldRenderer {
       boulders.instanceMatrix.needsUpdate = true;
       this.group.add(boulders);
     }
+  }
+
+  /** §savanna — the AFRICAN SAVANNA scatter: a SPARSE deterministic jittered grid of zero-asset acacia trees
+   *  across the Savanna cell — each a thin tall trunk topped by a WIDE FLAT canopy disc (the umbrella crown:
+   *  the unmistakable savanna silhouette). Built as TWO InstancedMeshes (trunks + canopies → ~2 draw calls;
+   *  matrices set once, no per-frame cost). Like the desert, FAR sparser than the pine scatter — the open
+   *  plain reads easily (legibility is free), so ~5–9 trees FRAME the play. Static like the desert; the locked
+   *  fog veils it until the savanna opens. ⚠️ ATMOSPHERE ONLY — not cover, not collision; the sim never sees
+   *  it. Entities draw OVER it, so an acacia can never hide a catch. Deterministic (a sin-hash, no RNG) → the
+   *  L2 capture is stable. */
+  private addSavanna(): void {
+    const S = SAVANNA_RENDER;
+    const r = BIOMES.savanna.bounds;
+    const w = r.maxX - r.minX;
+    const d = r.maxY - r.minY;
+    const hash = (a: number, b: number): number => {
+      const s = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
+      return s - Math.floor(s);
+    };
+
+    // ACACIAS — a sparse jittered grid, ~5–9 trees kept (open plain → legible). Tall thin trunks.
+    const trees: { x: number; z: number; h: number }[] = [];
+    for (let gx = 0; gx < S.gridN; gx++) {
+      for (let gz = 0; gz < S.gridN; gz++) {
+        const x = r.minX + ((gx + 0.5 + (hash(gx + 1, gz + 1) - 0.5) * S.jitter) / S.gridN) * w;
+        const z = r.minY + ((gz + 0.5 + (hash(gx + 7, gz + 3) - 0.5) * S.jitter) / S.gridN) * d;
+        if (hash(gx + 17, gz + 19) < S.skipThreshold) continue; // thin the grid (open plain)
+        trees.push({ x, z, h: S.minHeight + hash(gx + 11, gz + 13) * (S.maxHeight - S.minHeight) });
+      }
+    }
+    const n = trees.length;
+    if (n === 0) return;
+
+    // Unit-height trunk + a flat canopy disc, scaled per instance → two draw calls for the grove.
+    const trunkGeo = new CylinderGeometry(S.trunkRadius, S.trunkRadius, 1, 6);
+    const canopyGeo = new CylinderGeometry(S.canopyRadius, S.canopyRadius, S.canopyThickness, 8); // a WIDE FLAT umbrella disc
+    const trunkMat = new MeshStandardMaterial({ color: S.trunkColor, roughness: 1 });
+    const canopyMat = new MeshStandardMaterial({ color: S.canopyColor, roughness: 1, flatShading: true });
+    const trunks = new InstancedMesh(trunkGeo, trunkMat, n);
+    const canopies = new InstancedMesh(canopyGeo, canopyMat, n);
+    const m = new Matrix4();
+    for (let i = 0; i < n; i++) {
+      const t = trees[i];
+      const trunkH = t.h * S.trunkFraction;
+      m.makeScale(1, trunkH, 1);
+      m.setPosition(t.x, trunkH / 2, t.z);
+      trunks.setMatrixAt(i, m);
+      // The flat umbrella crown sits ATOP the trunk (unit-thickness geo → no y-scale; keep it flat).
+      m.makeScale(1, 1, 1);
+      m.setPosition(t.x, trunkH + S.canopyThickness / 2, t.z);
+      canopies.setMatrixAt(i, m);
+    }
+    trunks.instanceMatrix.needsUpdate = true;
+    canopies.instanceMatrix.needsUpdate = true;
+    this.group.add(trunks);
+    this.group.add(canopies);
   }
 
   /** §4.6 D1c-i — register a cover material for the seasonal re-tint, but ONLY for a FOLIAGE biome
