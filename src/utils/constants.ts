@@ -1243,7 +1243,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     fieldNote:
       'The smoke over the mudflats — the knot probes the estuary mud for tiny shellfish and molluscs by day, in flocks tens of thousands strong. The shore’s great spectacle.',
     behaviour:
-      'A dumpy grey wader that gathers in vast tight flocks, wheeling and twisting as one smoke-like cloud over the falling tide; it flies from the high Arctic to winter here.',
+      'A dumpy gray wader that gathers in vast tight flocks, wheeling and twisting as one smoke-like cloud over the falling tide; it flies from the high Arctic to winter here.',
     status: '⚠️ Near-threatened and declining — the knot depends on a handful of estuaries, so the loss of any one of them hits the whole flyway.',
   },
   // Alpine/Montane (§4.2) — HONEST status; the real summit stakes: a fauna squeezed upward by a warming
@@ -5053,7 +5053,7 @@ export const ONBOARDING = {
   beatSec: 4,
   prompts: {
     move: 'Drag to roam — or use WASD / arrow keys.',
-    approach: 'An animal is about! Move closer to it.',
+    approach: 'An animal is nearby! Move closer to it.',
     catch: 'In range — press CATCH (or Space) to try a catch.',
     journal: 'Caught one! Open your Field Journal (J / 📓) to see your find.',
     missions: 'Missions show you what to do next (M / 🎯).',
