@@ -160,6 +160,7 @@ export class WorldRenderer {
     this.addPineForest(); // §4.2 — the dense pine scatter (instanced; the locked fog veils it until open)
     this.addHedgerow(); // §hedgerow — the hedge lining the corridor (a walk-through lane kept clear)
     this.addCopse(); // §hedgerow — the isolated hazel stand (a clearing kept clear)
+    this.addDesert(); // §desert — the sparse Sonoran scatter (instanced; the locked fog veils it until open)
     this.addGrid(world);
 
     // The locked-region visuals — built from the current unlock state, and
@@ -494,6 +495,101 @@ export class WorldRenderer {
     canopies.instanceMatrix.needsUpdate = true;
     this.group.add(trunks);
     this.group.add(canopies);
+  }
+
+  /** §desert — the SONORAN DESERT scatter: a SPARSE deterministic jittered grid of zero-asset desert props
+   *  across the Desert cell — tall saguaro cacti (a vertical green column + a couple of short side arms) and a
+   *  few low tan boulders. Built as InstancedMeshes (~2 draw calls; matrices set once, no per-frame cost). Open
+   *  desert reads easily, so this is FAR sparser than the pine scatter (legibility is free). Static like the pine
+   *  forest; the locked fog veils it until the desert opens. ⚠️ ATMOSPHERE ONLY — not cover, not collision; the
+   *  sim never sees it. Entities draw OVER it, so a saguaro can never hide a catch. Deterministic (a sin-hash,
+   *  no RNG) → the L2 capture is stable. */
+  private addDesert(): void {
+    const r = BIOMES.desert.bounds;
+    const w = r.maxX - r.minX;
+    const d = r.maxY - r.minY;
+    const hash = (a: number, b: number): number => {
+      const s = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
+      return s - Math.floor(s);
+    };
+
+    // SAGUARO cacti — sparse 3×3 jittered grid, ~7 columns kept (open desert → legible). Tall green columns.
+    const cactusGridN = 3;
+    const cactusJitter = 0.6;
+    const cactusMinHeight = 5;
+    const cactusMaxHeight = 8;
+    const cactusRadius = 0.4;
+    const cactusColor = 0x4a7c3a;
+    const cacti: { x: number; z: number; h: number }[] = [];
+    for (let gx = 0; gx < cactusGridN; gx++) {
+      for (let gz = 0; gz < cactusGridN; gz++) {
+        const x = r.minX + ((gx + 0.5 + (hash(gx + 1, gz + 1) - 0.5) * cactusJitter) / cactusGridN) * w;
+        const z = r.minY + ((gz + 0.5 + (hash(gx + 7, gz + 3) - 0.5) * cactusJitter) / cactusGridN) * d;
+        // Thin the grid to ~7 saguaros (every cell where the hash clears a gate) — sparse, open desert.
+        if (hash(gx + 17, gz + 19) < 0.2) continue;
+        cacti.push({ x, z, h: cactusMinHeight + hash(gx + 11, gz + 13) * (cactusMaxHeight - cactusMinHeight) });
+      }
+    }
+    const nCactus = cacti.length;
+    if (nCactus > 0) {
+      // One InstancedMesh for the trunks; one for the side ARMS (two short arms per saguaro) → 2 draw calls.
+      const trunkGeo = new CylinderGeometry(cactusRadius, cactusRadius, 1, 7);
+      const armGeo = new CylinderGeometry(cactusRadius * 0.8, cactusRadius * 0.8, 1, 7);
+      const cactusMat = new MeshStandardMaterial({ color: cactusColor, roughness: 1 });
+      const trunks = new InstancedMesh(trunkGeo, cactusMat, nCactus);
+      const arms = new InstancedMesh(armGeo, cactusMat, nCactus * 2);
+      const m = new Matrix4();
+      const armLen = 1.5;
+      for (let i = 0; i < nCactus; i++) {
+        const c = cacti[i];
+        m.makeScale(1, c.h, 1);
+        m.setPosition(c.x, c.h / 2, c.z);
+        trunks.setMatrixAt(i, m);
+        // Two short upright arms, kicked out to opposite sides at ~60% of the trunk height (a saguaro tell).
+        const armY = c.h * 0.6;
+        m.makeScale(1, armLen, 1);
+        m.setPosition(c.x + cactusRadius * 2, armY + armLen / 2, c.z);
+        arms.setMatrixAt(i * 2, m);
+        m.setPosition(c.x - cactusRadius * 2, armY + armLen / 2, c.z);
+        arms.setMatrixAt(i * 2 + 1, m);
+      }
+      trunks.instanceMatrix.needsUpdate = true;
+      arms.instanceMatrix.needsUpdate = true;
+      this.group.add(trunks);
+      this.group.add(arms);
+    }
+
+    // ROCKS / boulders — a few low tan boulders on a sparse jittered grid (offset seeds from the cacti).
+    const rockGridN = 3;
+    const rockJitter = 0.7;
+    const rockMinSize = 0.8;
+    const rockMaxSize = 1.6;
+    const rockColor = 0x9a8a72;
+    const rocks: { x: number; z: number; s: number }[] = [];
+    for (let gx = 0; gx < rockGridN; gx++) {
+      for (let gz = 0; gz < rockGridN; gz++) {
+        const x = r.minX + ((gx + 0.5 + (hash(gx + 23, gz + 29) - 0.5) * rockJitter) / rockGridN) * w;
+        const z = r.minY + ((gz + 0.5 + (hash(gx + 31, gz + 37) - 0.5) * rockJitter) / rockGridN) * d;
+        // Thin to ~5 boulders.
+        if (hash(gx + 41, gz + 43) < 0.45) continue;
+        rocks.push({ x, z, s: rockMinSize + hash(gx + 47, gz + 53) * (rockMaxSize - rockMinSize) });
+      }
+    }
+    const nRock = rocks.length;
+    if (nRock > 0) {
+      const rockGeo = new IcosahedronGeometry(1, 0); // a low faceted boulder, scaled per instance
+      const rockMat = new MeshStandardMaterial({ color: rockColor, roughness: 1, flatShading: true });
+      const boulders = new InstancedMesh(rockGeo, rockMat, nRock);
+      const m = new Matrix4();
+      for (let i = 0; i < nRock; i++) {
+        const rk = rocks[i];
+        m.makeScale(rk.s, rk.s * 0.6, rk.s); // squash low to the ground (a boulder, not a ball)
+        m.setPosition(rk.x, rk.s * 0.3, rk.z);
+        boulders.setMatrixAt(i, m);
+      }
+      boulders.instanceMatrix.needsUpdate = true;
+      this.group.add(boulders);
+    }
   }
 
   /** §4.6 D1c-i — register a cover material for the seasonal re-tint, but ONLY for a FOLIAGE biome

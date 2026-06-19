@@ -86,7 +86,7 @@ export const WORLD = {
 } as const;
 
 /** The biomes in the world. `meadow` is the starting region. */
-export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave' | 'tidal' | 'alpine' | 'hedgerow' | 'copse' | 'estuary';
+export type BiomeId = 'meadow' | 'woodland' | 'wetland' | 'highlands' | 'riverbank' | 'coast' | 'moor' | 'pineforest' | 'cave' | 'tidal' | 'alpine' | 'hedgerow' | 'copse' | 'estuary' | 'desert';
 
 /** Static definition of one biome: its finite bounds, display name, adjacency
  *  in the world graph, initial unlocked state, and ground tint. */
@@ -134,7 +134,7 @@ function cell(cx: number, cy: number): Rect {
 }
 
 /** Iteration order for the biome graph (deterministic; render + lookup order). */
-export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave', 'tidal', 'alpine', 'hedgerow', 'copse', 'estuary'];
+export const BIOME_ORDER: readonly BiomeId[] = ['meadow', 'woodland', 'wetland', 'highlands', 'riverbank', 'coast', 'moor', 'pineforest', 'cave', 'tidal', 'alpine', 'hedgerow', 'copse', 'estuary', 'desert'];
 
 /**
  * The THROUGH-LINE (§4.3 TL1) — the soul layer's first slice. A biome's "thriving" derives from
@@ -209,6 +209,8 @@ export const SNOW_BIOMES: Partial<Record<BiomeId, boolean>> = {
   alpine: true,
   // §migration — the open estuary mud takes a winter frost-wash (reinforces the thronged-winter identity).
   estuary: true,
+  // §desert — the hot Sonoran desert does NOT snow (a warm-climate biome; the honest-omission discipline).
+  desert: false,
 };
 
 /**
@@ -266,6 +268,29 @@ export const BIOME_SEASONAL_POP: Partial<Record<BiomeId, Record<Season, number>>
  *  this many active animals (so the mudflat is never literally empty; catch + always-findable hold even
  *  at the dramatic summer setting). The structural anti-lockout guarantee for the headcount axis. */
 export const SEASONAL_POP_MIN_ACTIVE = 2;
+
+/**
+ * §desert — THE TIME-OF-DAY HEADCOUNT LEVER (the desert's crux; the day-night TWIN of BIOME_SEASONAL_POP).
+ * The existing day-phase system is the COMPOSITION axis — `eligibleSpecies` gates WHICH species are out by
+ * `activityWindow` (nocturnal at night, etc). It can NEVER make a place look emptier at noon, because the
+ * pool still saturates to SPAWN.maxAnimals from whatever IS eligible. "An empty furnace at midday vs a cool
+ * night alive with the nocturnal cast" is a SECOND, ORTHOGONAL axis — absolute HEADCOUNT by time of day —
+ * which nothing varied until now (BIOME_SEASONAL_POP is the SEASON twin of this).
+ *
+ * This per-biome, per-PHASE scalar modulates the EFFECTIVE active cap (see `effectiveCap` in Spawn.ts),
+ * COMPOSING with the season scalar (cap = maxAnimals × seasonScalar × timeScalar, floored). ⚠️ THE SPINE
+ * (identical to the season lever's): every value ≤ 1 → it only ever scales the cap DOWN (the pool ARRAY
+ * stays size maxAnimals — no new allocation), and the SEASONAL_POP_MIN_ACTIVE floor keeps it ≥ 2 (the desert
+ * is NEVER literally empty even at the furnace of midday → catch never locked out → with the season-flat,
+ * phase-independent eligibility floor, the day-active cast always holds the midday floor). A biome OMITTED
+ * here reads `?? 1` → its cap is unchanged by time of day (every existing biome byte-unchanged).
+ */
+export const BIOME_TIME_POP: Partial<Record<BiomeId, Record<DayPhase, number>>> = {
+  // The Sonoran's whole identity: a near-bare furnace at midday (round(12 × 0.2) = 2, the day-active few on
+  // the hot open sand), a teeming cool night (12 — the nocturnal cast out in force), the crepuscular peaks
+  // between. WHEN you visit changes HOW ALIVE the desert is — the nocturnality lesson, felt as headcount.
+  desert: { dawn: 0.7, day: 0.2, dusk: 0.85, night: 1.0 },
+};
 
 /**
  * §4.6 D1c-i — SEASONAL COVER/FLORA re-dress (render). The cover props re-TINT by season (reusing the
@@ -412,7 +437,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Coast',
     bounds: cell(PITCH, PITCH * 3), // north of the Riverbank — [20,60] x [100,140]
     unlocked: false,
-    adjacent: ['riverbank', 'tidal'], // §4.2 — the estuary/saltmarsh abuts the shore to the east
+    adjacent: ['riverbank', 'tidal', 'desert'], // §4.2 — the saltmarsh abuts E; §desert — the Sonoran abuts W (the green shore → sand)
     tier: 5,
     prereq: 'riverbank', // gated by research-mouse-dusk + the unlock-the-coast project
     color: 0xc9b489, // sand / shingle
@@ -440,7 +465,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     displayName: 'Pine Forest',
     bounds: cell(0, PITCH * 2), // north of the Woodland — [-20,20] x [60,100]
     unlocked: false,
-    adjacent: ['woodland', 'riverbank'],
+    adjacent: ['woodland', 'riverbank', 'desert'], // §desert — the Sonoran abuts N (a render-only breadcrumb; the desert's prereq is the Coast)
     tier: 2, // a parallel arm off the Woodland (like the Wetland)
     prereq: 'woodland',
     color: 0x1b3a2e, // deep boreal needle-green
@@ -536,6 +561,24 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     tier: 7,
     prereq: 'tidal',
     color: 0x4a5648, // wet grey-brown mudflat (cooler + darker than the tidal's olive saltmarsh)
+  },
+  // §desert — the SONORAN DESERT (B2): the first WORLDWIDE-by-design biome + the first NON-TEMPERATE
+  // climate. A hot, arid open cell WEST of the Coast (the green shore gives way to sand — a real coastal-
+  // desert transition, e.g. Baja). A full-cell full-edge fork off the Coast → ZERO clamp change (the proven
+  // node, like the estuary). OPEN terrain (≤ OPEN_BIOME_COVER_MAX cover → the throwing-net biome; legible).
+  // Its identity is the TIME-of-day headcount swing (BIOME_TIME_POP): an empty midday furnace, a night alive
+  // with the nocturnal cast — the desert-adaptation/nocturnality lesson, felt. Season-FLAT for now (the D1
+  // desert bloom is deferred); NO day-night world lighting (deferred — nocturnality reads via the HUD + the
+  // spawn swing, not a lit scene).
+  desert: {
+    id: 'desert',
+    displayName: 'Sonoran Desert',
+    bounds: cell(0, PITCH * 3), // west of the Coast — [-20,20] x [100,140]
+    unlocked: false,
+    adjacent: ['coast', 'pineforest'], // shares its E edge with the Coast (the prereq) + its S edge with the Pine Forest (render-only breadcrumb)
+    tier: 6, // a parallel arm off the Coast (tier 5) — like the Moor off the Highlands
+    prereq: 'coast',
+    color: 0xc9a05a, // warm ochre sand — the FIRST non-temperate ground tone (a confident departure from the greens)
   },
 };
 
@@ -766,7 +809,15 @@ export type SpeciesId =
   | 'pintail'
   | 'sanderling'
   | 'shelduck'
-  | 'ringedplover';
+  | 'ringedplover'
+  // §desert — the Sonoran roster (the day-active few + the nocturnal/crepuscular cast)
+  | 'cactuswren'
+  | 'roadrunner'
+  | 'deserttortoise'
+  | 'jackrabbit'
+  | 'cottontail'
+  | 'kangaroorat'
+  | 'kitfox';
 
 /** Rarity/difficulty tier: 1 = common, slow, forgiving … higher = rarer,
  *  faster, warier. The Meadow is all tier 1. */
@@ -905,6 +956,14 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
   'sanderling',
   'shelduck',
   'ringedplover',
+  // §desert — the Sonoran roster
+  'cactuswren',
+  'roadrunner',
+  'deserttortoise',
+  'jackrabbit',
+  'cottontail',
+  'kangaroorat',
+  'kitfox',
 ];
 
 /**
@@ -1378,6 +1437,57 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
     behaviour:
       'It feeds in the plover run-and-pause and, at the nest, leads an intruder away with a broken-wing display dragged across the open ground; loose flocks gather on the flats in winter.',
     status: '⚠️ A declining resident and passage wader — disturbance of its open shingle nesting shores has pushed it onto the red list, even as it holds on along the quieter estuary edges.',
+  },
+  // §desert — the SONORAN roster (US-framed; the adaptation/nocturnality teaching). DAY-active first
+  // (the heat-tolerant few that hold the floored midday), then the crepuscular/NOCTURNAL cast (the night fills up).
+  cactuswren: {
+    fieldNote:
+      'The voice of the desert morning — the cactus wren bustles through the cholla and saguaro by day, gleaning insects and spiders from among the spines. The big, bold bird of the dry scrub.',
+    behaviour:
+      'It builds bulky football-shaped nests cradled right in the cactus spines, safe from reach; curious and noisy, it scolds with a harsh churring rattle from the highest arm.',
+    status: 'Common and at home — the cactus wren thrives across the hot scrub wherever the cholla and saguaro stand.',
+  },
+  roadrunner: {
+    fieldNote:
+      'The sprinter of the open desert — the greater roadrunner dashes across the hot ground by day, running down lizards, insects and even snakes on foot. It would far rather run than fly.',
+    behaviour:
+      'It races on long legs in a flat-out sprint, tail flicking for balance; a ground cuckoo that snaps up whatever it can outrun, from grasshoppers to rattlesnakes.',
+    status: 'Doing well — the roadrunner is at home right across the open desert and scrub, a tough, adaptable hunter.',
+  },
+  deserttortoise: {
+    fieldNote:
+      'The slow grazer of the desert floor — the desert tortoise crops wildflowers and fresh growth in the cooler hours of the day, then shelters from the worst heat in a burrow it digs itself.',
+    behaviour:
+      'It spends most of the year underground, out only when the desert is mild; it stores water in its bladder to outlast months of drought, and can live well past fifty.',
+    status: '⚠️ Threatened — the desert tortoise has fallen steeply with habitat loss, disease and road deaths; it needs undisturbed desert and its burrows left intact.',
+  },
+  jackrabbit: {
+    fieldNote:
+      'The long-eared sprinter of the open desert — the black-tailed jackrabbit feeds on shrubs and grasses at dawn and dusk, resting in a shallow scrape through the heat of the day.',
+    behaviour:
+      'Its enormous ears shed body heat into the air to keep it cool; flushed, it bounds away in great zigzag leaps, flashing the black stripe up its tail.',
+    status: 'Common and adaptable — the jackrabbit thrives across the open desert and scrub, never far from cover to bolt to.',
+  },
+  cottontail: {
+    fieldNote:
+      'The gentle grazer of the desert evening — the desert cottontail comes out at dusk to crop grasses and fresh leaves, staying close to the cover of a bush or burrow.',
+    behaviour:
+      'It freezes stock-still at the first alarm, trusting its sandy coat, then bolts in a low dash for cover, the white scut of its tail bobbing.',
+    status: 'Common and thriving — the desert cottontail does well across the dry scrub wherever there is cover to hide in.',
+  },
+  kangaroorat: {
+    fieldNote:
+      'The hopper of the desert night — the kangaroo rat bounds across the cool sand after dark on long hind legs, stuffing its cheek pouches with seeds. Long gone underground before the heat of day.',
+    behaviour:
+      'It leaps like a tiny kangaroo to dodge a strike, drums its feet in warning, and caches scattered larders of seeds; it plugs its burrow by day to hold the cool, damp air in.',
+    status: 'Common and thriving — the kangaroo rat is the heartbeat of the desert night, abundant wherever the sand holds seeds.',
+  },
+  kitfox: {
+    fieldNote:
+      'The pale hunter of the desert dark — the kit fox slips out after nightfall to hunt kangaroo rats, insects and whatever the cool night offers. The smallest fox of the open desert.',
+    behaviour:
+      'Huge ears find prey by sound in the dark and shed heat by day; it dens underground against the heat, and is so wary it melts away at the faintest disturbance.',
+    status: 'Holding on — the kit fox does well in undisturbed open desert, but loses ground to development and the loss of the burrowing prey it lives on.',
   },
 };
 
@@ -2559,6 +2669,134 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     profile:
       'A small, neat plover with a black collar, running and pausing on the shingle and mud-edge — a resident of the shore, here all year. ⚠️ In serious decline: disturbance of its open nesting shores has pushed it down.',
   },
+  // §desert — the SONORAN roster. All biome:'desert', the proven diets (seeds/greens/insects — NO new bait),
+  // tier 6 (a parallel arm off the Coast). The activityWindow is the proven COMPOSITION lever (which cast is
+  // out when); BIOME_TIME_POP is the HEADCOUNT lever (how full). Every phase has ≥1 eligible species (D1b
+  // no-exclusion): dawn=jackrabbit, day=wren+roadrunner+tortoise, dusk=cottontail, night=kangaroorat+kitfox.
+  cactuswren: {
+    id: 'cactuswren',
+    gait: 'bird',
+    displayName: 'Cactus Wren',
+    biome: 'desert',
+    // The Desert VALVE (0.5): a calm, common day bird — catchable bait-less, it holds the floored midday (anti-lockout).
+    spawnWeight: 6,
+    baseFleeSpeed: 2.8,
+    detectionRadius: 2.6,
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.5,
+    bait: 'insects',
+    color: 0x9a6a44, // rufous-brown, streaked
+    size: 0.24,
+    profile:
+      'The largest wren in North America, it nests right in the spiny arms of the cholla — the spines guard the chicks. It barely drinks, taking the water it needs from insects and cactus fruit.',
+  },
+  roadrunner: {
+    id: 'roadrunner',
+    gait: 'bird',
+    displayName: 'Greater Roadrunner',
+    biome: 'desert',
+    spawnWeight: 4,
+    baseFleeSpeed: 4.4,
+    detectionRadius: 3.8,
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.32,
+    bait: 'insects', // a ground hunter of lizards + insects + snakes — maps to the proven small-prey bait
+    color: 0x7a6a4a, // streaky brown, a shaggy crest
+    size: 0.38,
+    profile:
+      'A ground cuckoo that runs down its prey at over fifteen miles an hour — it can even kill a rattlesnake. It needs little water, wringing out what it needs from its food and shedding salt through a gland by its eye.',
+  },
+  deserttortoise: {
+    id: 'deserttortoise',
+    gait: 'walk',
+    displayName: 'Desert Tortoise',
+    biome: 'desert',
+    // The conservation HERO — rare + slow (low flee), a careful catch; the threatened-species beat.
+    spawnWeight: 3,
+    baseFleeSpeed: 1.6, // the slowest in the game — found + approached, never chased
+    detectionRadius: 2.4,
+    activityWindow: 'day',
+    tier: 6,
+    baseCatchRate: 0.3,
+    bait: 'greens', // wildflowers + fresh growth + cactus
+    color: 0x8a7048, // a domed tan-brown shell
+    size: 0.34,
+    profile:
+      'It digs deep burrows that shelter dozens of other desert creatures too, and can go a year or more without drinking — storing water in its bladder against the drought. A keystone of the desert, and threatened.',
+  },
+  jackrabbit: {
+    id: 'jackrabbit',
+    gait: 'hop',
+    displayName: 'Black-tailed Jackrabbit',
+    biome: 'desert',
+    spawnWeight: 5,
+    baseFleeSpeed: 5.0, // a fast crepuscular bolter (still below the player's top speed)
+    detectionRadius: 4.0,
+    activityWindow: 'dawn', // crepuscular — assigned to dawn (it also feeds at dusk; the window is one phase)
+    tier: 6,
+    baseCatchRate: 0.4,
+    bait: 'greens',
+    color: 0xb0a48a, // sandy-grey, huge black-tipped ears
+    size: 0.42,
+    profile:
+      'Not a rabbit but a hare — born furred and open-eyed. Its huge ears are radiators: blood flushes through them to dump heat into the air, a way to stay cool without sweating away precious water.',
+  },
+  cottontail: {
+    id: 'cottontail',
+    gait: 'hop',
+    displayName: 'Desert Cottontail',
+    biome: 'desert',
+    // A calm crepuscular grazer — a second easy catch (the dusk floor-holder).
+    spawnWeight: 6,
+    baseFleeSpeed: 3.4,
+    detectionRadius: 2.8,
+    activityWindow: 'dusk',
+    tier: 6,
+    baseCatchRate: 0.46,
+    bait: 'greens',
+    color: 0xc2a988, // sandy-buff
+    size: 0.32,
+    profile:
+      'It gets most of its water from the plants it eats, and rests out the furnace of midday in the shade of a bush — feeding instead in the cooler dusk and dawn.',
+  },
+  kangaroorat: {
+    id: 'kangaroorat',
+    gait: 'hop',
+    displayName: 'Kangaroo Rat',
+    biome: 'desert',
+    // The NOCTURNAL valve (0.5): the night's calm, common floor-holder — catchable bait-less after dark.
+    spawnWeight: 6,
+    baseFleeSpeed: 3.2,
+    detectionRadius: 2.6,
+    activityWindow: 'night',
+    tier: 6,
+    baseCatchRate: 0.5,
+    bait: 'seeds',
+    color: 0xd8b070, // sandy-ochre, a white belly
+    size: 0.22,
+    profile:
+      'It never drinks water — ever. It makes all the water it needs chemically, from the dry seeds it eats, and its kidneys are so efficient its urine is almost a paste. The ultimate desert survivor.',
+  },
+  kitfox: {
+    id: 'kitfox',
+    gait: 'walk',
+    displayName: 'Kit Fox',
+    biome: 'desert',
+    // The Desert APEX (0.16): the wariest, hardest catch — a nocturnal hunter that melts away.
+    spawnWeight: 2,
+    baseFleeSpeed: 4.6,
+    detectionRadius: 4.4,
+    activityWindow: 'night',
+    tier: 6,
+    baseCatchRate: 0.16,
+    bait: 'insects', // a small nocturnal carnivore (kangaroo rats + insects) — maps to the proven small-prey bait
+    color: 0xc9b08a, // pale buff-grey, oversized ears
+    size: 0.4,
+    profile:
+      'The smallest fox in North America, built for the desert — oversized ears to hear prey and shed heat, fur on its paw-pads against the hot sand, and little need to drink, taking its water from the prey it catches.',
+  },
 };
 
 // ===========================================================================
@@ -2679,6 +2917,16 @@ export const SPECIES_BEHAVIOR: Partial<Record<SpeciesId, { budget?: EthogramBudg
   sanderling: { budget: ETHOGRAM.budgets.wader },
   shelduck: { budget: ETHOGRAM.budgets.wader },
   ringedplover: { budget: ETHOGRAM.budgets.wader },
+  // §desert — D2 heat-avoidance character (FREE — reuses the proven archetype budgets): the perched
+  // shade-resting wren (songbird, high rest), the restless ground hunters (darter), the slow grazers, the
+  // wary nocturnal fox (ambusher, high vigilance).
+  cactuswren: { budget: ETHOGRAM.budgets.songbird },
+  roadrunner: { budget: ETHOGRAM.budgets.darter },
+  deserttortoise: { budget: ETHOGRAM.budgets.grazer },
+  jackrabbit: { budget: ETHOGRAM.budgets.grazer },
+  cottontail: { budget: ETHOGRAM.budgets.grazer },
+  kangaroorat: { budget: ETHOGRAM.budgets.darter },
+  kitfox: { budget: ETHOGRAM.budgets.ambusher },
   wigeon: { budget: ETHOGRAM.budgets.grazer },
   pintail: { budget: ETHOGRAM.budgets.grazer },
   // Songbirds — perch + rest, brief foraging forays.
@@ -2811,6 +3059,10 @@ export const HIDING_SPOTS: readonly HidingSpotDef[] = [
   // coast): a SINGLE saltmarsh tussock at the landward edge is its only cover. The flat reads bare — the
   // legibility is trivial (open mud), and the swing (bare summer / thronged winter) is the render story.
   { biome: 'estuary', x: 108, y: 108, radius: 2.0, kind: 'grass' },
+  // §desert — the OPEN Sonoran: just TWO sparse rock outcrops (≤ OPEN_BIOME_COVER_MAX → the throwing-net
+  // biome; legibility is free on open sand, like the estuary — NOT the pine/hedgerow hiding problem).
+  { biome: 'desert', x: -9, y: 112, radius: 2.0, kind: 'rocks' },
+  { biome: 'desert', x: 10, y: 130, radius: 2.0, kind: 'rocks' },
 ];
 
 /** The portable HIDE (Nets & Gear slice C) — naturalist gear you DEPLOY at your
@@ -4070,6 +4322,17 @@ export const SPECIES_MODEL: Record<
     beakLengthR: 0.28, // a short, stubby plover bill
     crestHeightR: 0.1,
   },
+  // §desert — the SONORAN models (all reuse the proven ModelKinds; no new render machinery). ⚠️ The
+  // tortoise uses the 'hedgehog' domed body with spikeCount:0 (spikes OFF) → a smooth low shell (a passable
+  // tortoise at the low-poly scale; a dedicated model is deferred polish). The kit fox reuses the low 'mouse'
+  // build (long body + big ears + a tail), like the otter/marten — a close-enough small-canid read.
+  cactuswren: { kind: 'bird', accent: 0xd8c0a0, beakLengthR: 0.32 },
+  roadrunner: { kind: 'bird', accent: 0xb8a878, beakLengthR: 0.4, crestHeightR: 0.14 },
+  deserttortoise: { kind: 'hedgehog', accent: 0x6a5436, spikeCount: 0 }, // domed shell — spikes OFF
+  jackrabbit: { kind: 'rabbit', accent: 0xd0c4a8, earHeightR: 0.72, earRadiusR: 0.16 }, // the huge heat-radiator ears
+  cottontail: { kind: 'rabbit', accent: 0xe0cdb0, earHeightR: 0.5, earRadiusR: 0.16 },
+  kangaroorat: { kind: 'mouse', accent: 0xf0dcb0, earHeightR: 0.3, tailLengthR: 0.95, tailRadiusR: 0.08 }, // the long balancing tail
+  kitfox: { kind: 'mouse', accent: 0xe0d0b0, earHeightR: 0.6, tailLengthR: 0.8, tailRadiusR: 0.14 }, // oversized ears + a fox brush
 } as const;
 
 // ===========================================================================
@@ -4154,6 +4417,9 @@ export const MISSION_ORDER: readonly string[] = [
   // migration-NAMED flyway beat. The unlock itself is owned by the unlock-the-estuary research project.
   'estuary-survey',
   'estuary-flyway',
+  // §desert — the Sonoran side-quests (a terminal biome → standalone, like the estuary)
+  'desert-survey',
+  'desert-nocturne',
   // §4.1b research challenges (standalone — don't gate unlocks / the win). NON-FORCED
   // conditions (§4.1b-fix): the meadow round-the-clock foragers at NIGHT.
   'research-mouse-night',
@@ -4327,6 +4593,26 @@ export const MISSIONS: Record<string, MissionDef> = {
     requirement: { kind: 'catch-species', species: 'bartailedgodwit', count: 1 },
     rewardPoints: 25,
     standalone: true, // the migration-named teaching beat — a hub side-quest, not a gating set
+  },
+  // §desert — the Sonoran side-quests (the desert is terminal → standalone, like the estuary). The nocturne
+  // beat NAMES the lesson: come back AT NIGHT and the empty furnace is alive — the animals avoid the heat.
+  'desert-survey': {
+    id: 'desert-survey',
+    biome: 'desert',
+    title: 'Into the Heat',
+    description: 'West of the shore the green gives way to hot sand, saguaro and open sky — the Sonoran Desert. Catch 4 animals out on the desert.',
+    requirement: { kind: 'catch-in-biome', biome: 'desert', count: 4 },
+    rewardPoints: 30,
+    standalone: true, // the desert is terminal (unlocks nothing) — a hub side-quest, not a gating set
+  },
+  'desert-nocturne': {
+    id: 'desert-nocturne',
+    biome: 'desert',
+    title: 'When the Desert Wakes',
+    description: 'At midday the desert is an empty furnace — but the kangaroo rat is out on the cool sand after dark, when the heat has gone. Come back AT NIGHT and catch the kangaroo rat.',
+    requirement: { kind: 'research', species: 'kangaroorat', phase: 'night', count: 1 },
+    rewardPoints: 25,
+    standalone: true, // the nocturnality-named teaching beat — find them at night (they avoid the heat)
   },
   // §4.1b RESEARCH challenges — standalone applied-knowledge side-quests. The clue
   // describes TRAITS (the player identifies the species from the #45 cards); the
@@ -4563,7 +4849,7 @@ export const BIOME_SET_UNLOCK: Partial<Record<BiomeId, readonly BiomeId[]>> = {
   wetland: ['highlands'],
   highlands: ['riverbank', 'moor'], // §4.2 — the 1st BRANCH: the Highlands set unlocks BOTH
   riverbank: ['coast', 'cave'], // §4.2 — the Riverbank forks: the sea (Coast) AND underground (Cave)
-  coast: ['tidal'], // §4.2 — the Coast's first arm: the estuary/saltmarsh (a single-successor extension)
+  coast: ['tidal', 'desert'], // §4.2 — the saltmarsh/estuary arm; §desert — AND the Sonoran desert (the Coast forks to BOTH, each research-gated by its own unlock-the-X project, like the Riverbank→Coast+Cave)
   moor: ['alpine'], // §4.2 — the Moor's first arm: the alpine summit (a single-successor extension; was a terminus)
   tidal: ['estuary'], // §migration — the Tidal's first arm: the open estuary mudflats (was a terminus; research-gated)
 };
@@ -4854,6 +5140,19 @@ export const RESEARCH_PROJECTS: Record<string, ResearchProject> = {
     knowledgeRequirement: 'research-knot-shellfish', // by PLAY only — the non-forced species+bait catch
     reward: { kind: 'biome-access', biome: 'estuary' },
   },
+  // §desert — RESEARCH-gated off the Coast (the deep-chain pattern: the Coast's catch-set is vacuous, so the
+  // unlock is owned by THIS project, not isBiomeGateMet). ⚠️ NO knowledgeRequirement — the non-forced
+  // challenge slots are spent (logged at the Coast), so this gates on the ACTIVITY alone (catch 4 on the
+  // Coast); no new challenge mission. cost 0 (a route project, like the other unlock-the-X).
+  'unlock-the-desert': {
+    id: 'unlock-the-desert',
+    area: 'desert',
+    name: 'Desert Access',
+    blurb: 'Press west off the shore, where the green gives way to hot sand — work the coast’s life, and the Sonoran Desert opens.',
+    cost: 0,
+    activityRequirement: { kind: 'catch-in-biome', biome: 'coast', count: 4 },
+    reward: { kind: 'biome-access', biome: 'desert' },
+  },
 };
 
 /** Deterministic project order (offer + display). */
@@ -4873,6 +5172,7 @@ export const RESEARCH_ORDER: readonly string[] = [
   'unlock-the-tidal', // §4.2 — the saltmarsh/estuary (the Coast's first arm)
   'unlock-the-alpine', // §4.2 — the alpine summit (the Moor's first arm; the difficulty ceiling)
   'unlock-the-estuary', // §migration — the open estuary mudflats (the Tidal's first arm; tier 7)
+  'unlock-the-desert', // §desert — the Sonoran desert (the Coast's 2nd arm; the first worldwide-by-design biome)
 ];
 
 // ===========================================================================

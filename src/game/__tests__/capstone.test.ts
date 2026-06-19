@@ -13,6 +13,7 @@ import {
   completeTidalGate,
   completeAlpineGate,
   completeEstuaryGate,
+  completeDesertGate,
   catchRemainingSpecies,
 } from './l1/harness';
 import { createJournal } from '../../state/Journal';
@@ -45,6 +46,7 @@ function realisticWin() {
   completeTidalGate(j);
   completeAlpineGate(j);
   completeEstuaryGate(j);
+  completeDesertGate(j); // §desert — the Coast's 2nd arm (the first worldwide-by-design biome)
   catchRemainingSpecies(j);
   return j;
 }

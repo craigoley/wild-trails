@@ -14,6 +14,7 @@ import {
   completeTidalGate,
   completeAlpineGate,
   completeEstuaryGate,
+  completeDesertGate,
   catchRemainingSpecies,
 } from './harness';
 import { createJournal } from '../../../state/Journal';
@@ -148,6 +149,12 @@ describe('L1 Guard 3 — progression-to-win (the unlock chain + the win fires)',
     expect(j.unlockedBiomes).not.toContain('estuary');
     completeEstuaryGate(j);
     expect(j.unlockedBiomes).toContain('estuary');
+    // §desert — the SONORAN DESERT (the first worldwide-by-design biome) is the COAST's 2nd arm, research-
+    // gated by its OWN unlock-the-desert project (catch-in-coast ×4; NO knowledge challenge — the slots are
+    // spent). Additive: the Coast→Tidal arm opened long ago; the desert's own project opens it now.
+    expect(j.unlockedBiomes).not.toContain('desert');
+    completeDesertGate(j);
+    expect(j.unlockedBiomes).toContain('desert');
     // Fill the dex (every roster, incl. the Tidal five + the Alpine five + the Estuary seven) -> the win
     // fires. WIN REACHABLE through every research-gated biome (the cardinal anti-wall pin: no impossible state).
     catchRemainingSpecies(j);

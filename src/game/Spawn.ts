@@ -14,6 +14,7 @@ import {
   SEASONAL_ABUNDANCE,
   SEASONAL_ABUNDANCE_FLOOR,
   BIOME_SEASONAL_POP,
+  BIOME_TIME_POP,
   SEASONAL_POP_MIN_ACTIVE,
   type BiomeId,
   type DayPhase,
@@ -48,10 +49,18 @@ export function seasonalAbundance(species: SpeciesDef, season: Season): number {
  * from BIOME_SEASONAL_POP reads `?? 1` → its cap is EXACTLY SPAWN.maxAnimals (byte-unchanged behaviour).
  * This is ORTHOGONAL to seasonalAbundance: that weights WHICH species (composition); this caps HOW MANY
  * (headcount). The estuary uses both — a thronged winter of Arctic migrants, a near-bare summer of residents.
+ *
+ * §desert — the cap now COMPOSES TWO headcount axes: the SEASON scalar (BIOME_SEASONAL_POP — the estuary's
+ * empty-summer/thronged-winter) AND the TIME-of-day scalar (BIOME_TIME_POP — the desert's empty-midday/
+ * alive-night). Both are ≤ 1, so the cap only ever scales DOWN (the pool array never grows), and the floor
+ * holds ≥ SEASONAL_POP_MIN_ACTIVE. `phase` is OPTIONAL: omitted → the time factor is 1 (existing 2-arg
+ * callers are byte-unchanged); a biome OMITTED from a table reads `?? 1` for that axis. The two compose
+ * cleanly: a biome with BOTH (none today), with only season (estuary), only time (desert), or neither (most).
  */
-export function effectiveCap(biome: BiomeId, season: Season): number {
-  const mult = BIOME_SEASONAL_POP[biome]?.[season] ?? 1;
-  return Math.max(SEASONAL_POP_MIN_ACTIVE, Math.round(SPAWN.maxAnimals * mult));
+export function effectiveCap(biome: BiomeId, season: Season, phase?: DayPhase): number {
+  const seasonMult = BIOME_SEASONAL_POP[biome]?.[season] ?? 1;
+  const timeMult = phase !== undefined ? (BIOME_TIME_POP[biome]?.[phase] ?? 1) : 1;
+  return Math.max(SEASONAL_POP_MIN_ACTIVE, Math.round(SPAWN.maxAnimals * seasonMult * timeMult));
 }
 
 /**
@@ -110,7 +119,7 @@ export function trySpawn(
   // is the HEADCOUNT lever (a near-bare summer estuary stops filling at ~2; a thronged winter fills to 12).
   // ⚠️ effectiveCap ≤ SPAWN.maxAnimals always (it only scales DOWN), so the pool array never overflows; an
   // OMITTED biome gets exactly SPAWN.maxAnimals (every existing biome byte-unchanged).
-  if (activeAnimalCount(pool) >= effectiveCap(biome, season)) {
+  if (activeAnimalCount(pool) >= effectiveCap(biome, season, phase)) {
     return { outcome: 'pool-full', eligibleCount: eligible.length, animal: null };
   }
 

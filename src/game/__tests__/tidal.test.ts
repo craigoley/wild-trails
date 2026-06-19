@@ -129,7 +129,7 @@ describe('Tidal — ⚠️ anti-lockout (the fish-bait rule: shellfish NEVER req
 
 describe('Tidal — the branch + the #92 gate (the Coast extension; species+bait, no phase)', () => {
   it('the Coast (a former TERMINUS) gains its FIRST arm — coast → [tidal] (a single-successor extension)', () => {
-    expect(BIOME_SET_UNLOCK.coast).toEqual(['tidal']); // additive — the Coast was terminal
+    expect(BIOME_SET_UNLOCK.coast).toEqual(['tidal', 'desert']); // additive — the Coast was terminal
     expect(isResearchGatedUnlock('tidal')).toBe(true);
     // Every other link unchanged (the earlier forks intact):
     expect(BIOME_SET_UNLOCK.riverbank).toEqual(['coast', 'cave']);

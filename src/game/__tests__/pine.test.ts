@@ -37,7 +37,7 @@ describe('Pine Forest — the biome (a new CLOSED cell NW of the Woodland)', () 
     expect(BIOMES.pineforest.tier).toBe(2);
     expect(BIOMES.pineforest.prereq).toBe('woodland');
     expect(BIOMES.pineforest.bounds).toEqual({ minX: -20, minY: 60, maxX: 20, maxY: 100 }); // a new equal cell
-    expect(BIOMES.pineforest.adjacent).toEqual(['woodland', 'riverbank']);
+    expect(BIOMES.pineforest.adjacent).toEqual(['woodland', 'riverbank', 'desert']);
     expect(BIOMES.woodland.adjacent).toContain('pineforest'); // symmetric — the fork edge
     expect(BIOMES.riverbank.adjacent).toContain('pineforest');
   });
