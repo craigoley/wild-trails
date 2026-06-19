@@ -433,7 +433,7 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
   },
   // §4.2 — PINE FOREST / BOREAL: the 1st CLOSED/dense biome (everything else is open ground) + the
   // 1st TALL geometry (an instanced pine scatter). A 2nd arm off the Woodland (the broadleaf wood
-  // deepens into the old Caledonian pine forest), NW at [-20,20]x[60,100] — edge-adjacent to the
+  // deepens into the old boreal pine forest), NW at [-20,20]x[60,100] — edge-adjacent to the
   // Woodland (S) and the Riverbank (E). Gated by the Woodland set + a multi-condition challenge.
   pineforest: {
     id: 'pineforest',
@@ -521,8 +521,8 @@ export const BIOMES: Record<BiomeId, BiomeDef> = {
     prereq: 'hedgerow',
     color: 0x2a4420, // dappled coppice floor — a warm, shaded woodland-edge green
   },
-  // §migration — the estuary MIGRATION HUB: the great tidal mudflats EAST of the saltmarsh, the British
-  // end of the East Atlantic Flyway. A proven full-cell, full-edge fork-node at cell(PITCH*3, PITCH*3) =
+  // §migration — the estuary MIGRATION HUB: the great tidal mudflats EAST of the saltmarsh, a major
+  // end of a great migratory flyway. A proven full-cell, full-edge fork-node at cell(PITCH*3, PITCH*3) =
   // [100,140] x [100,140], one cell out to sea past the Tidal saltmarsh. ⚠️ A normal square cell on a
   // full shared edge → the computeUnlockedRects FULL-EDGE assumption HOLDS → ZERO clamp change (the
   // proven node, NOT the hedgerow ribbon). Tier 7 (past the tier-6 Tidal), prereq 'tidal'. Its IDENTITY
@@ -578,7 +578,7 @@ export type DayPhase = 'dawn' | 'day' | 'dusk' | 'night';
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 
 /** Which half of the world — flips the season-by-month mapping (Dec is winter up north, summer
- *  down south). Northern is the default (the roster is British wildlife); a Southern setting is a
+ *  down south). Northern is the default (the roster is temperate Northern-Hemisphere wildlife); a Southern setting is a
  *  future data swap, never a rewrite — the `hemisphere` arg is threaded from day one. */
 export type Hemisphere = 'northern' | 'southern';
 
@@ -726,7 +726,7 @@ export type SpeciesId =
   | 'redgrouse'
   | 'curlew'
   | 'reddeer'
-  // Pine Forest (§4.2, the 1st CLOSED/dense biome — Caledonian pinewood; the conservation stakes).
+  // Pine Forest (§4.2, the 1st CLOSED/dense biome — old boreal pinewood; the conservation stakes).
   | 'crossbill'
   | 'coaltit'
   | 'crestedtit'
@@ -1136,7 +1136,7 @@ export const SPECIES_INFO: Record<SpeciesId, SpeciesInfo> = {
       'It moves in wary herds and freezes at the faintest scent before flowing away over the slope; the autumn stag roars across the glen and carries great branching antlers.',
     status: 'A success with caveats — red deer have recovered so well that in places there are now too many for the hill to bear.',
   },
-  // Pine Forest (§4.2) — the Caledonian pinewood; HONEST status, the real boreal-forest stakes.
+  // Pine Forest (§4.2) — the old boreal pinewood; HONEST status, the real boreal-forest stakes.
   crossbill: {
     fieldNote:
       'A chunky finch of the pine tops — the crossbill prises seeds from conifer cones by day with its crossed bill. Listen for the “chip-chip” of a feeding flock overhead.',
@@ -1449,7 +1449,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     size: 0.5,
     profile:
       'Quail forage at first light for seeds and shoots, and would rather run than fly. Coveys roost together in a circle, tails pointing in.',
-    seasonTag: 'summer-visitor', // §4.6 D1b — Britain's only migratory gamebird; here to breed, gone-but-not-quite by winter
+    seasonTag: 'summer-visitor', // §4.6 D1b — a summer-breeding migratory gamebird; here to breed, gone-but-not-quite by winter
   },
   hedgehog: {
     id: 'hedgehog',
@@ -1933,7 +1933,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     gait: 'walk',
     displayName: 'Red Deer',
     biome: 'moor',
-    // The Moor APEX (0.14): large, wary, fast — Britain's largest wild land mammal.
+    // The Moor APEX (0.14): large, wary, fast — one of the largest wild land mammals.
     spawnWeight: 2,
     baseFleeSpeed: 4.6,
     detectionRadius: 4.5,
@@ -1946,7 +1946,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     profile:
       'The monarch of the moor, grazing the open hill in wary herds and flowing away at the faintest scent. The autumn stag roars across the glen under great branching antlers.',
   },
-  // --- Pine Forest (§4.2) — the 1st CLOSED/dense biome; Caledonian pinewood, the conservation stakes. ---
+  // --- Pine Forest (§4.2) — the 1st CLOSED/dense biome; old boreal pinewood, the conservation stakes. ---
   // A dry forest → NO water. The dense PINES are VISUAL atmosphere (not cover, not collision); cover is
   // the usual low spots. CJ2 gaits by tag: four BIRDs + the marten's WALK. Catch-band 0.18–0.55.
   crossbill: {
@@ -2354,7 +2354,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     baseCatchRate: 0.46,
     bait: 'seeds',
     color: 0xc69a5a, // golden-russet
-    size: 0.32, // Britain's smallest rodent
+    size: 0.32, // one of the world's smallest rodents
     profile:
       'One of the world’s tiniest rodents, weighing less than a small coin — the harvest mouse climbs the tall grass and hedge stems by day, weaving a woven nest among them and gleaning seeds.',
   },
