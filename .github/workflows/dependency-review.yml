@@ -1,0 +1,41 @@
+name: Dependency Review
+
+# SCA — the PR-DIFF gate. Reviews the dependency changes a PR INTRODUCES (the
+# base...head diff) for known-vulnerable packages AND disallowed licenses, and
+# posts a summary comment. Complements the existing tools rather than duplicating
+# them: OSV-Scanner (osv-scanner.yml) scans the resolved tree for CVEs; Dependabot
+# opens the update PRs; this catches a bad/over-permissive-license OR vulnerable
+# dep AS it lands in a diff — the license check in particular is net-new here.
+#
+# ⚠️ NON-BLOCKING by design (warn-only): this repo has a hands-off auto-merge
+# pipeline (claude-review.yml) that merges clean drafts once marked ready. A
+# hard-failing check would wall/stall that pipeline, so this only WARNS + comments
+# — advisory, never a merge gate. (Flip warn-only to a real fail-on-severity gate
+# only if/when the auto-merge pipeline is retired.)
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write # post the review summary comment
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          # Advisory only — surfaces findings without ever failing the run (the
+          # auto-merge pipeline must not be walled). Findings live in the summary
+          # comment + the job log.
+          warn-only: true
+          comment-summary-in-pr: on-failure
+          # Strong-copyleft licenses would be a problem bundled into a shipped
+          # client; flagged (warn-only) if one is ever introduced. The current
+          # tree (three = MIT) is clean.
+          deny-licenses: GPL-2.0, GPL-3.0, AGPL-3.0, LGPL-3.0

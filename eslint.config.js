@@ -15,5 +15,13 @@ export default tseslint.config(
     languageOptions: {
       globals: { ...globals.browser },
     },
+    // Additive bug-catching hardening (security-hardening pass) — zero violations
+    // in the current tree, so this only guards against NEW bad patterns. no-debugger
+    // is already on via js.recommended; console is left alone (the one console.info
+    // is an intentional journal diagnostic). Not stylistic churn — defensive only.
+    rules: {
+      'no-var': 'error', // const/let only — no hoisting/scope footguns
+      'no-alert': 'error', // a canvas game never uses alert/confirm/prompt
+    },
   },
 );
