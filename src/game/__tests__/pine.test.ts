@@ -63,8 +63,8 @@ describe('Pine Forest — the roster (honest Caledonian-pinewood; the conservati
     expect(SPECIES.redsquirrel.biome).toBe('woodland');
   });
 
-  it('honest status: the endemic crossbill, the on-the-brink capercaillie hero, the marten recovery', () => {
-    expect(SPECIES_INFO.crossbill.status.toLowerCase()).toContain('endemic'); // the only UK endemic bird
+  it('honest status: the nomadic crossbill, the on-the-brink capercaillie hero, the marten recovery', () => {
+    expect(SPECIES_INFO.crossbill.status.toLowerCase()).toContain('nomadic'); // the red crossbill — worldwide, wanders the cone crops
     expect(SPECIES_INFO.capercaillie.status.toLowerCase()).toContain('brink'); // ⚠️ the hero — on the brink
     expect(SPECIES_INFO.pinemarten.status.toLowerCase()).toContain('recovery'); // a genuine recovery
     expect(SPECIES_INFO.coaltit.status.toLowerCase()).toContain('common'); // doing well
