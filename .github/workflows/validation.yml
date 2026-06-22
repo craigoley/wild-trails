@@ -25,7 +25,7 @@ jobs:
     continue-on-error: true # report-only — never blocks
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: npm ci
       - name: Pure-Node bug-hunt (data + sim soak)
         run: npm run validate:node
