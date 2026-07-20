@@ -4,9 +4,8 @@
 # Conventions (schedule, grouping, commit prefixes, labels) follow the OleyArcade
 # fleet's dependabot.yml. The fleet's upstream ignore list is entirely Expo /
 # React Native SDK pins — NONE of which apply here: Wild Trails is a static
-# Three.js + Vite app with no native modules. There are no held-back versions in
-# package.json (three / vite / vitest / typescript all float on caret/tilde
-# ranges with no pinning rationale), so this config carries NO ignore list.
+# Three.js + Vite app with no native modules. The only ignore we carry is the
+# typescript major (see the npm block below); everything else floats free.
 
 version: 2
 updates:
@@ -26,6 +25,13 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    ignore:
+      # typescript-eslint peers on typescript ">=4.8.4 <6.1.0" as of 8.65.0, so
+      # a TS 7 bump makes `npm ci` fail ERESOLVE and takes every CI job with it.
+      # No released typescript-eslint supports TS 7 yet. REMOVE this ignore once
+      # it does — TS majors should not sit held back any longer than necessary.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
       # Order matters — a package lands in the FIRST matching group.
       # @types/* are dev-deps too, so they must come before dev-tooling.
